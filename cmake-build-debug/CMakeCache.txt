@@ -169,7 +169,7 @@ CMAKE_OBJCOPY:FILEPATH=/usr/bin/objcopy
 CMAKE_OBJDUMP:FILEPATH=/usr/bin/objdump
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=code
+CMAKE_PROJECT_NAME:STATIC=weighted_distance_oracle
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
@@ -254,6 +254,12 @@ code_BINARY_DIR:STATIC=/home/bohuang/weighted_distance_oracle/cmake-build-debug
 //Value Computed by CMake
 code_SOURCE_DIR:STATIC=/home/bohuang/weighted_distance_oracle
 
+//Value Computed by CMake
+weighted_distance_oracle_BINARY_DIR:STATIC=/home/bohuang/weighted_distance_oracle/cmake-build-debug
+
+//Value Computed by CMake
+weighted_distance_oracle_SOURCE_DIR:STATIC=/home/bohuang/weighted_distance_oracle
+
 
 ########################
 # INTERNAL cache entries
@@ -267,7 +273,7 @@ Boost_DIR-ADVANCED:INTERNAL=1
 Boost_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CGAL_Boost_USE_STATIC_LIBS
 CGAL_Boost_USE_STATIC_LIBS-ADVANCED:INTERNAL=1
-CGAL_EXECUTABLE_TARGETS:INTERNAL=main
+CGAL_EXECUTABLE_TARGETS:INTERNAL=main;main;main
 //CGAL library is configured to use GMP
 CGAL_USE_GMP:INTERNAL=TRUE
 //CGAL library is configured to use MPFR
