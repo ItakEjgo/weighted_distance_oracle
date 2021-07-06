@@ -73,7 +73,7 @@ namespace WeightedDistanceOracle{
                 cout << "current V = " << pid[0] << endl;
 #endif
                 while (Base::doubleCmp(cur_distance - limit_distance) < 0){
-                    Base::Point bisector_p = p[0] + (double)(++k) / point_num * vec_bisector;
+                    Base::Point bisector_p = p[0] + static_cast<double>(++k) / point_num * vec_bisector;
 #ifdef PrintDetails
                     cout << "k = " << k << ", p = " << bisector_p << endl;
 #endif
