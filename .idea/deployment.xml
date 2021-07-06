@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="dbg09 (65213637-8098-4676-b58a-5cec965beb1d)" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="dbg09 (65213637-8098-4676-b58a-5cec965beb1d)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/bohuang/weighted_distance_oracle" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
