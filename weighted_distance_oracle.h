@@ -143,7 +143,7 @@ namespace WeightedDistanceOracle {
     pair<double, double> distanceBoundMapPreprocessing(Base::Mesh &mesh, int method_type,
                                          map<int, int> &point_face_map,
                                          vector<double> face_max_length) {
-        double bound_pre_time;
+        double bound_pre_time = 0.0;
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         distance_map.clear();
@@ -190,7 +190,7 @@ namespace WeightedDistanceOracle {
 
                     auto bound_pre_end = chrono::_V2::system_clock::now();
                     auto bound_pre_duration = chrono::duration_cast<chrono::milliseconds>(bound_pre_end - bound_pre_start);
-                    bound_pre_time = static_cast<double>(bound_pre_duration.count());
+                    bound_pre_time += static_cast<double>(bound_pre_duration.count());
                 }
                 else {
                     auto target_vd = *(mesh.vertices().begin() + j);
@@ -209,7 +209,8 @@ namespace WeightedDistanceOracle {
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
         if (!method_type) {
-            return make_pair(static_cast<double>(duration.count()) - geodesic_pre_time, bound_pre_time);
+//            cout << "[Debug Info] Bound pre time = " << bound_pre_time << " ms" << endl;
+            return make_pair(static_cast<double>(duration.count()) - geodesic_pre_time - bound_pre_time, bound_pre_time);
         } else {
             return make_pair(static_cast<double>(duration.count()), 0.0);
         }

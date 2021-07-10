@@ -60,6 +60,8 @@ void run(string &file_name, double eps, int type, int point_num){
         shortest_paths.add_source_point(svd);
         auto dis_pair = shortest_paths.shortest_distance_to_source_points(tvd);
         double real_distance = dis_pair.first;
+//        double real_distance = 0.0;
+
         shortest_paths.remove_all_source_points();
 
         double relative_error = fabs(oracle_distance - real_distance) / real_distance;

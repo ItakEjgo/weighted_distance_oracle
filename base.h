@@ -18,6 +18,7 @@
 #include <CGAL/Triangulation_3.h>
 #include <CGAL/Surface_mesh_shortest_path.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 
 //boost headers
 #include <boost/graph/graph_traits.hpp>
@@ -45,6 +46,7 @@ namespace Base{
 
     using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::no_property, boost::property<boost::edge_weight_t, double> >;
     using vertex_descriptor = boost::graph_traits<Graph>::vertex_descriptor;
+//    using Traits = CGAL::Surface_mesh_shortest_path_traits<CGAL::Exact_predicates_exact_constructions_kernel, Mesh>;
     using Traits = CGAL::Surface_mesh_shortest_path_traits<Kernel, Mesh>;
     using Surface_mesh_shortest_path = CGAL::Surface_mesh_shortest_path<Traits>;
 
