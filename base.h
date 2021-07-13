@@ -18,7 +18,13 @@
 #include <CGAL/Triangulation_3.h>
 #include <CGAL/Surface_mesh_shortest_path.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Polygon_mesh_processing/locate.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+
 
 //boost headers
 #include <boost/graph/graph_traits.hpp>
@@ -49,6 +55,9 @@ namespace Base{
 //    using Traits = CGAL::Surface_mesh_shortest_path_traits<CGAL::Exact_predicates_exact_constructions_kernel, Mesh>;
     using Traits = CGAL::Surface_mesh_shortest_path_traits<Kernel, Mesh>;
     using Surface_mesh_shortest_path = CGAL::Surface_mesh_shortest_path<Traits>;
+
+    using AABB_face_graph_primitive = CGAL::AABB_face_graph_triangle_primitive<Mesh>;
+    using AABB_face_graph_traits = CGAL::AABB_traits<Kernel, AABB_face_graph_primitive>;
 
     const double eps = 1e-6;
     const double PI = acos(-1.0);

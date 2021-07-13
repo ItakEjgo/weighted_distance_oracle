@@ -8,6 +8,18 @@ void run(string &file_name, double eps, int type, int point_num){
     Base::Mesh surface_mesh;
     ifstream fin(file_name);
     fin >> surface_mesh;
+//    CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh);
+    CGAL::AABB_tree<Base::AABB_face_graph_traits> aabb_tree;
+    CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+//    Base::Point pp(1.0, 3.0, 0.0);
+//    auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(pp, aabb_tree, surface_mesh);
+//    cout << location.first << endl;
+//    for (auto val: location.second){
+//        cout << val << " ";
+//    }
+//    cout << endl;
+//    return;
+
     vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
     vector<double> face_max_length = {}; // maximum edge length for each face.
     WeightedDistanceOracle::getFaceMaxLength(surface_mesh, face_max_length); // get the maximum edge length for each face.
@@ -108,7 +120,82 @@ void run(string &file_name, double eps, int type, int point_num){
 //        cout << "distance of " << point_location_map[u] << " and " << point_location_map[v] << " is " << d[v] << endl;
     }
 #endif
+}
 
+void evaluateBaseGraphEffect(string &file_name, double eps, int point_num){
+    srand((int)time(0));
+
+    Base::Mesh surface_mesh;
+    ifstream fin(file_name);
+    fin >> surface_mesh;
+    int num_queries = 1000;
+    vector<pair<int, int> > query_pairs = {};   //  pre-computed query pairs
+    for (auto i = 0; i != num_queries; i++){
+        int s = rand() % surface_mesh.num_vertices(),
+                t = rand() % surface_mesh.num_vertices();
+        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+        query_pairs.emplace_back(s, t);
+    }
+
+    vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+    vector<double> face_max_length = {}; // maximum edge length for each face.
+
+    map<int, vector<int> > edge_bisector_map, bisector_point_map;
+    map<int, int> point_face_map;
+    map<int, Base::Point> point_location_map;
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map);
+    double time_place_points_fixed = ret_place_points.first;
+    int number_placed_points_fixed = ret_place_points.second;
+
+    auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, number_placed_points_fixed, edge_bisector_map,
+                                                                     bisector_point_map, point_face_map, point_location_map);
+    double time_base_graph_fixed = ret_base_graph;
+
+    vector<double> fixed_results = {};
+    for (auto query: query_pairs){
+        vector<double> dall;
+        vector<int> fa;
+        Base::dijkstra_SSAD(WeightedDistanceOracle::base_graph, query.first, dall, fa);
+        fixed_results.push_back(dall[query.second]);
+    }
+
+    edge_bisector_map.clear(); bisector_point_map.clear();
+    point_face_map.clear(); point_location_map.clear();
+    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+    ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama,
+                                                                            edge_bisector_map, bisector_point_map,
+                                                                            point_face_map, point_location_map);
+    double time_place_points_jacm = ret_place_points.first;
+    int number_placed_points_jacm = ret_place_points.second;
+    ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, number_placed_points_jacm, edge_bisector_map,
+                                                                     bisector_point_map, point_face_map, point_location_map);
+    double time_base_graph_jacm = ret_base_graph;
+
+    cout << "[TIME] Place Steiner points: " << fixed << setprecision(2) << time_place_points_fixed << " vs. " << time_place_points_jacm << " ms" << endl;
+    cout << "Number of Steiner points: " << number_placed_points_fixed << " vs. " << number_placed_points_jacm  << " nodes" << endl;
+    cout << "[TIME] Base graph construction: " << fixed << setprecision(2) << time_base_graph_fixed << " vs. " << time_base_graph_jacm << " ms" << endl;
+
+    vector<double> jacm_results = {};
+    for (auto query: query_pairs){
+        vector<double> dall;
+        vector<int> fa;
+        Base::dijkstra_SSAD(WeightedDistanceOracle::base_graph, query.first, dall, fa);
+        jacm_results.push_back(dall[query.second]);
+    }
+
+    double tot_err = 0.0;
+    double max_err = -1.0;
+    double min_err = 1e100;
+    for (auto i = 0; i != num_queries; i++){
+        double relative_err = fabs(fixed_results[i] - jacm_results[i]) / jacm_results[i];
+        cout << fixed_results[i] << " vs. " << jacm_results[i] << " error = " << relative_err << endl;
+        tot_err += relative_err;
+        if (Base::doubleCmp(relative_err - max_err) > 0) max_err = relative_err;
+        if (Base::doubleCmp(relative_err - min_err) < 0) min_err = relative_err;
+    }
+    cout << "min error = " << min_err << endl;
+    cout << "max error = " << max_err << endl;
+    cout << "average error = " << tot_err / num_queries << endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -117,5 +204,6 @@ int main(int argc, char* argv[]) {
     double eps;
     Base::getOpt(argc, argv, file_name, eps, type, point_num);
     run(file_name, eps, type, point_num);
+//    evaluateBaseGraphEffect(file_name, eps, point_num);
     return 0;
 }

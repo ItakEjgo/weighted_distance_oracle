@@ -34,6 +34,107 @@ namespace WeightedDistanceOracle {
         return static_cast<double>(duration.count());
     }
 
+    vector<double> getVertexGamma(Base::Mesh &mesh, vector<double> &face_weights){
+        map<int, vector<int> > vertex_face_map = {};
+        vector<double> gama(mesh.num_vertices());
+        double dis, w_min, w_max;
+        for (auto fd: mesh.faces()) {
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
+                int source_idx = mesh.source(hed);
+                assert(mesh.face(hed) != mesh.null_face());
+                vertex_face_map[source_idx].push_back(mesh.face(hed).idx());
+            }
+        }
+
+        for (auto vd: mesh.vertices()){
+            int vid = vd.idx();
+            Base::Point v(mesh.points()[vd]);
+            dis = 1e100;
+            w_max = -1.0;
+            w_min = 1e100;
+            for (auto fid: vertex_face_map[vid]){
+                if (Base::doubleCmp(face_weights[fid] - w_max) > 0) w_max = face_weights[fid];
+                if (Base::doubleCmp(face_weights[fid] - w_min) < 0) w_min = face_weights[fid];
+                double tmp_face_dis = -1.0;
+                for (auto &hed: mesh.halfedges_around_face(mesh.halfedge(*(mesh.faces_begin() + fid)))){
+                    auto source = mesh.source(hed), target = mesh.target(hed);
+                    Base::Point p(mesh.points()[source]), q(mesh.points()[target]);
+                    double t = CGAL::squared_distance(v, Base::Segment(p, q));
+                    if (Base::doubleCmp(t - tmp_face_dis) > 0){
+                        tmp_face_dis = t;
+                    }
+                }
+                if (Base::doubleCmp(tmp_face_dis - dis) < 0){
+                    dis = tmp_face_dis;
+                }
+            }
+            gama[vid] = w_min * sqrt(dis) / w_max / 7;
+        }
+        return gama;
+    }
+
+    pair<double, int> placeBisectorPointsJACM(Base::Mesh &mesh, const double &eps,
+                                              vector<double> &gama,
+                                              map<int, vector<int>> &edge_bisector_map,
+                                              map<int, vector<int>> &bisector_point_map,
+                                              map<int, int> &point_face_map,
+                                              map<int, Base::Point> &point_location_map){
+        auto start_time = chrono::_V2::system_clock::now();  //  timer
+
+        int num_vertices = static_cast<int>(mesh.num_vertices());
+        int bisector_num = 0;
+        for (auto  fd: mesh.faces()){
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
+                int eid = static_cast<int>(mesh.edge(hed).idx()),
+                    eid2 = static_cast<int>(mesh.edge(mesh.prev(hed)).idx());
+                vector<Base::Point> p(3);
+                vector<int> pid(3);
+                for (auto i = 0; i != 3; hed = mesh.next(hed), i++){
+                    p[i] = mesh.points()[mesh.source(hed)];
+                    pid[i] = static_cast<int>(mesh.source(hed).idx());
+                    if (point_location_map.find(pid[i]) == point_location_map.end()){
+                        point_location_map[pid[i]] = p[i];
+                    }
+                }
+                vector<int> cur_bisector = {};
+                cur_bisector.push_back(pid[0]);
+
+                double len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
+                        len2 = sqrt(CGAL::squared_distance(p[2], p[0]));
+                Base::Point p_end(p[1] + Base::Vector(p[2] - p[1]) * len1 / (len1 + len2));
+                Base::Vector vec_bisector(p_end - p[0]);
+                Base::Point aux1 = p[0] + Base::Vector(p[1] - p[0]) * gama[pid[0]] / len1;
+                Base::Point aux2 = p[0] + Base::Vector(p[2] - p[0]) * gama[pid[0]] / len2;
+                Base::Point bisector_p0 = aux1 + 0.5 * Base::Vector(aux2 - aux1);
+                double angle = Base::PI * CGAL::approximate_angle(p[1], p[0], p[2]) / 180;
+                double sin_val = sin(angle * 0.5);
+                double limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
+                double cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
+#ifdef PrintDetails
+                cout << "current V = " << pid[0] << endl;
+#endif
+                while (Base::doubleCmp(cur_distance - limit_distance) < 0) {
+                    Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
+#ifdef PrintDetails
+                    cout << "k = " << k << ", p = " << bisector_p << endl;
+#endif
+                    point_location_map[num_vertices] = bisector_p;
+                    point_face_map[num_vertices] = static_cast<int>(fd.idx());
+                    cur_bisector.push_back(num_vertices++);
+                    double distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
+                    cur_distance += distance_delta;
+                }
+                bisector_point_map[bisector_num] = cur_bisector;
+                edge_bisector_map[eid].push_back(bisector_num);
+                edge_bisector_map[eid2].push_back(bisector_num++);
+            }
+        }
+
+        auto end_time = chrono::_V2::system_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        return make_pair(static_cast<double>(duration.count()), num_vertices);
+    }
+
     pair<double, int> placeBisectorPointsFixed(Base::Mesh &mesh, const int &point_num,
                                                map<int, vector<int>> &edge_bisector_map,
                                                map<int, vector<int>> &bisector_point_map,
@@ -46,7 +147,7 @@ namespace WeightedDistanceOracle {
         for (auto fd: mesh.faces()) {
             for (auto hed:mesh.halfedges_around_face(mesh.halfedge(fd))) {
                 int eid = static_cast<int>(mesh.edge(hed).idx()),
-                        eid2 = static_cast<int>(mesh.edge(mesh.prev(hed)).idx());
+                    eid2 = static_cast<int>(mesh.edge(mesh.prev(hed)).idx());
                 vector<Base::Point> p(3);
                 vector<int> pid(3);
                 for (auto i = 0; i != 3; hed = mesh.next(hed), i++) {
