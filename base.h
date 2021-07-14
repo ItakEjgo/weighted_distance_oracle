@@ -11,6 +11,7 @@
 #include "getopt.h"
 #include "chrono"
 #include "assert.h"
+#include <random>
 
 //CGAL headers
 #include <CGAL/Simple_cartesian.h>
@@ -58,6 +59,7 @@ namespace Base{
 
     using AABB_face_graph_primitive = CGAL::AABB_face_graph_triangle_primitive<Mesh>;
     using AABB_face_graph_traits = CGAL::AABB_traits<Kernel, AABB_face_graph_primitive>;
+    using AABB_tree = CGAL::AABB_tree<AABB_face_graph_traits>;
 
     const double eps = 1e-6;
     const double PI = acos(-1.0);
@@ -229,6 +231,24 @@ namespace Base{
         }
     }
 
+    Point generateArbitrarySurfacePoint(Mesh &mesh, AABB_tree &aabb_tree){
+        auto fid = rand() % mesh.num_faces();
+//        cout << "fid = " << fid << endl;
+        auto fd = *(mesh.faces().begin() + fid);
+
+        uniform_real_distribution<double> gen(0.0, 1.0);
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        default_random_engine e(seed);
+        double a = gen(e), b = gen(e), c = gen(e);
+        vector<Point> p;
+        for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
+            p.push_back(mesh.points()[vd]);
+        }
+        Point A = p[0] + (p[1] - p[0]) * a, B = p[0] + (p[2] - p[0]) * b;
+        Point ret_point = A + (B - A) * c;
+//        cout << x_gen << " || " << y_gen << " || " << z_cor_min << endl;
+        return ret_point;
+    }
 }
 
 

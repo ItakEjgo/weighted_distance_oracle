@@ -9,16 +9,8 @@ void run(string &file_name, double eps, int type, int point_num){
     ifstream fin(file_name);
     fin >> surface_mesh;
 //    CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh);
-    CGAL::AABB_tree<Base::AABB_face_graph_traits> aabb_tree;
+    Base::AABB_tree aabb_tree;
     CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
-//    Base::Point pp(1.0, 3.0, 0.0);
-//    auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(pp, aabb_tree, surface_mesh);
-//    cout << location.first << endl;
-//    for (auto val: location.second){
-//        cout << val << " ";
-//    }
-//    cout << endl;
-//    return;
 
     vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
     vector<double> face_max_length = {}; // maximum edge length for each face.
@@ -44,16 +36,40 @@ void run(string &file_name, double eps, int type, int point_num){
     cout << "[TIME] Distance map preprocessing: " << fixed << setprecision(2) << ret_preprocessing_pair.first << " ms" << endl;
     cout << "[TIME] Bound map preprocessing: " << fixed << setprecision(2) << ret_preprocessing_pair.second << " ms" << endl;
     WeightedDistanceOracle::PartitionTree tree = WeightedDistanceOracle::PartitionTree();
-    auto ret_build_tree = tree.construct_tree(surface_mesh.num_vertices());
+    auto ret_build_tree = tree.constructTree(surface_mesh.num_vertices());
     cout << "[TIME] Partition tree construction: " << fixed << setprecision(2) << ret_build_tree << " ms" << endl;
 
     set<WeightedDistanceOracle::nodePair> node_pairs;
-    auto ret_node_pair_generate = tree.generate_node_pair_set(eps, type, point_num, node_pairs);
+    auto ret_node_pair_generate = tree.generateNodePairSet(eps, type, point_num, node_pairs);
     cout << "Node pair set size: " << node_pairs.size() << endl;
     cout << "Node pair percentage: " << fixed << setprecision(2) << 1.0 * node_pairs.size() / surface_mesh.num_vertices() / surface_mesh.num_vertices() << endl;
     cout << "[TIME] Node pair generation: " << fixed << setprecision(2) << ret_node_pair_generate << " ms" << endl;
 
     vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
+
+//    Base::Point pp(1.0, 3.0, 0.0);
+//    WeightedDistanceOracle::distanceQueryA2A(pp, surface_mesh, node_pairs, aabb_tree);
+//    auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(pp, aabb_tree, surface_mesh);
+//    cout << location.first << endl;
+//    for (auto val: location.second){
+//        cout << val << " ";
+//    }
+//    cout << endl;
+    int cnt = 0;
+    for (auto i = 0; i < 10000; i++){
+        auto p1 = Base::generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+        auto p2 = Base::generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+        double query_distance = WeightedDistanceOracle::distanceQueryA2A(p1, p2, surface_mesh, tree, node_pairs, aabb_tree);
+        if (Base::doubleCmp(query_distance) >= 0){
+            cnt++;
+//            cout << "p1 = " << p1 << " ; p2 = " << p2 << endl;
+//            cout << "query_distance = " << query_distance << endl;
+        }
+    }
+    cout << fixed << setprecision(2) << (double)cnt / 10000 << " percent queries in the node_pair_set." << endl;
+
+    return;
+
     double tot_err = 0.0, min_err = 1e20, max_err = -1.0;
     Base::Surface_mesh_shortest_path shortest_paths(surface_mesh);
     for (auto i = 0; i < 1000; i++){
@@ -63,9 +79,9 @@ void run(string &file_name, double eps, int type, int point_num){
         assert(leaf_nodes[s]->center_idx == s);
         assert(leaf_nodes[t]->center_idx == t);
         vector<WeightedDistanceOracle::PartitionTreeNode*> As, At;
-        tree.get_path_to_root(leaf_nodes[s], As);
-        tree.get_path_to_root(leaf_nodes[t], At);
-        double oracle_distance = WeightedDistanceOracle::distance_query_bf(node_pairs, As, At);
+        tree.getPathToRoot(leaf_nodes[s], As);
+        tree.getPathToRoot(leaf_nodes[t], At);
+        double oracle_distance = WeightedDistanceOracle::distanceQueryBf(node_pairs, As, At);
 
         auto svd = *(surface_mesh.vertices().begin() + s),
              tvd = *(surface_mesh.vertices().begin() + t);

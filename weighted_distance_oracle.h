@@ -373,22 +373,22 @@ namespace WeightedDistanceOracle {
         PartitionTree();
         ~PartitionTree();
 
-        void root_node_select(int num_vertices);
+        void rootNodeSelect(int num_vertices);
 
-        int build_level(int num_vertices);
+        int buildLevel(int num_vertices);
 
-        double construct_tree(int num_vertices);
+        double constructTree(int num_vertices);
 
-        double generate_node_pair_set(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set);
+        double generateNodePairSet(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set);
 
-        void get_path_to_root(PartitionTreeNode* node, vector<PartitionTreeNode*> &path);
+        static void getPathToRoot(PartitionTreeNode* node, vector<PartitionTreeNode*> &path);
     };
 
     PartitionTree::PartitionTree() { stop_flag = 0; num_tree_nodes = 0; }
 
     PartitionTree::~PartitionTree() {}
 
-    inline void PartitionTree::get_path_to_root(PartitionTreeNode *node, vector<PartitionTreeNode *> &path) {
+    inline void PartitionTree::getPathToRoot(PartitionTreeNode *node, vector<PartitionTreeNode *> &path) {
         path.clear();
         while (node != nullptr){
             path.push_back(node);
@@ -396,9 +396,9 @@ namespace WeightedDistanceOracle {
         }
     }
 
-    inline double well_separated_value(double center_distance, double eps, int type,
-                                       PartitionTreeNode* node1, PartitionTreeNode* node2,
-                                       int bisector_point_num = 6, double bound_dis = 1e100){
+    inline double wellSeparatedValue(double center_distance, double eps, int type,
+                                     PartitionTreeNode* node1, PartitionTreeNode* node2,
+                                     int bisector_point_num = 6, double bound_dis = 1e100){
         if (!Base::doubleCmp(node1->radius) && !Base::doubleCmp(node2->radius)) return 0;
         assert(Base::doubleCmp(eps));
         double rhs = (2 / eps + 2) * max(node1->radius, node2->radius);
@@ -409,19 +409,19 @@ namespace WeightedDistanceOracle {
         return rhs;
     }
 
-    double PartitionTree::generate_node_pair_set(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set) {
+    double PartitionTree::generateNodePairSet(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         priority_queue<nodePairWithValue , vector<nodePairWithValue>, greater<nodePairWithValue> > q;
         double center_distance = 0.0;
         double ws_value = -1.0;
         if (!type){
-            ws_value = well_separated_value(center_distance, eps, type,
-                                            root, root,
-                                            bisector_point_num, 0);
+            ws_value = wellSeparatedValue(center_distance, eps, type,
+                                          root, root,
+                                          bisector_point_num, 0);
         }
         else{
-            ws_value = well_separated_value(center_distance, eps, type, root, root);
+            ws_value = wellSeparatedValue(center_distance, eps, type, root, root);
         }
 
         q.push(make_pair(0 - ws_value, make_pair(root, root)));
@@ -439,13 +439,13 @@ namespace WeightedDistanceOracle {
                     auto child_node = child.second;
                     center_distance = distance_map[child_idx][r_node->center_idx];
                     if (!type){
-                        ws_value = well_separated_value(center_distance, eps, type,
-                                                        child_node, r_node,
-                                                        bisector_point_num, bound_map[child_idx][r_node->center_idx]);
+                        ws_value = wellSeparatedValue(center_distance, eps, type,
+                                                      child_node, r_node,
+                                                      bisector_point_num, bound_map[child_idx][r_node->center_idx]);
                     }
                     else{
-                        ws_value = well_separated_value(center_distance, eps, type,
-                                                        child_node, r_node);
+                        ws_value = wellSeparatedValue(center_distance, eps, type,
+                                                      child_node, r_node);
                     }
                     q.push(make_pair(center_distance - ws_value, make_pair(child_node, r_node)));
                 }
@@ -457,13 +457,13 @@ namespace WeightedDistanceOracle {
                     auto child_node = child.second;
                     center_distance = distance_map[l_node->center_idx][child_idx];
                     if (!type){
-                        ws_value = well_separated_value(center_distance, eps, type,
-                                                        l_node, child_node,
-                                                        bisector_point_num, bound_map[l_node->center_idx][child_idx]);
+                        ws_value = wellSeparatedValue(center_distance, eps, type,
+                                                      l_node, child_node,
+                                                      bisector_point_num, bound_map[l_node->center_idx][child_idx]);
                     }
                     else{
-                        ws_value = well_separated_value(center_distance, eps, type,
-                                                        l_node, child_node);
+                        ws_value = wellSeparatedValue(center_distance, eps, type,
+                                                      l_node, child_node);
                     }
                     q.push(make_pair(center_distance - ws_value, make_pair(l_node, child_node)));
                 }
@@ -480,12 +480,12 @@ namespace WeightedDistanceOracle {
         return static_cast<double>(duration.count());
     }
 
-    double PartitionTree::construct_tree(int num_vertices) {
+    double PartitionTree::constructTree(int num_vertices) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
-        root_node_select(num_vertices);
+        rootNodeSelect(num_vertices);
         while (!stop_flag){
-            int cur_num_level_nodes = build_level(num_vertices);
+            int cur_num_level_nodes = buildLevel(num_vertices);
             int max_cover_set_size = -1, min_cover_set_size = num_vertices + 1;
             for (auto &node: level_nodes[max_level]){
                 max_cover_set_size = max(max_cover_set_size, static_cast<int>(node->cover_set.size()));
@@ -501,8 +501,7 @@ namespace WeightedDistanceOracle {
         return static_cast<double>(duration.count());
     }
 
-    void PartitionTree::root_node_select(int num_vertices) {
-        srand((int)time(0));
+    void PartitionTree::rootNodeSelect(int num_vertices) {
         int root_index = rand() % num_vertices;
         vector<double> d(distance_map[root_index]);
         double radius = -1.0;
@@ -524,7 +523,7 @@ namespace WeightedDistanceOracle {
         cout << "[Partition Tree] Root = (" << root_index << "," << radius << ")" << endl;
     }
 
-    int PartitionTree::build_level(int num_vertices){
+    int PartitionTree::buildLevel(int num_vertices){
         if (stop_flag){
             cout << "[Partition Tree] Already finish the building of partition tree." << endl;
             return -1;
@@ -615,14 +614,13 @@ namespace WeightedDistanceOracle {
         return static_cast<int>(cur_level_nodes.size());
     }
 
-    double distance_query_bf(set<nodePair> &node_pairs,
-                             vector<PartitionTreeNode*> &As,
-                             vector<PartitionTreeNode*> &At){
+    double distanceQueryBf(set<nodePair> &node_pairs,
+                           vector<PartitionTreeNode*> &As,
+                           vector<PartitionTreeNode*> &At){
         double approximate_distance = 0.0;
         int cnt = 0;
         for (auto i = 0; i != As.size(); i++){
             for (auto j = 0; j != At.size(); j++){
-                auto u = As[i], v = At[j];
                 nodePair query_pair = make_pair(As[i], At[j]);
                 if (node_pairs.find(query_pair) != node_pairs.end()){
                     cnt++;
@@ -635,6 +633,75 @@ namespace WeightedDistanceOracle {
             cout << "[ERROR] multiple node pairs found!!!" << endl;
         }
         return approximate_distance;
+    }
+
+    double distanceQueryBf(double source_dis,
+                           double target_dis,
+                           set<nodePair> &node_pairs,
+                           vector<PartitionTreeNode*> &As,
+                           vector<PartitionTreeNode*> &At){
+        double approximate_distance = -1.0;
+        int nearest_sid = As[0]->center_idx, nearest_tid = At[0]->center_idx, cnt = 0;
+        for (auto i = 0; i != As.size(); i++){
+            for (auto j = 0; j != At.size(); j++){
+                nodePair query_pair = make_pair(As[i], At[j]);
+//                cout << "As.radius = " << As[i]->radius << " source_dis = " << source_dis << endl;
+//                cout << "At.radius = " << At[i]->radius << " target_dis = " << target_dis << endl;
+
+                bool is_cover_source = false, is_cover_target = false;
+                if (Base::doubleCmp(As[i]->radius - (distance_map[As[i]->center_idx][nearest_sid] + source_dis)) >= 0){
+                    is_cover_source = true;
+                }
+                if (Base::doubleCmp(At[j]->radius - (distance_map[At[j]->center_idx][nearest_tid] + target_dis)) >= 0){
+                    is_cover_target = true;
+                }
+                if (is_cover_source && is_cover_target && node_pairs.find(query_pair) != node_pairs.end()){
+                    cnt++;
+                    approximate_distance = distance_map[As[i]->center_idx][At[j]->center_idx];
+                }
+            }
+        }
+        if (cnt > 0){
+            assert(cnt == 1);
+            if (cnt != 1){
+                cout << "[ERROR] Multiple node pairs found!" << endl;
+            }
+        }
+        return approximate_distance;
+    }
+
+    pair<int, double> findNearestVertex(Base::Point &p,
+                          Base::Mesh &mesh,
+                          Base::AABB_tree &aabb_tree){
+        auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(p, aabb_tree, mesh);
+        auto fd = location.first;
+        double nearest_dis = 1e100;
+        int nearest_id = -1;
+        for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
+            double dis = CGAL::squared_distance(mesh.points()[vd], p);
+//            cout << "dis = " << dis << endl;
+            if (Base::doubleCmp(dis - nearest_dis) < 0){
+                nearest_dis = dis;
+                nearest_id = vd.idx();
+            }
+        }
+        return make_pair(nearest_id, sqrt(nearest_dis));
+    }
+
+    double distanceQueryA2A(Base::Point &query_source,
+                          Base::Point &query_target,
+                          Base::Mesh &mesh,
+                          PartitionTree &tree,
+                          set<nodePair> &node_pairs,
+                          Base::AABB_tree &aabb_tree
+                          ){
+        auto source_nearest_pair = findNearestVertex(query_source, mesh, aabb_tree);
+        auto target_nearest_pair = findNearestVertex(query_target, mesh, aabb_tree);
+        vector<PartitionTreeNode*> As, At;
+        tree.getPathToRoot(tree.level_nodes[tree.max_level][source_nearest_pair.first], As);
+        tree.getPathToRoot(tree.level_nodes[tree.max_level][target_nearest_pair.first], At);
+        double ret_dis = distanceQueryBf(source_nearest_pair.second, target_nearest_pair.second, node_pairs, As, At);
+        return ret_dis;
     }
 
 }
