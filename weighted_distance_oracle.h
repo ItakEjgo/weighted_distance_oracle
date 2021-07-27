@@ -14,6 +14,22 @@ namespace WeightedDistanceOracle {
     Base::Graph base_graph;
     map<int, vector<double> > distance_map, bound_map;
 
+    // return the vertex id of inserted point
+    int addVertexEdgeToBaseGraph(Base::Mesh &mesh, Base::Point &p, int fid, map<int, vector<int> > &face_point_map,
+                                  map<int, Base::Point> &point_location_map){
+        auto fd = *(mesh.faces().begin() + fid);
+        int V = boost::num_vertices(base_graph);
+//        cout << "old V size = " << V << endl;
+        for (auto pid: face_point_map[fid]){
+            double w = sqrt(CGAL::squared_distance(p, point_location_map[pid]));
+//            cout << "u,v,w = " << V << " " << pid << " " << w << endl;
+            boost::add_edge(V, pid, w, base_graph);
+            boost::add_edge(pid, V, w, base_graph);
+        }
+        return V;
+//        cout << "new V size = " << boost::num_vertices(base_graph) << endl;
+    }
+
     double getFaceMaxLength(Base::Mesh &mesh, vector<double> &face_max_length) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
@@ -78,7 +94,8 @@ namespace WeightedDistanceOracle {
                                               map<int, vector<int>> &edge_bisector_map,
                                               map<int, vector<int>> &bisector_point_map,
                                               map<int, int> &point_face_map,
-                                              map<int, Base::Point> &point_location_map){
+                                              map<int, Base::Point> &point_location_map,
+                                              map<int, vector<int>> &face_point_map){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         int num_vertices = static_cast<int>(mesh.num_vertices());
@@ -120,6 +137,7 @@ namespace WeightedDistanceOracle {
 #endif
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = static_cast<int>(fd.idx());
+                    face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
                     cur_bisector.push_back(num_vertices++);
                     double distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
                     cur_distance += distance_delta;
@@ -139,7 +157,8 @@ namespace WeightedDistanceOracle {
                                                map<int, vector<int>> &edge_bisector_map,
                                                map<int, vector<int>> &bisector_point_map,
                                                map<int, int> &point_face_map,
-                                               map<int, Base::Point> &point_location_map) {
+                                               map<int, Base::Point> &point_location_map,
+                                               map<int, vector<int>> &face_point_map) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         int num_vertices = static_cast<int>(mesh.num_vertices());
@@ -177,6 +196,7 @@ namespace WeightedDistanceOracle {
 #endif
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = static_cast<int>(fd.idx());
+                    face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
                     cur_bisector.push_back(num_vertices++);
                     cur_distance += limit_distance / point_num;
                 }

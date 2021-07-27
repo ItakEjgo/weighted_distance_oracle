@@ -1,5 +1,6 @@
 #include "base.h"
 #include "weighted_distance_oracle.h"
+#include "highway_well_separated.h"
 
 using namespace std;
 
@@ -20,10 +21,10 @@ void run(string &file_name, double eps, int type, int point_num){
         cout << "face " << i << " has maximum edge length " << face_max_length[i] << endl;
     }
 #endif
-    map<int, vector<int> > edge_bisector_map, bisector_point_map;
+    map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
     map<int, int> point_face_map;
     map<int, Base::Point> point_location_map;
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
     int num_base_graph_vertices = ret_place_points.second;
 
     auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
@@ -47,30 +48,52 @@ void run(string &file_name, double eps, int type, int point_num){
 
     vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
 
-//    Base::Point pp(1.0, 3.0, 0.0);
-//    WeightedDistanceOracle::distanceQueryA2A(pp, surface_mesh, node_pairs, aabb_tree);
-//    auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(pp, aabb_tree, surface_mesh);
-//    cout << location.first << endl;
-//    for (auto val: location.second){
-//        cout << val << " ";
-//    }
-//    cout << endl;
     int cnt = 0;
+    double tot_err = 0.0, min_err = 1e20, max_err = -1.0;
+
     for (auto i = 0; i < 10000; i++){
-        auto p1 = Base::generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
-        auto p2 = Base::generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+        auto p1_pair = Base::generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+        auto p2_pair = Base::generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+        auto p1 = p1_pair.first, p2 = p2_pair.first;
         double query_distance = WeightedDistanceOracle::distanceQueryA2A(p1, p2, surface_mesh, tree, node_pairs, aabb_tree);
         if (Base::doubleCmp(query_distance) >= 0){
             cnt++;
 //            cout << "p1 = " << p1 << " ; p2 = " << p2 << endl;
 //            cout << "query_distance = " << query_distance << endl;
+            cout << "oracle distance: " << query_distance << endl;
+
+        }
+        else{
+            cout << "[INFO] node found in oracles!" << endl;
+        }
+//        else{
+            int s = WeightedDistanceOracle::addVertexEdgeToBaseGraph(surface_mesh, p1, p1_pair.second, face_point_map, point_location_map);
+            int t = WeightedDistanceOracle::addVertexEdgeToBaseGraph(surface_mesh, p2, p2_pair.second, face_point_map, point_location_map);
+            vector<double> tmp_dall;
+            vector<int> tmp_fa;
+            Base::dijkstra_SSAD(WeightedDistanceOracle::base_graph, s, tmp_dall, tmp_fa);
+            double real_distance = tmp_dall[t];
+            cout << "real distance: " << real_distance << endl;
+
+//        }
+        if (Base::doubleCmp(query_distance) < 0) continue;
+        double relative_error = fabs(query_distance - real_distance) / real_distance;
+        tot_err += relative_error;
+        if (Base::doubleCmp(relative_error - min_err) < 0) min_err = relative_error;
+        if (Base::doubleCmp(relative_error - max_err) > 0) max_err = relative_error;
+        if (relative_error > eps){
+            cout << "[WARNING] large error found in (" << s << "," << t << "): " << relative_error << " > " << eps << endl;
+//            cout << "oracle distance of (" << s << "," << t << "): " << fixed << setprecision(2) << query_distance << endl;
+//            cout << "real distance of (" << s << "," << t << "): " << fixed << setprecision(2) << real_distance << endl;
         }
     }
     cout << fixed << setprecision(2) << (double)cnt / 10000 << " percent queries in the node_pair_set." << endl;
-
+    cout << "[QUALITY] min relative = " << fixed << setprecision(2) << min_err << endl;
+    cout << "[QUALITY] max relative = " << fixed << setprecision(2) << max_err << endl;
+    cout << "[QUALITY] avg relative = " << fixed << setprecision(2) << tot_err / cnt << endl;
     return;
 
-    double tot_err = 0.0, min_err = 1e20, max_err = -1.0;
+    tot_err = 0.0, min_err = 1e20, max_err = -1.0;
     Base::Surface_mesh_shortest_path shortest_paths(surface_mesh);
     for (auto i = 0; i < 1000; i++){
         int s = rand() % surface_mesh.num_vertices(),
@@ -156,15 +179,17 @@ void evaluateBaseGraphEffect(string &file_name, double eps, int point_num){
     vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
     vector<double> face_max_length = {}; // maximum edge length for each face.
 
-    map<int, vector<int> > edge_bisector_map, bisector_point_map;
+    map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
     map<int, int> point_face_map;
     map<int, Base::Point> point_location_map;
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num,
+                                                                             edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
     double time_place_points_fixed = ret_place_points.first;
     int number_placed_points_fixed = ret_place_points.second;
 
     auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, number_placed_points_fixed, edge_bisector_map,
-                                                                     bisector_point_map, point_face_map, point_location_map);
+                                                                     bisector_point_map, point_face_map,
+                                                                     point_location_map);
     double time_base_graph_fixed = ret_base_graph;
 
     vector<double> fixed_results = {};
@@ -176,11 +201,11 @@ void evaluateBaseGraphEffect(string &file_name, double eps, int point_num){
     }
 
     edge_bisector_map.clear(); bisector_point_map.clear();
-    point_face_map.clear(); point_location_map.clear();
+    point_face_map.clear(); point_location_map.clear(); face_point_map.clear();
     vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
     ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama,
                                                                             edge_bisector_map, bisector_point_map,
-                                                                            point_face_map, point_location_map);
+                                                                            point_face_map, point_location_map, face_point_map);
     double time_place_points_jacm = ret_place_points.first;
     int number_placed_points_jacm = ret_place_points.second;
     ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, number_placed_points_jacm, edge_bisector_map,

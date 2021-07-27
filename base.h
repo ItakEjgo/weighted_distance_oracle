@@ -63,6 +63,8 @@ namespace Base{
 
     const double eps = 1e-6;
     const double PI = acos(-1.0);
+    const double unreachable = numeric_limits<double>::max();
+
 
     int doubleCmp(const double &x){
         if (fabs(x) < eps) return 0;
@@ -231,7 +233,7 @@ namespace Base{
         }
     }
 
-    Point generateArbitrarySurfacePoint(Mesh &mesh, AABB_tree &aabb_tree){
+    pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh, AABB_tree &aabb_tree){
         auto fid = rand() % mesh.num_faces();
 //        cout << "fid = " << fid << endl;
         auto fd = *(mesh.faces().begin() + fid);
@@ -247,7 +249,7 @@ namespace Base{
         Point A = p[0] + (p[1] - p[0]) * a, B = p[0] + (p[2] - p[0]) * b;
         Point ret_point = A + (B - A) * c;
 //        cout << x_gen << " || " << y_gen << " || " << z_cor_min << endl;
-        return ret_point;
+        return make_pair(ret_point, fid);
     }
 }
 
