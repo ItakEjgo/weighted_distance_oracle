@@ -1,8 +1,10 @@
 #include "base.h"
 #include "weighted_distance_oracle.h"
 #include "highway_well_separated.h"
+#include "k_skip.h"
 
 using namespace std;
+int K = 3;
 
 void run(string &file_name, double eps, int type, int point_num){
     srand((int)time(0));
@@ -239,12 +241,72 @@ void evaluateBaseGraphEffect(string &file_name, double eps, int point_num){
     cout << "average error = " << tot_err / num_queries << endl;
 }
 
+void highway_test(string &file_name, double eps, int point_num){
+
+    srand((int)time(0));
+
+    Base::Mesh surface_mesh;
+    ifstream fin(file_name);
+    fin >> surface_mesh;
+    int num_queries = 1000;
+    vector<pair<int, int> > query_pairs = {};   //  pre-computed query pairs
+    for (auto i = 0; i != num_queries; i++){
+        int s = rand() % surface_mesh.num_vertices(),
+                t = rand() % surface_mesh.num_vertices();
+        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+        query_pairs.emplace_back(s, t);
+    }
+
+    vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+    vector<double> face_max_length = {}; // maximum edge length for each face.
+
+    map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
+    map<int, int> point_face_map;
+    map<int, Base::Point> point_location_map;
+
+    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama,
+                                                                       edge_bisector_map, bisector_point_map,
+                                                                       point_face_map, point_location_map, face_point_map);
+    int number_placed_points_jacm = ret_place_points.second;
+
+    Highway::HighwayGraph g;
+    g.init(number_placed_points_jacm);
+    Highway::constructHighwayGraph(g, surface_mesh, face_weight, number_placed_points_jacm, edge_bisector_map,
+                                   bisector_point_map, point_face_map, point_location_map);
+
+    for (auto q: query_pairs){
+        auto query_result = g.distanceQuery(q.first, q.second);
+        cout << query_result.first << " " << query_result.second << endl;
+    }
+}
+
+void kSkipTest(){
+    ifstream fin("../datasets/grid.txt");
+    int V, E;
+    fin >> V >> E;
+    kSkip::Graph g;
+    g.init(V);
+    int u, v; double w;
+    for (auto i = 0; i < E; i++){
+        fin >> u >> v >> w;
+        g.addEdge(u, v, w);
+    }
+    auto ret = kSkip::adaptiveSampling(g);
+    for (auto &vid: ret){
+        cout << vid << " ";
+    }
+    cout << endl;
+}
+
 int main(int argc, char* argv[]) {
     string file_name;
     int type, point_num;
     double eps;
     Base::getOpt(argc, argv, file_name, eps, type, point_num);
-    run(file_name, eps, type, point_num);
+//    highway_test(file_name, eps, point_num);
+//    run(file_name, eps, type, point_num);
 //    evaluateBaseGraphEffect(file_name, eps, point_num);
+    kSkipTest();
     return 0;
 }
