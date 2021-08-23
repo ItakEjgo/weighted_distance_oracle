@@ -2,9 +2,10 @@
 #include "weighted_distance_oracle.h"
 #include "highway_well_separated.h"
 #include "k_skip.h"
+#include "quad.h"
 
 using namespace std;
-int K = 3;
+int K;
 
 void run(string &file_name, double eps, int type, int point_num){
     srand((int)time(0));
@@ -281,22 +282,149 @@ void highway_test(string &file_name, double eps, int point_num){
     }
 }
 
-void kSkipTest(){
-    ifstream fin("../datasets/grid.txt");
-    int V, E;
-    fin >> V >> E;
+void kSkipTest(string &file_name, double eps, int point_num, int type){
+    K = type;
+    cout << "k in k-skip graph is: " << K << endl;
+    srand((int)time(0));
+    Base::Mesh surface_mesh;
+    ifstream fin(file_name);
+    fin >> surface_mesh;
+    vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+    vector<double> face_max_length = {}; // maximum edge length for each face.
+
+    map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
+    map<int, int> point_face_map;
+    map<int, Base::Point> point_location_map;
+
+    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama,
+                                                                            edge_bisector_map, bisector_point_map,
+                                                                            point_face_map, point_location_map, face_point_map);
+    int number_placed_points_jacm = ret_place_points.second;
+    cout << "Place Steiner points finished." << endl;
+
     kSkip::Graph g;
-    g.init(V);
-    int u, v; double w;
-    for (auto i = 0; i < E; i++){
-        fin >> u >> v >> w;
-        g.addEdge(u, v, w);
+    g.init(number_placed_points_jacm);
+    kSkip::constructGraph(g, surface_mesh, face_weight, number_placed_points_jacm, edge_bisector_map,
+                                   bisector_point_map, point_face_map, point_location_map);
+
+    cout << "Construct graph finished." << endl;
+
+    auto k_cover_V = kSkip::adaptiveSampling(g);
+    auto k_cover_vertex_id = kSkip::generateKCoverVertexId(k_cover_V);
+    auto k_skip_graph = kSkip::computeKSkipGraph(g, k_cover_V, k_cover_vertex_id);
+    cout << "V = " << g.num_V << " k-skip V = " << k_skip_graph.num_V << endl;
+    cout << "E = " << g.num_E << " k-skip E = " << k_skip_graph.num_E << endl;
+    cout << "compressed V percent: " << static_cast<double>(k_skip_graph.num_V) / g.num_V << endl;
+    cout << "compressed E percent: " << static_cast<double>(k_skip_graph.num_E) / g.num_E << endl;
+//    cout << "k-cover-vertices: ";
+//    for (auto vid: k_cover_V){
+//        cout << vid << " ";
+//    }
+//    cout << endl;
+
+    cout << "level 2 start construction:" << endl;
+    auto k2_cover_V = kSkip::adaptiveSampling(k_skip_graph);
+    auto k2_cover_vertex_id = kSkip::generateKCoverVertexId(k2_cover_V);
+    auto k2_skip_graph = kSkip::computeKSkipGraph(k_skip_graph, k2_cover_V, k2_cover_vertex_id);
+    cout << "V = " << g.num_V << " k2-skip V = " << k2_skip_graph.num_V << endl;
+    cout << "E = " << g.num_E << " k2-skip E = " << k2_skip_graph.num_E << endl;
+    cout << "compressed V percent: " << static_cast<double>(k2_skip_graph.num_V) / g.num_V << endl;
+    cout << "compressed E percent: " << static_cast<double>(k2_skip_graph.num_E) / g.num_E << endl;
+
+    int q_num = 10;
+    double tot = 0, tot_dijk = 0;
+//    vector<int> vec(k_cover_V.begin(), k_cover_V.end());
+    vector<int> vec(k2_cover_V.begin(), k2_cover_V.end());
+
+    for (auto i = 0; i < q_num; i++){
+//        int s = rand() % surface_mesh.num_vertices();
+//        int t = rand() % surface_mesh.num_vertices();
+//        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+        int s = rand() % vec.size();
+        int t = rand() % vec.size();
+        if (s == t) t = (t + 1) % vec.size();
+        s = vec[s]; t = vec[t];
+        auto ret = kSkip::queryKSkipGraph(k_skip_graph, k2_skip_graph, k2_cover_V, k2_cover_vertex_id, s, t);
+        auto ret_ori_g = kSkip::dijkstra(k_skip_graph, s, t);
+        if (Base::doubleCmp(ret_ori_g.first - ret.first)){
+            cout << "kSkip dis(" << s << "," << t << "): ";
+            cout << fixed << setprecision(3) << ret.first << ", query time = " << ret.second << " ms" << endl;
+            cout << "exact dis(" << s << "," << t << "): ";
+            cout << fixed << setprecision(3) << ret_ori_g.first << ", query time = " << ret_ori_g.second << " ms" << endl;
+        }
+        tot += ret.second;
+        tot_dijk += ret_ori_g.second;
     }
-    auto ret = kSkip::adaptiveSampling(g);
-    for (auto &vid: ret){
-        cout << vid << " ";
+    cout << "AVG k-skip query time = " << tot / 1000 << endl;
+    cout << "AVG dijkstra query time = " << tot_dijk / 1000 << endl;
+}
+
+void kSkipGraphTest(){
+    ifstream fin("../datasets/challenge9/USA-road-d.BAY.gr");
+    kSkip::Graph g;
+    char c;
+    K = 10;
+    int V, E;
+    while (fin >> c){
+        if (c == 'c'){
+            char s[100];
+            fin.getline(s, 100);
+        }
+        else if (c == 'p'){
+            string sp;
+            fin >> sp >> V >> E;
+            g.init(V);
+        }
+        else if (c == 'a'){
+            int u, v; double w;
+            fin >> u >> v >> w;
+            g.addEdge(u - 1, v - 1, w);
+            g.addEdge(v - 1, u - 1, w);
+        }
     }
-    cout << endl;
+
+    cout << "Construct graph finished." << endl;
+
+    auto k_cover_V = kSkip::adaptiveSampling(g);
+    auto k_cover_vertex_id = kSkip::generateKCoverVertexId(k_cover_V);
+    auto k_skip_graph = kSkip::computeKSkipGraph(g, k_cover_V, k_cover_vertex_id);
+    cout << "V = " << g.num_V << " k-skip V = " << k_skip_graph.num_V << endl;
+    cout << "E = " << g.num_E << " k-skip E = " << k_skip_graph.num_E << endl;
+    cout << "compressed V percent: " << static_cast<double>(k_skip_graph.num_V) / g.num_V << endl;
+    cout << "compressed E percent: " << static_cast<double>(k_skip_graph.num_E) / g.num_E << endl;
+
+
+
+
+    int q_num = 1000;
+    double tot = 0, tot_dijk = 0;
+    vector<int> vec(k_cover_V.begin(), k_cover_V.end());
+//    vector<int> vec(k2_cover_V.begin(), k2_cover_V.end());
+
+    for (auto i = 0; i < q_num; i++){
+//        int s = rand() % V;
+//        int t = rand() % V;
+//        if (s == t) t = (t + 1) % V;
+        int s = rand() % vec.size();
+        int t = rand() % vec.size();
+        if (s == t) t = (t + 1) % vec.size();
+        s = vec[s]; t = vec[t];
+
+        auto ret = kSkip::queryKSkipGraph(g, k_skip_graph, k_cover_V, k_cover_vertex_id, s, t);
+        auto ret_ori_g = kSkip::dijkstra(g, s, t);
+        if (Base::doubleCmp(ret_ori_g.first - ret.first)){
+            cout << "kSkip dis(" << s << "," << t << "): ";
+            cout << fixed << setprecision(3) << ret.first << ", query time = " << ret.second << " ms" << endl;
+            cout << "exact dis(" << s << "," << t << "): ";
+            cout << fixed << setprecision(3) << ret_ori_g.first << ", query time = " << ret_ori_g.second << " ms" << endl;
+        }
+        tot += ret.second;
+        tot_dijk += ret_ori_g.second;
+    }
+    cout << "AVG query time = " << tot / 1000 << endl;
+    cout << "AVG dijkstra query time = " << tot_dijk / 1000 << endl;
+
 }
 
 int main(int argc, char* argv[]) {
@@ -307,6 +435,7 @@ int main(int argc, char* argv[]) {
 //    highway_test(file_name, eps, point_num);
 //    run(file_name, eps, type, point_num);
 //    evaluateBaseGraphEffect(file_name, eps, point_num);
-    kSkipTest();
+    kSkipTest(file_name, eps, point_num, type);
+//    kSkipGraphTest();
     return 0;
 }

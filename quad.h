@@ -1,0 +1,8 @@
+//
+// Created by huang on 2021/8/23.
+//
+
+#ifndef WEIGHTED_DISTANCE_ORACLE_QUAD_H
+#define WEIGHTED_DISTANCE_ORACLE_QUAD_H
+
+#endif //WEIGHTED_DISTANCE_ORACLE_QUAD_H
