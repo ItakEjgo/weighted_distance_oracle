@@ -292,8 +292,9 @@ namespace Quad{
                 }
             }
         }
-        cout << "box_s = " << box_s->node_id << " box_t = " << box_t->node_id << endl;
+//        cout << "box_s = " << box_s->node_id << " box_t = " << box_t->node_id << endl;
         if (box_s->node_id != box_t->node_id){
+            cout << "in different box!" << endl;
             int final_s, final_t;
             if (new_id.find(sid) == new_id.end()){
                 final_s = spanner.addVertex();
@@ -313,9 +314,12 @@ namespace Quad{
             else{
                 final_t = new_id[tid];
             }
+            cout << "s, t = " << sid << " " << tid << endl;
+            cout << "final s, t = " << final_s << " " << final_t << endl;
             return kSkip::dijkstra(spanner, final_s, final_t).first;
         }
         else{
+            cout << "in same box!" << endl;
             return kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first;
         }
 

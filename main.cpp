@@ -426,7 +426,7 @@ int K;
 //    cout << "AVG dijkstra query time = " << tot_dijk / 1000 << endl;
 //}
 
-void quadTest(string &file_name, double eps, int point_num, int type) {
+void quadTest(string &file_name, double eps, int point_num, int type, int level) {
     srand((int)time(0));
     Base::Mesh surface_mesh;
     ifstream fin(file_name);
@@ -456,8 +456,8 @@ void quadTest(string &file_name, double eps, int point_num, int type) {
     cout << "# of placed points = " << number_placed_points_jacm << endl;
 
     Quad::quadTree quad_tree(surface_mesh, face_point_map);
-    cout << "quad tree level = 3" << endl;
-    for (auto i = 0; i < 2; i++){
+    cout << "quad tree level = " << level << endl;
+    for (auto i = 0; i < level; i++){
         quad_tree.buildLevel(surface_mesh, face_point_map);
     }
     set<int> pids;
@@ -500,36 +500,40 @@ void quadTest(string &file_name, double eps, int point_num, int type) {
     map<int, int> new_id;
     auto spanner = Quad::generateSpanner(pid_list, node_pairs, new_id);
     double tot_err = 0.0, min_err = 1e20, max_err = -1.0;
-//    Base::Surface_mesh_shortest_path shortest_paths(surface_mesh);
+    Base::Surface_mesh_shortest_path shortest_paths(surface_mesh);
 //    sort(pid_list.begin(), pid_list.end());
-    for (auto i = 0; i < 100; i++){
-//        int s = rand() % surface_mesh.num_vertices(),
-//            t = rand() % surface_mesh.num_vertices();
-//        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
-        int s = rand() % pid_list.size(),
-                t = rand() % pid_list.size();
-        if (s == t) t = (t + 1) % pid_list.size();
+    for (auto i = 0; i < 1000; i++){
+        int s = rand() % surface_mesh.num_vertices(),
+            t = rand() % surface_mesh.num_vertices();
+        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+//        int s = rand() % pid_list.size(),
+//                t = rand() % pid_list.size();
+//        if (s == t) t = (t + 1) % pid_list.size();
 //        s = pid_list[s]; t = pid_list[t];
 //        cout << leaf_nodes[s]->center_idx << " " << s << endl;
 //        cout << leaf_nodes[t]->center_idx << " " << t << endl;
-        assert(leaf_nodes[s]->center_idx == pid_list[s]);
-        assert(leaf_nodes[t]->center_idx == pid_list[t]);
-        vector<WeightedDistanceOracle::PartitionTreeNode*> As, At;
-        tree.getPathToRoot(leaf_nodes[s], As);
-        tree.getPathToRoot(leaf_nodes[t], At);
-        double oracle_distance = WeightedDistanceOracle::distanceQueryBf(node_pairs, As, At);
+//        assert(leaf_nodes[s]->center_idx == s);
+//        assert(leaf_nodes[t]->center_idx == t);
+//        vector<WeightedDistanceOracle::PartitionTreeNode*> As, At;
+//        tree.getPathToRoot(leaf_nodes[s], As);
+//        tree.getPathToRoot(leaf_nodes[t], At);
+//        double oracle_distance = WeightedDistanceOracle::distanceQueryBf(node_pairs, As, At);
 //        auto spanner_ret = kSkip::dijkstra(spanner, new_id[pid_list[s]], new_id[pid_list[t]]);
-        double spanner_distance = Quad::querySpanner(surface_mesh, spanner, pid_list[s], pid_list[t], quad_tree, new_id);
-        cout << "oracle distance of (" << pid_list[s] << "," << pid_list[t] << "): " << fixed << setprecision(2) << oracle_distance << endl;
-        cout << "spanner distance of (" << pid_list[s] << "," << pid_list[t] << "): " << fixed << setprecision(2) << spanner_distance << endl;
 
-//        auto svd = *(surface_mesh.vertices().begin() + s),
-//             tvd = *(surface_mesh.vertices().begin() + t);
-//        shortest_paths.add_source_point(svd);
-//        auto dis_pair = shortest_paths.shortest_distance_to_source_points(tvd);
-//        double real_distance = dis_pair.first;
-//
-//        shortest_paths.remove_all_source_points();
+        auto svd = *(surface_mesh.vertices().begin() + s),
+                tvd = *(surface_mesh.vertices().begin() + t);
+        shortest_paths.add_source_point(svd);
+        auto dis_pair = shortest_paths.shortest_distance_to_source_points(tvd);
+        double real_distance = dis_pair.first;
+        shortest_paths.remove_all_source_points();
+
+        double spanner_distance = Quad::querySpanner(surface_mesh, spanner, s, t, quad_tree, new_id);
+        cout << "real distance of (" << s << "," << t << "): " << fixed << setprecision(2) << real_distance << endl;
+
+//        cout << "oracle distance of (" << pid_list[s] << "," << pid_list[t] << "): " << fixed << setprecision(2) << oracle_distance << endl;
+        cout << "spanner distance of (" << s << "," << t << "): " << fixed << setprecision(2) << spanner_distance << endl;
+        double relative_error = fabs(real_distance - spanner_distance) / real_distance;
+        cout << "relative error = " << relative_error << endl;
 
 //        double relative_error = fabs(oracle_distance - real_distance) / real_distance;
 //        tot_err += relative_error;
@@ -548,14 +552,14 @@ void quadTest(string &file_name, double eps, int point_num, int type) {
 
 int main(int argc, char* argv[]) {
     string file_name;
-    int type, point_num;
+    int type, point_num, level;
     double eps;
-    Base::getOpt(argc, argv, file_name, eps, type, point_num);
+    Base::getOpt(argc, argv, file_name, eps, type, point_num, level);
 //    highway_test(file_name, eps, point_num);
 //    run(file_name, eps, type, point_num);
 //    evaluateBaseGraphEffect(file_name, eps, point_num);
 //    kSkipTest(file_name, eps, point_num, type);
 //    kSkipGraphTest();
-    quadTest(file_name, eps, point_num, type);
+    quadTest(file_name, eps, point_num, type, level);
     return 0;
 }

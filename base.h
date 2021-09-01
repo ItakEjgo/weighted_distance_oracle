@@ -79,16 +79,17 @@ namespace Base{
 
     double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
 
-    void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num) {
+    void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num, int &level) {
         struct option long_options[] = {
                 {"mesh", required_argument, 0, 'm'},
                 {"eps", required_argument, 0, 'e'},
                 {"type", required_argument, 0, 't'},
                 {"pointnum", required_argument, 0, 'p'},
+                {"level", required_argument, 0, 'l'},
                 {0, 0, 0, 0}
         };
         int opt;
-        const char* opt_string = "m:e:t:p:";
+        const char* opt_string = "m:e:t:p:l:";
         int option_index = 0;
         while ((opt = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1){
             char ch = (char)opt;
@@ -97,6 +98,7 @@ namespace Base{
                 case 'e': eps = atof(optarg); break;
                 case 't': type = atoi(optarg); break;
                 case 'p': point_num = atoi(optarg); break;
+                case 'l': level = atoi(optarg); break;
                 default: break;
             }
         }
