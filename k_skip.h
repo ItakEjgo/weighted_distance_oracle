@@ -254,6 +254,9 @@ namespace kSkip{
             for (int eid = g.head[f.p]; eid; eid = g.edges[eid].next){
                 int v = g.edges[eid].to;
                 double w = g.edges[eid].w;
+//                if (Base::doubleCmp(w) < 0){
+//                    cout << "w < 0: " << f.p << " " << v << " " << w << endl;
+//                }
                 if (Base::doubleCmp(d[f.p] + w - d[v]) < 0){
                     d[v] = d[f.p] + w;
                     fa[v] = f.p;
