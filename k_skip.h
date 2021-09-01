@@ -54,6 +54,8 @@ namespace kSkip{
         }
     };
 
+    Graph my_base_graph;
+
     // k-hop-vector
     vector<int> generateKHopVector(Graph &g, int s, vector<double> &d, vector<int> &fa, int max_hops = K){
         vector<int> k_hop_vector = {};

@@ -518,7 +518,8 @@ void quadTest(string &file_name, double eps, int point_num, int type) {
         tree.getPathToRoot(leaf_nodes[s], As);
         tree.getPathToRoot(leaf_nodes[t], At);
         double oracle_distance = WeightedDistanceOracle::distanceQueryBf(node_pairs, As, At);
-        double spanner_distance = spanner.queryOriginGraph(new_id[pid_list[s]], new_id[pid_list[t]]);
+//        auto spanner_ret = kSkip::dijkstra(spanner, new_id[pid_list[s]], new_id[pid_list[t]]);
+        double spanner_distance = Quad::querySpanner(surface_mesh, spanner, pid_list[s], pid_list[t], quad_tree, new_id);
         cout << "oracle distance of (" << pid_list[s] << "," << pid_list[t] << "): " << fixed << setprecision(2) << oracle_distance << endl;
         cout << "spanner distance of (" << pid_list[s] << "," << pid_list[t] << "): " << fixed << setprecision(2) << spanner_distance << endl;
 

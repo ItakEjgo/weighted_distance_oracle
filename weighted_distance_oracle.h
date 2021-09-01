@@ -6,6 +6,7 @@
 #define WEIGHTED_DISTANCE_ORACLE_WEIGHTED_DISTANCE_ORACLE_H
 
 #include "base.h"
+#include "k_skip.h"
 
 namespace WeightedDistanceOracle {
 
@@ -226,6 +227,7 @@ namespace WeightedDistanceOracle {
                               map<int, Base::Point> &point_location_map) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
+        kSkip::my_base_graph.init(num_vertices);
         vector<pair<int, int> > base_graph_edges = {};
         vector<double> base_graph_weights = {};
         for (auto it = edge_bisector_map.begin(); it != edge_bisector_map.end(); it++) {
@@ -253,6 +255,7 @@ namespace WeightedDistanceOracle {
 //                            }
                             base_graph_edges.emplace_back(pid_1, pid_2);
                             base_graph_weights.push_back(dis);
+                            kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
 #ifdef PrintDetails
                             cout << "add edge: " << pid_1 << " " << pid_2 << " " << dis << endl;
 #endif
@@ -263,6 +266,7 @@ namespace WeightedDistanceOracle {
         }
         base_graph = Base::Graph(begin(base_graph_edges), end(base_graph_edges), begin(base_graph_weights),
                                  num_vertices);
+
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);

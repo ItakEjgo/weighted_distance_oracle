@@ -6,11 +6,14 @@
 #define WEIGHTED_DISTANCE_ORACLE_QUAD_H
 
 #include "base.h"
+#include "k_skip.h"
 #include "weighted_distance_oracle.h"
-#include "highway_well_separated.h"
 
 namespace Quad{
+
     using namespace std;
+
+    kSkip::Graph my_base_graph;
 
     struct my_point{
         double x, y;
@@ -54,6 +57,7 @@ namespace Quad{
     class treeNode{
     public:
         double x_min, y_min, x_max, y_max;
+        int node_id;
         set<int> boundary_points_id;
         treeNode* parent;
         vector<treeNode*> sons; // 0/1/2/3 -- NE/NW/SW/SE
@@ -62,6 +66,7 @@ namespace Quad{
     };
 
     treeNode::treeNode() {
+        node_id = 0;
         x_min = 1e60; x_max = -1e60;
         y_min = 1e60; y_max = -1e60;
         parent = nullptr;
@@ -121,7 +126,8 @@ namespace Quad{
     quadTree::quadTree(Base::Mesh &m, map<int, vector<int> > &face_point_map) {
         level = 0;
         root = new treeNode();
-        node_count = 1;
+        node_count = 0;
+        root->node_id = node_count++;
         for (auto &v: m.vertices()){
 //            cout << m.points()[v].x() << " " << m.points()[v].y() << " " << m.points()[v].z() << endl;
             double x = m.points()[v].x(), y = m.points()[v].y();
@@ -223,6 +229,10 @@ namespace Quad{
             NE_son->parent = node;
             SW_son->parent = node;
             SE_son->parent = node;
+            NW_son->node_id = node_count++;
+            NE_son->node_id = node_count++;
+            SW_son->node_id = node_count++;
+            SE_son->node_id = node_count++;
             node->sons.push_back(NW_son);
             node->sons.push_back(NE_son);
             node->sons.push_back(SW_son);
@@ -236,13 +246,13 @@ namespace Quad{
         level_nodes.push_back(cur_level_nodes);
     }
 
-    Highway::HighwayGraph generateSpanner(vector<int> &pid_list, set<WeightedDistanceOracle::nodePair> &node_pairs,
+    kSkip::Graph generateSpanner(vector<int> &pid_list, set<WeightedDistanceOracle::nodePair> &node_pairs,
                                           map<int, int> &new_id){
         new_id.clear();
         for (auto i = 0; i < pid_list.size(); i++){
             new_id[pid_list[i]] = i;
         }
-        Highway::HighwayGraph g;
+        kSkip::Graph g;
         g.init(static_cast<int>(pid_list.size()));
         for (auto node_pair: node_pairs){
             auto u = node_pair.first->center_idx;
@@ -256,8 +266,59 @@ namespace Quad{
         return g;
     }
 
-    double querySpanner(Highway::HighwayGraph &spanner, int sid, int tid){
-        
+    double querySpanner(Base::Mesh &m, kSkip::Graph spanner, int sid, int tid, quadTree &tree, map<int, int> &new_id){
+        auto box_s = tree.root, box_t = tree.root;
+        auto point_s = m.points()[*(m.vertices_begin() + sid)];
+        auto point_t = m.points()[*(m.vertices_begin() + tid)];
+        while (box_s->node_id == box_t->node_id){
+            if (box_s->sons.size() > 0){
+                for (auto son: box_s->sons){
+                    if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
+                        Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
+                        box_s = son;
+                        break;
+                    }
+                }
+            }
+            else{
+                break;
+            }
+
+            for (auto son: box_t->sons){
+                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
+                    box_t = son;
+                    break;
+                }
+            }
+        }
+        cout << "box_s = " << box_s->node_id << " box_t = " << box_t->node_id << endl;
+        if (box_s->node_id != box_t->node_id){
+            int final_s, final_t;
+            if (new_id.find(sid) == new_id.end()){
+                final_s = spanner.addVertex();
+                for (auto pid: box_s->boundary_points_id){
+                    spanner.addEdge(final_s, new_id[pid], WeightedDistanceOracle::distance_map[pid][sid]);
+                }
+            }
+            else{
+                final_s = new_id[sid];
+            }
+            if (new_id.find(tid) == new_id.end()){
+                final_t = spanner.addVertex();
+                for (auto pid: box_s->boundary_points_id){
+                    spanner.addEdge(new_id[pid], final_t, WeightedDistanceOracle::distance_map[pid][tid]);
+                }
+            }
+            else{
+                final_t = new_id[tid];
+            }
+            return kSkip::dijkstra(spanner, final_s, final_t).first;
+        }
+        else{
+            return kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first;
+        }
+
     }
 
 }
