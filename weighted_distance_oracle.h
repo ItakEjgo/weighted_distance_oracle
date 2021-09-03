@@ -321,15 +321,15 @@ namespace WeightedDistanceOracle {
                 if (!method_type) {
                     auto bound_pre_start = chrono::_V2::system_clock::now();
 
-                    int id = t;
-                    while (id != s) {
-                        if (id < V && fa[id] < V) {
-                            b[t] += sqrt(CGAL::squared_distance(point_location_map[id], point_location_map[fa[id]]));
-                        } else {
-                            b[t] += face_max_length[point_face_map[id]];
-                        }
-                        id = fa[id];
-                    }
+//                    int id = t;
+//                    while (id != s) {
+//                        if (id < V && fa[id] < V) {
+//                            b[t] += sqrt(CGAL::squared_distance(point_location_map[id], point_location_map[fa[id]]));
+//                        } else {
+//                            b[t] += face_max_length[point_face_map[id]];
+//                        }
+//                        id = fa[id];
+//                    }
 
                     auto bound_pre_end = chrono::_V2::system_clock::now();
                     auto bound_pre_duration = chrono::duration_cast<chrono::milliseconds>(bound_pre_end - bound_pre_start);
@@ -345,6 +345,9 @@ namespace WeightedDistanceOracle {
                 shortest_paths.remove_all_source_points();
             }
             distance_map[s] = d;
+            bound_map[s] = d;
+//            bound_map[s] = b;
+
 //            cout << "s = " << s;
 //            for (auto x = 0; x < V; x++){
 //                if (!Base::doubleCmp(d[pid_list[x]])){
@@ -353,7 +356,6 @@ namespace WeightedDistanceOracle {
 //                    cout << point_location_map[pid_list[x]] << " on face " << point_face_map[pid_list[x]] << endl;
 //                }
 //            }
-            bound_map[s] = b;
         }
         cout << "Distance/Bound map preprocessing finished." << endl;
 

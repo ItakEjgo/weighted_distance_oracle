@@ -37,8 +37,10 @@ pair<vector<double>, pair<double, double> > run(string &file_name, double eps, i
     }
 
     auto index_start = chrono::_V2::system_clock::now();
+    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
 
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
     int num_base_graph_vertices = ret_place_points.second;
     auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                                      bisector_point_map, point_face_map, point_location_map);
@@ -413,7 +415,9 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
 
     auto index_start = chrono::_V2::system_clock::now();
 
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
     Quad::quadTree quad_tree(surface_mesh, face_point_map);
     cout << "quad tree level = " << level << endl;
     for (auto i = 0; i < level; i++){
@@ -463,7 +467,7 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
         int t = V2V_query[i].second;
 //        int s = rand() % surface_mesh.num_vertices();
 //        int t = rand() % surface_mesh.num_vertices();
-        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+//        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
         auto q_start = chrono::_V2::system_clock::now();
         double spanner_distance = Quad::querySpanner(surface_mesh, spanner, s, t, quad_tree, new_id);
         auto q_end = chrono::_V2::system_clock::now();
@@ -474,6 +478,27 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
 
     }
     return make_pair(V2V_results, make_pair(index_time, query_time));
+}
+
+pair<vector<double>, pair<double, double> > base_graph_run(int q_num){
+    vector<double> V2V_results = {};
+    double query_time = 0.0;
+    for (auto i = 0; i < q_num; i++){
+        int s = V2V_query[i].first;
+        int t = V2V_query[i].second;
+//        int s = rand() % surface_mesh.num_vertices();
+//        int t = rand() % surface_mesh.num_vertices();
+//        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+        auto q_start = chrono::_V2::system_clock::now();
+        double dijk_distance = kSkip::dijkstra(kSkip::my_base_graph, s, t).first;
+        auto q_end = chrono::_V2::system_clock::now();
+        auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+        query_time += static_cast<double>(q_duration.count());
+
+        V2V_results.push_back(dijk_distance);
+
+    }
+    return make_pair(V2V_results, make_pair(0, query_time));
 }
 
 int main(int argc, char* argv[]) {
@@ -487,20 +512,24 @@ int main(int argc, char* argv[]) {
 //    kSkipTest(file_name, eps, point_num, type);
 //    kSkipGraphTest();
     auto res_quad = quadTest(file_name, eps, point_num, type, level, q_num);
+    auto res_dijk = base_graph_run(q_num);
 
     cout << "index time cmp: " << endl;
     cout << fixed << setprecision(3) << "oracle index: " << res_oracle.second.first << " ms." << endl;
     cout << fixed << setprecision(3) << "quad index: " << res_quad.second.first << " ms." << endl;
     cout << "query time cmp: " << endl;
     cout << fixed << setprecision(3) << "oracle query: " << res_oracle.second.second << " ms." << endl;
+    cout << fixed << setprecision(3) << "dijk query: " << res_dijk.second.second << " ms." << endl;
     cout << fixed << setprecision(3) << "quad query: " << res_quad.second.second << " ms." << endl;
+
     cout << "totally " << q_num << " queries" << endl;
     double tot_err, min_err, max_err;
     for (auto i = 0; i < q_num; i++){
         double relative_error = fabs(res_oracle.first[i] - res_quad.first[i]) / res_oracle.first[i];
-        if (Base::doubleCmp(relative_error - 0.5) > 0){
-            cout << fixed << setprecision(2) << "large error for: " << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
-        }
+//        if (Base::doubleCmp(relative_error - 0.5) > 0){
+//            cout << fixed << setprecision(2) << "large error for: " << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
+//        }
+        cout << fixed << setprecision(3) << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
 
         tot_err += relative_error;
         if (Base::doubleCmp(relative_error - min_err) < 0) min_err = relative_error;
