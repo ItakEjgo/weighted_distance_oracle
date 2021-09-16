@@ -51,6 +51,31 @@ namespace WeightedDistanceOracle {
         return static_cast<double>(duration.count());
     }
 
+    double getFaceMaxMinLength(Base::Mesh &mesh, vector<double> &face_max_length, vector<double> &face_min_length) {
+        auto start_time = chrono::_V2::system_clock::now();  //  timer
+
+        face_max_length.resize(mesh.num_faces(), 0.0);
+        face_min_length.resize(mesh.num_faces(), 0.0);
+
+        double max_length = -1.0, min_length = 1e60, e_length;
+        for (auto fd: mesh.faces()) {
+            max_length = -1.0;
+            min_length = 1e60;
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
+                e_length = sqrt(
+                        CGAL::squared_distance(mesh.points()[mesh.source(hed)], mesh.points()[mesh.target(hed)]));
+                max_length = Base::doubleCmp(e_length - max_length) > 0 ? e_length : max_length;
+                min_length = Base::doubleCmp(e_length - min_length) < 0 ? e_length : min_length;
+            }
+            face_max_length[fd.idx()] = max_length;
+            face_min_length[fd.idx()] = min_length;
+        }
+
+        auto end_time = chrono::_V2::system_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        return static_cast<double>(duration.count());
+    }
+
     vector<double> getVertexGamma(Base::Mesh &mesh, vector<double> &face_weights){
         map<int, vector<int> > vertex_face_map = {};
         vector<double> gama(mesh.num_vertices());
@@ -259,7 +284,7 @@ namespace WeightedDistanceOracle {
 //                            }
                             base_graph_edges.emplace_back(pid_1, pid_2);
                             base_graph_weights.push_back(dis);
-                            if (g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
+                            if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
 #ifdef PrintDetails
                             cout << "add edge: " << pid_1 << " " << pid_2 << " " << dis << endl;
 #endif

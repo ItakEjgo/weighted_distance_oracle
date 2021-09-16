@@ -8,6 +8,20 @@ using namespace std;
 int K;
 vector<pair<int, int> > V2V_query;
 
+void generate_queries(string &file_name, double eps, int type, int point_num, int q_num){
+    srand((int)time(0));
+    Base::Mesh surface_mesh;
+    ifstream fin(file_name);
+    fin >> surface_mesh;
+
+    for (auto i = 0; i < q_num; i++){
+        int s = rand() % surface_mesh.num_vertices(),
+                t = rand() % surface_mesh.num_vertices();
+        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+        V2V_query.push_back(make_pair(s, t));
+    }
+}
+
 pair<vector<double>, pair<double, double> > run(string &file_name, double eps, int type, int point_num, int q_num){
     srand((int)time(0));
     Base::Mesh surface_mesh;
@@ -16,13 +30,13 @@ pair<vector<double>, pair<double, double> > run(string &file_name, double eps, i
 //    CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh);
     Base::AABB_tree aabb_tree;
     CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
-
-    for (auto i = 0; i < q_num; i++){
-        int s = rand() % surface_mesh.num_vertices(),
-                t = rand() % surface_mesh.num_vertices();
-        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
-        V2V_query.push_back(make_pair(s, t));
-    }
+//
+//    for (auto i = 0; i < q_num; i++){
+//        int s = rand() % surface_mesh.num_vertices(),
+//                t = rand() % surface_mesh.num_vertices();
+//        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
+//        V2V_query.push_back(make_pair(s, t));
+//    }
 
     vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
     vector<double> face_max_length = {}; // maximum edge length for each face.
@@ -37,10 +51,11 @@ pair<vector<double>, pair<double, double> > run(string &file_name, double eps, i
     }
 
     auto index_start = chrono::_V2::system_clock::now();
-    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto memory_begin = Base::physical_memory_used_by_process();
+//    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
 
-//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
     int num_base_graph_vertices = ret_place_points.second;
     auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                                      bisector_point_map, point_face_map, point_location_map);
@@ -61,6 +76,8 @@ pair<vector<double>, pair<double, double> > run(string &file_name, double eps, i
     auto index_end = chrono::_V2::system_clock::now();
     auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
     double index_time = index_duration.count();
+    auto memory_end = Base::physical_memory_used_by_process();
+    cout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
 
     vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
@@ -400,12 +417,17 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
     fin >> surface_mesh;
     vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
     vector<double> face_max_length = {}; // maximum edge length for each face.
-    WeightedDistanceOracle::getFaceMaxLength(surface_mesh, face_max_length); // get the maximum edge length for each face.
-    double max_len = -1.0;
+    vector<double> face_min_length = {}; // minimum edge length for each face.
+//    WeightedDistanceOracle::getFaceMaxLength(surface_mesh, face_max_length); // get the maximum edge length for each face.
+    WeightedDistanceOracle::getFaceMaxMinLength(surface_mesh, face_max_length, face_min_length); // get the maximum edge length for each face.
+
+    double max_len = -1.0, min_len = 1e60;
     for (auto val: face_max_length){
         max_len = max(max_len, val);
+        min_len = min(min_len, val);
     }
-//    cout << "max edge length: " << max_len << endl;
+    cout << "max edge length: " << max_len << endl;
+    cout << "min edge length: " << min_len << endl;
 
 
     WeightedDistanceOracle::getFaceMaxLength(surface_mesh, face_max_length); // get the maximum edge length for each face.
@@ -415,11 +437,14 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
 
     auto index_start = chrono::_V2::system_clock::now();
 
-    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
-//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto memory_begin = Base::physical_memory_used_by_process();
+    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
     Quad::quadTree quad_tree(surface_mesh, face_point_map);
+    double rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
     cout << "quad tree level = " << level << endl;
+    cout << "root.Len / Lmin = " << rootLen / min_len << endl;
     for (auto i = 0; i < level; i++){
         quad_tree.buildLevel(surface_mesh, face_point_map);
     }
@@ -459,7 +484,9 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
     auto index_end = chrono::_V2::system_clock::now();
     auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
     double index_time = index_duration.count();
+    auto memory_end = Base::physical_memory_used_by_process();
 
+    cout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
     vector<double> V2V_results = {};
     double query_time = 0.0;
     for (auto i = 0; i < q_num; i++){
@@ -507,7 +534,10 @@ int main(int argc, char* argv[]) {
     double eps;
     Base::getOpt(argc, argv, file_name, eps, type, point_num, level, q_num);
 //    highway_test(file_name, eps, point_num);
-    auto res_oracle = run(file_name, eps, type, point_num, q_num);
+    generate_queries(file_name, eps, type, point_num, q_num);
+//    auto res_oracle = run(file_name, eps, type, point_num, q_num);
+
+
 //    evaluateBaseGraphEffect(file_name, eps, point_num);
 //    kSkipTest(file_name, eps, point_num, type);
 //    kSkipGraphTest();
@@ -515,21 +545,24 @@ int main(int argc, char* argv[]) {
     auto res_dijk = base_graph_run(q_num);
 
     cout << "index time cmp: " << endl;
-    cout << fixed << setprecision(3) << "oracle index: " << res_oracle.second.first << " ms." << endl;
+//    cout << fixed << setprecision(3) << "oracle index: " << res_oracle.second.first << " ms." << endl;
     cout << fixed << setprecision(3) << "quad index: " << res_quad.second.first << " ms." << endl;
     cout << "query time cmp: " << endl;
-    cout << fixed << setprecision(3) << "oracle query: " << res_oracle.second.second << " ms." << endl;
+//    cout << fixed << setprecision(3) << "oracle query: " << res_oracle.second.second << " ms." << endl;
     cout << fixed << setprecision(3) << "dijk query: " << res_dijk.second.second << " ms." << endl;
     cout << fixed << setprecision(3) << "quad query: " << res_quad.second.second << " ms." << endl;
 
     cout << "totally " << q_num << " queries" << endl;
     double tot_err, min_err, max_err;
     for (auto i = 0; i < q_num; i++){
-        double relative_error = fabs(res_oracle.first[i] - res_quad.first[i]) / res_oracle.first[i];
-//        if (Base::doubleCmp(relative_error - 0.5) > 0){
+//        double relative_error = fabs(res_oracle.first[i] - res_quad.first[i]) / res_oracle.first[i];
+        double relative_error = fabs(res_dijk.first[i] - res_quad.first[i]) / res_dijk.first[i];
+
+        if (Base::doubleCmp(relative_error - 0.5) > 0){
 //            cout << fixed << setprecision(2) << "large error for: " << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
-//        }
-        cout << fixed << setprecision(3) << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
+            cout << fixed << setprecision(2) << "large error for: " << res_dijk.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
+        }
+//        cout << fixed << setprecision(3) << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
 
         tot_err += relative_error;
         if (Base::doubleCmp(relative_error - min_err) < 0) min_err = relative_error;

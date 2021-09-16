@@ -270,20 +270,40 @@ namespace Quad{
         auto box_s = tree.root, box_t = tree.root;
         auto point_s = m.points()[*(m.vertices_begin() + sid)];
         auto point_t = m.points()[*(m.vertices_begin() + tid)];
-        while (box_s->node_id == box_t->node_id){
-            if (box_s->sons.size() > 0){
-                for (auto son: box_s->sons){
-                    if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
-                        Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
-                        box_s = son;
-                        break;
-                    }
+//        while (box_s->node_id == box_t->node_id){
+//            if (box_s->sons.size() > 0){
+//                for (auto son: box_s->sons){
+//                    if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
+//                        Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
+//                        box_s = son;
+//                        break;
+//                    }
+//                }
+//            }
+//            else{
+//                break;
+//            }
+//
+//            for (auto son: box_t->sons){
+//                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
+//                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
+//                    box_t = son;
+//                    break;
+//                }
+//            }
+//        }
+
+        //find the leaf contains s and t
+        while (box_s->sons.size() > 0){
+            for (auto son: box_s->sons){
+                if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
+                    box_s = son;
+                    break;
                 }
             }
-            else{
-                break;
-            }
-
+        }
+        while (box_t->sons.size() > 0){
             for (auto son: box_t->sons){
                 if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
                     Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
@@ -292,6 +312,7 @@ namespace Quad{
                 }
             }
         }
+
 //        cout << "box_s = " << box_s->node_id << " box_t = " << box_t->node_id << endl;
         if (box_s->node_id != box_t->node_id){
 //            cout << "in different box!" << endl;
