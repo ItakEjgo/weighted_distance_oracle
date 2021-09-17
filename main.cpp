@@ -60,13 +60,14 @@ pair<vector<double>, pair<double, double> > run(string &file_name, double eps, i
     auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                                      bisector_point_map, point_face_map, point_location_map);
 
-    auto ret_preprocessing_pair = WeightedDistanceOracle::distanceBoundMapPreprocessing(surface_mesh, type,
-                                                                                       point_face_map,
-                                                                                       face_max_length,
-                                                                                       point_location_map,
-                                                                                       pid_list);
+//    auto ret_preprocessing_pair = WeightedDistanceOracle::distanceBoundMapPreprocessing(surface_mesh, type,
+//                                                                                       point_face_map,
+//                                                                                       face_max_length,
+//                                                                                       point_location_map,
+//                                                                                       pid_list);
     WeightedDistanceOracle::PartitionTree tree = WeightedDistanceOracle::PartitionTree();
-    auto ret_build_tree = tree.constructTree(pid_list);
+    double l = 8 / eps + 10;
+    auto ret_build_tree = tree.constructTree(pid_list, l);
 
     set<WeightedDistanceOracle::nodePair> node_pairs;
     auto ret_node_pair_generate = tree.generateNodePairSet(eps, type, point_num, node_pairs);
@@ -466,13 +467,15 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
                                                                      bisector_point_map, point_face_map, point_location_map);
 
 
-    auto ret_preprocessing_pair = WeightedDistanceOracle::distanceBoundMapPreprocessing(surface_mesh, type,
-                                                                                       point_face_map,
-                                                                                       face_max_length,
-                                                                                       point_location_map,
-                                                                                       pid_list);
+//    auto ret_preprocessing_pair = WeightedDistanceOracle::distanceBoundMapPreprocessing(surface_mesh, type,
+//                                                                                       point_face_map,
+//                                                                                       face_max_length,
+//                                                                                       point_location_map,
+//                                                                                       pid_list);
+
     WeightedDistanceOracle::PartitionTree tree = WeightedDistanceOracle::PartitionTree();
-    auto ret_build_tree = tree.constructTree(pid_list);
+    double l = 8 / eps + 10;
+    auto ret_build_tree = tree.constructTree(pid_list, l);
 
     set<WeightedDistanceOracle::nodePair> node_pairs;
     auto ret_node_pair_generate = tree.generateNodePairSet(eps, type, point_num, node_pairs);
@@ -489,6 +492,7 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
     cout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
     vector<double> V2V_results = {};
     double query_time = 0.0;
+    int same_box = 0, diff_box = 0;
     for (auto i = 0; i < q_num; i++){
         int s = V2V_query[i].first;
         int t = V2V_query[i].second;
@@ -496,14 +500,22 @@ pair<vector<double>, pair<double, double> > quadTest(string &file_name, double e
 //        int t = rand() % surface_mesh.num_vertices();
 //        if (s == t) t = (t + 1) % surface_mesh.num_vertices();
         auto q_start = chrono::_V2::system_clock::now();
-        double spanner_distance = Quad::querySpanner(surface_mesh, spanner, s, t, quad_tree, new_id);
+        auto ret = Quad::querySpanner(surface_mesh, spanner, s, t, quad_tree, new_id);
+//        auto ret = Quad::queryWSPD(surface_mesh, quad_tree, s, t, node_pairs, tree, new_id);
+        double spanner_distance = ret.first;
         auto q_end = chrono::_V2::system_clock::now();
         auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
         query_time += static_cast<double>(q_duration.count());
-
+        if (ret.second){
+            same_box++;
+        }
+        else{
+            diff_box++;
+        }
         V2V_results.push_back(spanner_distance);
 
     }
+    cout << fixed << setprecision(3) << "Quad query distribution: same/diff = " << 1.0 * same_box / q_num << " / " << 1.0 * diff_box / q_num << endl;
     return make_pair(V2V_results, make_pair(index_time, query_time));
 }
 
@@ -535,32 +547,32 @@ int main(int argc, char* argv[]) {
     Base::getOpt(argc, argv, file_name, eps, type, point_num, level, q_num);
 //    highway_test(file_name, eps, point_num);
     generate_queries(file_name, eps, type, point_num, q_num);
-//    auto res_oracle = run(file_name, eps, type, point_num, q_num);
+    auto res_oracle = run(file_name, eps, type, point_num, q_num);
 
 
 //    evaluateBaseGraphEffect(file_name, eps, point_num);
 //    kSkipTest(file_name, eps, point_num, type);
 //    kSkipGraphTest();
     auto res_quad = quadTest(file_name, eps, point_num, type, level, q_num);
-    auto res_dijk = base_graph_run(q_num);
+//    auto res_dijk = base_graph_run(q_num);
 
     cout << "index time cmp: " << endl;
-//    cout << fixed << setprecision(3) << "oracle index: " << res_oracle.second.first << " ms." << endl;
+    cout << fixed << setprecision(3) << "oracle index: " << res_oracle.second.first << " ms." << endl;
     cout << fixed << setprecision(3) << "quad index: " << res_quad.second.first << " ms." << endl;
     cout << "query time cmp: " << endl;
-//    cout << fixed << setprecision(3) << "oracle query: " << res_oracle.second.second << " ms." << endl;
-    cout << fixed << setprecision(3) << "dijk query: " << res_dijk.second.second << " ms." << endl;
+    cout << fixed << setprecision(3) << "oracle query: " << res_oracle.second.second << " ms." << endl;
+//    cout << fixed << setprecision(3) << "dijk query: " << res_dijk.second.second << " ms." << endl;
     cout << fixed << setprecision(3) << "quad query: " << res_quad.second.second << " ms." << endl;
 
     cout << "totally " << q_num << " queries" << endl;
     double tot_err, min_err, max_err;
     for (auto i = 0; i < q_num; i++){
-//        double relative_error = fabs(res_oracle.first[i] - res_quad.first[i]) / res_oracle.first[i];
-        double relative_error = fabs(res_dijk.first[i] - res_quad.first[i]) / res_dijk.first[i];
+        double relative_error = fabs(res_oracle.first[i] - res_quad.first[i]) / res_oracle.first[i];
+//        double relative_error = fabs(res_dijk.first[i] - res_quad.first[i]) / res_dijk.first[i];
 
         if (Base::doubleCmp(relative_error - 0.5) > 0){
-//            cout << fixed << setprecision(2) << "large error for: " << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
-            cout << fixed << setprecision(2) << "large error for: " << res_dijk.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
+            cout << fixed << setprecision(2) << "large error for: " << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
+//            cout << fixed << setprecision(2) << "large error for: " << res_dijk.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
         }
 //        cout << fixed << setprecision(3) << res_oracle.first[i] << " | " << res_quad.first[i] << " | " << relative_error << endl;
 

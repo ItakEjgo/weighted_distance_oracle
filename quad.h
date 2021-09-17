@@ -259,14 +259,63 @@ namespace Quad{
             auto v = node_pair.second->center_idx;
             assert(new_id.find(u) != new_id.end());
             assert(new_id.find(v) != new_id.end());
-            double tmp_d = WeightedDistanceOracle::distance_map[u][v];
+            double tmp_d = WeightedDistanceOracle::enhanced_edges[make_pair(u, v)];
             g.addEdge(new_id[u], new_id[v], tmp_d);
             g.addEdge(new_id[v], new_id[u], tmp_d);
         }
         return g;
     }
 
-    double querySpanner(Base::Mesh &m, kSkip::Graph spanner, int sid, int tid, quadTree &tree, map<int, int> &new_id){
+    pair<double, bool> queryWSPD(Base::Mesh &m, quadTree &tree, int sid, int tid,
+                                 set<WeightedDistanceOracle::nodePair> &node_pairs,
+                                 WeightedDistanceOracle::PartitionTree &partition_tree,
+                                 map<int, int> &new_id){
+        auto box_s = tree.root, box_t = tree.root;
+        auto point_s = m.points()[*(m.vertices_begin() + sid)];
+        auto point_t = m.points()[*(m.vertices_begin() + tid)];
+        //find the leaf contains s and t
+        while (box_s->sons.size() > 0){
+            for (auto son: box_s->sons){
+                if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
+                    box_s = son;
+                    break;
+                }
+            }
+        }
+        while (box_t->sons.size() > 0){
+            for (auto son: box_t->sons){
+                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
+                    box_t = son;
+                    break;
+                }
+            }
+        }
+
+        if (box_s->node_id == box_t->node_id){
+            return make_pair(kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
+        }
+        else{
+            vector<double> ds, dt;
+            kSkip::covered_dijkstra(kSkip::my_base_graph, sid, box_s->boundary_points_id, ds);
+            kSkip::covered_dijkstra(kSkip::my_base_graph, tid, box_t->boundary_points_id, dt);
+
+            double dis_min = Base::unreachable;
+            for (auto pid1: box_s->boundary_points_id){
+                for (auto pid2: box_t->boundary_points_id){
+                    vector<WeightedDistanceOracle::PartitionTreeNode*> As, At;
+                    partition_tree.getPathToRoot(partition_tree.level_nodes[partition_tree.max_level][new_id[pid1]], As);
+                    partition_tree.getPathToRoot(partition_tree.level_nodes[partition_tree.max_level][new_id[pid2]], At);
+                    double cur_dis = ds[pid1] + WeightedDistanceOracle::distanceQueryBf(node_pairs, As, At) + dt[pid2];
+                    if (Base::doubleCmp(cur_dis - dis_min) < 0) dis_min = cur_dis;
+                }
+            }
+            return make_pair(dis_min, box_s->node_id == box_t->node_id);
+        }
+    }
+
+    pair<double, bool> querySpanner(Base::Mesh &m, kSkip::Graph spanner, int sid, int tid, quadTree &tree, map<int, int> &new_id){
         auto box_s = tree.root, box_t = tree.root;
         auto point_s = m.points()[*(m.vertices_begin() + sid)];
         auto point_t = m.points()[*(m.vertices_begin() + tid)];
@@ -319,8 +368,10 @@ namespace Quad{
             int final_s, final_t;
             if (new_id.find(sid) == new_id.end()){
                 final_s = spanner.addVertex();
+                vector<double> d;
+                kSkip::covered_dijkstra(kSkip::my_base_graph, sid, box_s->boundary_points_id, d);
                 for (auto pid: box_s->boundary_points_id){
-                    spanner.addEdge(final_s, new_id[pid], WeightedDistanceOracle::distance_map[pid][sid]);
+                    spanner.addEdge(final_s, new_id[pid], d[pid]);
                 }
             }
             else{
@@ -328,8 +379,10 @@ namespace Quad{
             }
             if (new_id.find(tid) == new_id.end()){
                 final_t = spanner.addVertex();
-                for (auto pid: box_s->boundary_points_id){
-                    spanner.addEdge(new_id[pid], final_t, WeightedDistanceOracle::distance_map[pid][tid]);
+                vector<double> d;
+                kSkip::covered_dijkstra(kSkip::my_base_graph, tid, box_t->boundary_points_id, d);
+                for (auto pid: box_t->boundary_points_id){
+                    spanner.addEdge(new_id[pid], final_t, d[pid]);
                 }
             }
             else{
@@ -337,11 +390,11 @@ namespace Quad{
             }
 //            cout << "s, t = " << sid << " " << tid << endl;
 //            cout << "final s, t = " << final_s << " " << final_t << endl;
-            return kSkip::dijkstra(spanner, final_s, final_t).first;
+            return make_pair(kSkip::dijkstra(spanner, final_s, final_t).first, box_s->node_id == box_t->node_id);
         }
         else{
 //            cout << "in same box!" << endl;
-            return kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first;
+            return make_pair(kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
         }
 
     }

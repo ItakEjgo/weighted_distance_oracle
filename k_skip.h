@@ -272,6 +272,74 @@ namespace kSkip{
         return make_pair(d[t], static_cast<double>(duration.count()));
     }
 
+    double bounded_dijkstra(Graph &g, int s, double bound, vector<double> &d){
+        auto start_time = chrono::_V2::system_clock::now();  //  timer
+
+        vector<bool> vis(g.num_V, false);
+        d.resize(g.num_V, Base::unreachable);
+        vector<int> fa(g.num_V, -1);
+        d[s] = 0;
+        priority_queue<QNode> q = {};
+        q.push(QNode(s, d[s]));
+        while (!q.empty()){
+            QNode f = q.top(); q.pop();
+            if (Base::doubleCmp(d[f.p] - bound) > 0) break;
+            if (vis[f.p]) continue;
+            for (int eid = g.head[f.p]; eid; eid = g.edges[eid].next){
+                int v = g.edges[eid].to;
+                double w = g.edges[eid].w;
+//                if (Base::doubleCmp(w) < 0){
+//                    cout << "w < 0: " << f.p << " " << v << " " << w << endl;
+//                }
+                if (Base::doubleCmp(d[f.p] + w - d[v]) < 0){
+                    d[v] = d[f.p] + w;
+                    fa[v] = f.p;
+                    q.push(QNode(v, d[v]));
+                }
+            }
+            vis[f.p] = true;
+        }
+
+        auto end_time = chrono::_V2::system_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        return static_cast<double>(duration.count());
+    }
+
+    double covered_dijkstra(Graph &g, int s, set<int> &cover_id, vector<double> &d){
+        auto start_time = chrono::_V2::system_clock::now();  //  timer
+
+        vector<bool> vis(g.num_V, false);
+        d.resize(g.num_V, Base::unreachable);
+        vector<int> fa(g.num_V, -1);
+        d[s] = 0;
+        priority_queue<QNode> q = {};
+        q.push(QNode(s, d[s]));
+        int cnt = cover_id.size();
+        while (!q.empty()){
+            QNode f = q.top(); q.pop();
+            if (!cnt) break;
+            if (vis[f.p]) continue;
+            for (int eid = g.head[f.p]; eid; eid = g.edges[eid].next){
+                int v = g.edges[eid].to;
+                double w = g.edges[eid].w;
+//                if (Base::doubleCmp(w) < 0){
+//                    cout << "w < 0: " << f.p << " " << v << " " << w << endl;
+//                }
+                if (Base::doubleCmp(d[f.p] + w - d[v]) < 0){
+                    d[v] = d[f.p] + w;
+                    fa[v] = f.p;
+                    q.push(QNode(v, d[v]));
+                }
+            }
+            vis[f.p] = true;
+            if (cover_id.find(f.p) != cover_id.end()) cnt--;
+        }
+
+        auto end_time = chrono::_V2::system_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        return static_cast<double>(duration.count());
+    }
+
     pair<double, double> queryKSkipGraph(Graph &g, Graph k_skip_graph, set<int> &k_cover_V, map<int, int> &k_cover_vertex_id, int query_s, int query_t){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
