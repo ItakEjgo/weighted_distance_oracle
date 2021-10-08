@@ -40,6 +40,7 @@ namespace Base{
     using namespace chrono;
 
     using Kernel = CGAL::Simple_cartesian<double>;
+//    using Kernel = CGAL::Exact_predicates_exact_constructions_kernel;
     using Point = Kernel::Point_3;
     using Vector = Kernel::Vector_3;
     using Triangle = Kernel::Triangle_3;
@@ -98,14 +99,14 @@ namespace Base{
     }
     
 
-    void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num);
+    void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num, int &query_type);
 
     // Return the point rotate around a vector with given angle.
     Point pointRotationAroundVector(Point p, Point vec_source, Point vec_target, double theta);
 
     double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
 
-    void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num, int &level, int &q_num) {
+    void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num, int &level, int &q_num, int &q_type) {
         struct option long_options[] = {
                 {"mesh", required_argument, 0, 'm'},
                 {"eps", required_argument, 0, 'e'},
@@ -113,10 +114,11 @@ namespace Base{
                 {"pointnum", required_argument, 0, 'p'},
                 {"level", required_argument, 0, 'l'},
                 {"query", required_argument, 0, 'q'},
+                {"a2a", required_argument, 0, 'a'},
                 {0, 0, 0, 0}
         };
         int opt;
-        const char* opt_string = "m:e:t:p:l:q:";
+        const char* opt_string = "m:e:t:p:l:q:a:";
         int option_index = 0;
         while ((opt = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1){
             char ch = (char)opt;
@@ -127,6 +129,7 @@ namespace Base{
                 case 'p': point_num = atoi(optarg); break;
                 case 'l': level = atoi(optarg); break;
                 case 'q': q_num = atoi(optarg); break;
+                case 'a': q_type = atoi(optarg); break;
                 default: break;
             }
         }

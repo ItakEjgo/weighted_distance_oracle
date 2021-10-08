@@ -13,7 +13,9 @@ namespace Quad{
 
     using namespace std;
 
+    int WSPD_hit = 0;
     kSkip::Graph my_base_graph;
+    map<pair<int, int>, double> LQT_distance_map;
 
     struct my_point{
         double x, y;
@@ -59,6 +61,7 @@ namespace Quad{
         double x_min, y_min, x_max, y_max;
         int node_id;
         set<int> boundary_points_id;
+        set<int> covered_faces_id;
         treeNode* parent;
         vector<treeNode*> sons; // 0/1/2/3 -- NE/NW/SW/SE
         treeNode();
@@ -71,6 +74,7 @@ namespace Quad{
         y_min = 1e60; y_max = -1e60;
         parent = nullptr;
         boundary_points_id.clear();
+        covered_faces_id.clear();
         sons.clear();
     }
 
@@ -102,6 +106,7 @@ namespace Quad{
         set<int> intersect_face_id = {};
         double x_min = tree_node->x_min, x_max = tree_node->x_max, y_min = tree_node->y_min, y_max = tree_node->y_max;
         for (auto &f: m.faces()){
+            bool in_flag = false;
             vector<my_point> p;
             for (auto v: m.vertices_around_face(m.halfedge(f))){
                 double x = m.points()[v].x();
@@ -114,10 +119,27 @@ namespace Quad{
                 triangle_segment_intersection(p[0], p[1], p[2], my_point(x_max, y_max), my_point(x_max, y_min))
             ){
                 intersect_face_id.insert(f.idx());
+                tree_node->covered_faces_id.insert(f.idx());
+            }
+            if (!in_flag){
+                for (auto i = 0; i < 3; i++){
+                    if (Base::doubleCmp(p[i].x - x_min) >= 0 && Base::doubleCmp(p[i].x - x_max) <= 0 &&
+                    Base::doubleCmp(p[i].y - y_min) >= 0 && Base::doubleCmp(p[i].y - y_max) <= 0){
+                        in_flag = true;
+                        break;
+                    }
+                }
+            }
+            if (in_flag){
+                tree_node->covered_faces_id.insert(f.idx());
             }
         }
 //        tree_node->print();
 //        for (auto fid: intersect_face_id){
+//            cout << fid << endl;
+//        }
+//        cout << "covered----------------------" << endl;
+//        for (auto fid: tree_node->covered_faces_id){
 //            cout << fid << endl;
 //        }
         return intersect_face_id;
@@ -315,32 +337,36 @@ namespace Quad{
         }
     }
 
-    pair<double, bool> querySpanner(Base::Mesh &m, kSkip::Graph spanner, int sid, int tid, quadTree &tree, map<int, int> &new_id){
-        auto box_s = tree.root, box_t = tree.root;
+    void distancePreprocessing(quadTree &quad_tree, kSkip::Graph &base_graph, map<int, vector<int> > &face_point_map){
+        auto leaf = quad_tree.level_nodes[quad_tree.level];
+        for (auto node: leaf){
+            set<int> covered_point = {};
+            for (auto fid: node->covered_faces_id){
+                for (auto pid: face_point_map[fid]){
+                    covered_point.insert(pid);
+                }
+            }
+//            cout << "face = " << node->covered_faces_id.size() << endl;
+//            cout << "size = " << covered_point.size() << endl;
+            for (auto s: node->boundary_points_id){
+                vector<double> d;
+                kSkip::covered_dijkstra(base_graph, s, covered_point, d);
+                for (auto pid: covered_point){
+                    LQT_distance_map[make_pair(s, pid)] = d[pid];
+                    LQT_distance_map[make_pair(pid, s)] = d[pid];
+                }
+            }
+
+        }
+    }
+
+    //dealing with V2V queries
+    pair<double, bool> querySpanner(Base::Mesh &m, kSkip::Graph spanner, int sid, int tid, quadTree &quad_tree,
+                                    map<int, int> &new_id, WeightedDistanceOracle::PartitionTree &tree, Base::AABB_tree &aabb_tree,
+                                    set<WeightedDistanceOracle::nodePair> &node_pairs, bool check_first_flag = 0){
+        auto box_s = quad_tree.root, box_t = quad_tree.root;
         auto point_s = m.points()[*(m.vertices_begin() + sid)];
         auto point_t = m.points()[*(m.vertices_begin() + tid)];
-//        while (box_s->node_id == box_t->node_id){
-//            if (box_s->sons.size() > 0){
-//                for (auto son: box_s->sons){
-//                    if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
-//                        Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
-//                        box_s = son;
-//                        break;
-//                    }
-//                }
-//            }
-//            else{
-//                break;
-//            }
-//
-//            for (auto son: box_t->sons){
-//                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
-//                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
-//                    box_t = son;
-//                    break;
-//                }
-//            }
-//        }
 
         //find the leaf contains s and t
         while (box_s->sons.size() > 0){
@@ -363,40 +389,164 @@ namespace Quad{
         }
 
 //        cout << "box_s = " << box_s->node_id << " box_t = " << box_t->node_id << endl;
+//        cout << "box_s son = " << box_s->sons.size() << " box_t son = " << box_t->sons.size() << endl;
+
+        double min_ds = 1e60, min_dt = 1e60;
+        int closest_pid_s = -1, closest_pid_t = -1;
         if (box_s->node_id != box_t->node_id){
-//            cout << "in different box!" << endl;
+            // in different boxes.
+//            vector<double> ds, dt;
+//            kSkip::covered_dijkstra(kSkip::my_base_graph, sid, box_s->boundary_points_id, ds);
+//            kSkip::covered_dijkstra(kSkip::my_base_graph, tid, box_t->boundary_points_id, dt);
+
             int final_s, final_t;
+
             if (new_id.find(sid) == new_id.end()){
                 final_s = spanner.addVertex();
-                vector<double> d;
-                kSkip::covered_dijkstra(kSkip::my_base_graph, sid, box_s->boundary_points_id, d);
-                for (auto pid: box_s->boundary_points_id){
-                    spanner.addEdge(final_s, new_id[pid], d[pid]);
+
+                for (auto pid: box_s->boundary_points_id) {
+//                    if (check_first_flag){
+//                        if (Base::doubleCmp(ds[pid] - min_ds) < 0){
+//                            min_ds = ds[pid];
+//                            closest_pid_s = pid;
+//                        }
+//                    }
+//                    spanner.addEdge(final_s, new_id[pid], ds[pid]);
+                    if (LQT_distance_map.find(make_pair(sid, pid)) == LQT_distance_map.end()) {
+                        cout << "ERROR: distance not found in LQT_distance_map !!!" << endl;
+                        cout << sid << "--" << pid << endl;
+                    }
+                    spanner.addEdge(final_s, new_id[pid], LQT_distance_map[make_pair(sid, pid)]);
+
                 }
             }
             else{
                 final_s = new_id[sid];
+                min_ds = 0;
+                closest_pid_s = sid;
             }
             if (new_id.find(tid) == new_id.end()){
                 final_t = spanner.addVertex();
-                vector<double> d;
-                kSkip::covered_dijkstra(kSkip::my_base_graph, tid, box_t->boundary_points_id, d);
+
                 for (auto pid: box_t->boundary_points_id){
-                    spanner.addEdge(new_id[pid], final_t, d[pid]);
+//                    if (check_first_flag){
+//                        if (Base::doubleCmp(dt[pid] - min_dt) < 0){
+//                            min_dt = dt[pid];
+//                            closest_pid_t = pid;
+//                        }
+//                    }
+//                    spanner.addEdge(new_id[pid], final_t, dt[pid]);
+                    if (LQT_distance_map.find(make_pair(tid, pid)) == LQT_distance_map.end()) {
+                        cout << "ERROR: distance not found in LQT_distance_map !!!" << endl;
+                    }
+                    spanner.addEdge(new_id[pid], final_t, LQT_distance_map[make_pair(tid, pid)]);
+
                 }
             }
             else{
                 final_t = new_id[tid];
+                min_dt = 0;
+                closest_pid_t = tid;
             }
-//            cout << "s, t = " << sid << " " << tid << endl;
-//            cout << "final s, t = " << final_s << " " << final_t << endl;
+
+            double ret_dis = -1.0;
+//            if (check_first_flag){
+//                vector<WeightedDistanceOracle::PartitionTreeNode*> As, At;
+//                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[closest_pid_s]], As);
+//                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[closest_pid_t]], At);
+//                ret_dis = WeightedDistanceOracle::distanceQueryBf(min_ds, min_dt, tree,node_pairs, As, At, new_id);
+//            }
+
+            if (Base::doubleCmp(ret_dis) < 0){
+                ret_dis = kSkip::dijkstra(spanner, final_s, final_t).first;
+            }
+            else{
+                WSPD_hit++;
+            }
+
+            return make_pair(ret_dis, box_s->node_id == box_t->node_id);
+        }
+        else{
+            // in the same box, just SE_A2A dijkstra untill find the result.
+            return make_pair(kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
+        }
+    }
+
+    pair<double, bool> queryA2A(Base::Mesh &m, kSkip::Graph spanner,
+                                kSkip::Graph base_graph, map<int, vector<int> > &face_point_map,
+                                map<int, Base::Point> &point_location_map,
+                                Base::Point s, Base::Point t,
+                                quadTree &quad_tree, map<int, int> &new_id,
+                                WeightedDistanceOracle::PartitionTree &tree,
+                                set<WeightedDistanceOracle::nodePair> &node_pairs,
+                                Base::AABB_tree &aabb_tree, bool check_first_flag = 0){
+
+
+        auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(s, aabb_tree, m);
+        auto fds = location.first.idx();
+        location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(t, aabb_tree, m);
+        auto fdt = location.first.idx();
+        auto point_s = s;
+        auto point_t = t;
+
+        auto box_s = quad_tree.root, box_t = quad_tree.root;
+        //find the leaf contains s and t
+        while (box_s->sons.size() > 0){
+            for (auto son: box_s->sons){
+                if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
+                    box_s = son;
+                    break;
+                }
+            }
+        }
+        while (box_t->sons.size() > 0){
+            for (auto son: box_t->sons){
+                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
+                    box_t = son;
+                    break;
+                }
+            }
+        }
+//        cout << "box_id = " << box_s->node_id << " " << box_t->node_id << endl;
+
+        if (box_s->node_id != box_t->node_id){
+//        if (false){
+            auto final_s = spanner.addVertex();
+            for (auto bpid: box_s->boundary_points_id){
+                double d = Base::unreachable;
+                for (auto pid: face_point_map[fds]){
+                    double t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
+                }
+                spanner.addEdge(final_s, new_id[bpid], d);
+            }
+            auto final_t = spanner.addVertex();
+            for (auto bpid: box_t->boundary_points_id){
+                double d = Base::unreachable;
+                for (auto pid: face_point_map[fdt]){
+                    double t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
+                }
+                spanner.addEdge(new_id[bpid], final_t, d);
+            }
+
             return make_pair(kSkip::dijkstra(spanner, final_s, final_t).first, box_s->node_id == box_t->node_id);
         }
         else{
-//            cout << "in same box!" << endl;
-            return make_pair(kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
+            auto sid = base_graph.addVertex();
+            for (auto pid: face_point_map[fds]){
+                double dis = CGAL::squared_distance(s, point_location_map[pid]);
+                base_graph.addEdge(sid, pid, sqrt(dis));
+            }
+            auto tid = base_graph.addVertex();
+            for (auto pid: face_point_map[fdt]){
+                double dis = CGAL::squared_distance(t, point_location_map[pid]);
+                base_graph.addEdge(pid, tid, sqrt(dis));
+            }
+            return make_pair(kSkip::dijkstra(base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
         }
-
     }
 
 }

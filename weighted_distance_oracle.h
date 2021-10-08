@@ -144,6 +144,7 @@ namespace WeightedDistanceOracle {
                     if (point_location_map.find(pid[i]) == point_location_map.end()){
                         point_location_map[pid[i]] = p[i];
                     }
+                    face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
                 }
                 vector<int> cur_bisector = {};
                 cur_bisector.push_back(pid[0]);
@@ -159,14 +160,10 @@ namespace WeightedDistanceOracle {
                 double sin_val = sin(angle * 0.5);
                 double limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
                 double cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
-#ifdef PrintDetails
-                cout << "current V = " << pid[0] << endl;
-#endif
+
                 while (Base::doubleCmp(cur_distance - limit_distance) < 0) {
                     Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
-#ifdef PrintDetails
-                    cout << "k = " << k << ", p = " << bisector_p << endl;
-#endif
+
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = static_cast<int>(fd.idx());
                     face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
@@ -207,6 +204,7 @@ namespace WeightedDistanceOracle {
                     if (point_location_map.find(pid[i]) == point_location_map.end()) {
                         point_location_map[pid[i]] = p[i];
                     }
+                    face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
                 }
                 vector<int> cur_bisector = {};
                 cur_bisector.push_back(pid[0]);
@@ -218,14 +216,9 @@ namespace WeightedDistanceOracle {
                 double limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
                 double cur_distance = 0;
                 int k = 0;
-#ifdef PrintDetails
-                cout << "current V = " << pid[0] << endl;
-#endif
+
                 while (Base::doubleCmp(cur_distance - limit_distance) < 0) {
                     Base::Point bisector_p = p[0] + static_cast<double>(++k) / point_num * vec_bisector;
-#ifdef PrintDetails
-                    cout << "k = " << k << ", p = " << bisector_p << endl;
-#endif
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = static_cast<int>(fd.idx());
                     face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
@@ -285,9 +278,6 @@ namespace WeightedDistanceOracle {
                             base_graph_edges.emplace_back(pid_1, pid_2);
                             base_graph_weights.push_back(dis);
                             if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
-#ifdef PrintDetails
-                            cout << "add edge: " << pid_1 << " " << pid_2 << " " << dis << endl;
-#endif
                         }
                     }
                 }
@@ -757,39 +747,92 @@ namespace WeightedDistanceOracle {
                     cnt++;
 //                    approximate_distance = distance_map[As[i]->center_idx][At[j]->center_idx];
                     approximate_distance = enhanced_edges[make_pair(As[i]->center_idx, At[j]->center_idx)];
-
                 }
             }
         }
         assert(cnt == 1);
         if (cnt != 1){
-            cout << "[ERROR] multiple node pairs found!!!" << endl;
+            cout << "[ERROR] multiple node pairs found!!! cnt = " << cnt << endl;
+        }
+        return approximate_distance;
+    }
+
+    double distanceQueryEfficient(set<nodePair> &node_pairs,
+                                  vector<PartitionTreeNode*> &As,
+                                  vector<PartitionTreeNode*> &At){
+        double approximate_distance = 0.0;
+        int cnt = 0;
+        // same-layer
+        for (auto i = 0; i < As.size(); i++){
+            nodePair query_pair = make_pair(As[i], At[i]);
+            if (node_pairs.find(query_pair) != node_pairs.end()){
+                cnt++;
+                approximate_distance = enhanced_edges[make_pair(As[i]->center_idx, At[i]->center_idx)];
+            }
+        }
+
+        //first-higher
+        for (auto i = 1; i < As.size(); i++){
+            nodePair query_pair = make_pair(As[i - 1], At[i]);
+            if (node_pairs.find(query_pair) != node_pairs.end()){
+                cnt++;
+                approximate_distance = enhanced_edges[make_pair(As[i - 1]->center_idx, At[i]->center_idx)];
+            }
+        }
+
+        //first-lower
+        for (auto i = 1; i < As.size(); i++){
+            nodePair query_pair = make_pair(As[i], At[i - 1]);
+            if (node_pairs.find(query_pair) != node_pairs.end()){
+                cnt++;
+                approximate_distance = enhanced_edges[make_pair(As[i]->center_idx, At[i - 1]->center_idx)];
+            }
+        }
+        assert(cnt == 1);
+        if (cnt != 1){
+            cout << "Multiple distance found! cnt = " << cnt << endl;
         }
         return approximate_distance;
     }
 
     double distanceQueryBf(double source_dis,
                            double target_dis,
+                           PartitionTree &tree,
                            set<nodePair> &node_pairs,
                            vector<PartitionTreeNode*> &As,
-                           vector<PartitionTreeNode*> &At){
+                           vector<PartitionTreeNode*> &At,
+                           map<int, int> &new_id){
         double approximate_distance = -1.0;
         int nearest_sid = As[0]->center_idx, nearest_tid = At[0]->center_idx, cnt = 0;
+
         for (auto i = 0; i != As.size(); i++){
             for (auto j = 0; j != At.size(); j++){
                 nodePair query_pair = make_pair(As[i], At[j]);
 //                cout << "As.radius = " << As[i]->radius << " source_dis = " << source_dis << endl;
 //                cout << "At.radius = " << At[i]->radius << " target_dis = " << target_dis << endl;
 
+                vector<PartitionTreeNode*> tAs, tAt;
+
+                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[As[i]->center_idx]], tAs);
+                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[nearest_sid]], tAt);
+
                 bool is_cover_source = false, is_cover_target = false;
 //                if (Base::doubleCmp(As[i]->radius - (distance_map[As[i]->center_idx][nearest_sid] + source_dis)) >= 0){
-                if (Base::doubleCmp(As[i]->radius - (enhanced_edges[make_pair(As[i]->center_idx, nearest_sid)] + source_dis)) >= 0){
-                    is_cover_source = true;
+                double t_dis = distanceQueryBf(node_pairs, tAs, tAt);
+//                if (Base::doubleCmp(As[i]->radius - (enhanced_edges[make_pair(As[i]->center_idx, nearest_sid)] + source_dis)) >= 0){
+                if (Base::doubleCmp(As[i]->radius - (t_dis + source_dis)) >= 0){
+                        is_cover_source = true;
                 }
 //                if (Base::doubleCmp(At[j]->radius - (distance_map[At[j]->center_idx][nearest_tid] + target_dis)) >= 0){
-                if (Base::doubleCmp(At[j]->radius - (enhanced_edges[make_pair(At[j]->center_idx, nearest_tid)] + target_dis)) >= 0){
+//                if (Base::doubleCmp(At[j]->radius - (enhanced_edges[make_pair(At[j]->center_idx, nearest_tid)] + target_dis)) >= 0){
+                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[At[j]->center_idx]], tAs);
+                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[nearest_tid]], tAt);
+                t_dis = distanceQueryBf(node_pairs, tAs, tAt);
+
+                if (Base::doubleCmp(At[j]->radius - (t_dis + target_dis)) >= 0){
                     is_cover_target = true;
                 }
+
                 if (is_cover_source && is_cover_target && node_pairs.find(query_pair) != node_pairs.end()){
                     cnt++;
 //                    approximate_distance = distance_map[As[i]->center_idx][At[j]->center_idx];
@@ -829,15 +872,35 @@ namespace WeightedDistanceOracle {
                           Base::Point &query_target,
                           Base::Mesh &mesh,
                           PartitionTree &tree,
+                          kSkip::Graph my_base_graph,
+                          map<int, vector<int> > &face_point_map,
+                          map<int, Base::Point> &point_location_map,
                           set<nodePair> &node_pairs,
-                          Base::AABB_tree &aabb_tree
+                          Base::AABB_tree &aabb_tree,
+                          map<int, int> &new_id
                           ){
-        auto source_nearest_pair = findNearestVertex(query_source, mesh, aabb_tree);
-        auto target_nearest_pair = findNearestVertex(query_target, mesh, aabb_tree);
-        vector<PartitionTreeNode*> As, At;
-        tree.getPathToRoot(tree.level_nodes[tree.max_level][source_nearest_pair.first], As);
-        tree.getPathToRoot(tree.level_nodes[tree.max_level][target_nearest_pair.first], At);
-        double ret_dis = distanceQueryBf(source_nearest_pair.second, target_nearest_pair.second, node_pairs, As, At);
+
+        auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(query_source, aabb_tree, mesh);
+        auto fds = location.first.idx();
+        location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(query_target, aabb_tree, mesh);
+        auto fdt = location.first.idx();
+
+        double ret_dis = Base::unreachable;
+        auto leaf_nodes = tree.level_nodes[tree.max_level];
+        for (auto pid1: face_point_map[fds]){
+            for (auto pid2: face_point_map[fdt]){
+                vector<PartitionTreeNode*> As, At;
+                tree.getPathToRoot(leaf_nodes[pid1], As);
+                tree.getPathToRoot(leaf_nodes[pid2], At);
+                double t_dis = sqrt(CGAL::squared_distance(query_source, point_location_map[pid1])) +
+                        distanceQueryEfficient(node_pairs, As, At) +
+                        sqrt(CGAL::squared_distance(point_location_map[pid2], query_target));
+                if (Base::doubleCmp(t_dis - ret_dis) < 0) ret_dis = t_dis;
+            }
+        }
+        if (!Base::doubleCmp(ret_dis - Base::unreachable)){
+            cout << "ERROR: A2A distance not found!" << endl;
+        }
         return ret_dis;
     }
 
