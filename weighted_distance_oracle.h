@@ -163,7 +163,6 @@ namespace WeightedDistanceOracle {
 
                 while (Base::doubleCmp(cur_distance - limit_distance) < 0) {
                     Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
-
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = static_cast<int>(fd.idx());
                     face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
@@ -451,7 +450,7 @@ namespace WeightedDistanceOracle {
 
         int buildLevel(vector<int> &pid_list, double l);
 
-        double constructTree(vector<int> &pid_list, double l);
+        double constructTree(ofstream &fout, vector<int> &pid_list, double l);
 
         double findEnhancedDistance(int uid, int vid);
     };
@@ -584,7 +583,7 @@ namespace WeightedDistanceOracle {
         return static_cast<double>(duration.count());
     }
 
-    double PartitionTree::constructTree(vector<int> &pid_list, double l) {
+    double PartitionTree::constructTree(ofstream &fout, vector<int> &pid_list, double l) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
         auto num_vertices = pid_list.size();
         rootNodeSelect(pid_list);
@@ -595,10 +594,10 @@ namespace WeightedDistanceOracle {
                 max_cover_set_size = max(max_cover_set_size, static_cast<int>(node->cover_set.size()));
                 min_cover_set_size = min(min_cover_set_size, static_cast<int>(node->cover_set.size()));
             }
-            cout << "level " << max_level << " has " << cur_num_level_nodes << " nodes" << endl;
-            cout << "max cover set size: " << max_cover_set_size << " min cover set size: " << min_cover_set_size << endl;
+            fout << "level " << max_level << " has " << cur_num_level_nodes << " nodes" << endl;
+            fout << "max cover set size: " << max_cover_set_size << " min cover set size: " << min_cover_set_size << endl;
         }
-        cout << "[Partition Tree] totally " << num_tree_nodes << " nodes " << endl;
+        fout << "[Partition Tree] totally " << num_tree_nodes << " nodes " << endl;
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
@@ -626,7 +625,7 @@ namespace WeightedDistanceOracle {
         for (auto i = 0; i < num_vertices; i++){
             root->cover_set[pid_list[i]] = true;
         }
-        cout << "[Partition Tree] Root = (" << root_index << "," << radius << ")" << endl;
+//        cout << "[Partition Tree] Root = (" << root_index << "," << radius << ")" << endl;
     }
 
     int PartitionTree::buildLevel(vector<int> &pid_list, double l){
@@ -643,7 +642,7 @@ namespace WeightedDistanceOracle {
             vertex_to_be_covered.insert(pid_list[i]);
         }
         double cur_level_radius = level_nodes[max_level][0]->radius * 0.5;
-        cout << "[Partition Tree] Current level radius is: " << cur_level_radius << endl;
+//        cout << "[Partition Tree] Current level radius is: " << cur_level_radius << endl;
         for (auto &last_level_node: level_nodes[max_level]){
             int vertex_idx = last_level_node->center_idx;
             PartitionTreeNode* cur_node = new PartitionTreeNode(vertex_idx, cur_level_radius, num_tree_nodes++);
@@ -869,26 +868,18 @@ namespace WeightedDistanceOracle {
     }
 
     double distanceQueryA2A(Base::Point &query_source,
+                          int fid_s,
                           Base::Point &query_target,
-                          Base::Mesh &mesh,
+                          int fid_t,
                           PartitionTree &tree,
-                          kSkip::Graph my_base_graph,
                           map<int, vector<int> > &face_point_map,
                           map<int, Base::Point> &point_location_map,
-                          set<nodePair> &node_pairs,
-                          Base::AABB_tree &aabb_tree,
-                          map<int, int> &new_id
+                          set<nodePair> &node_pairs
                           ){
-
-        auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(query_source, aabb_tree, mesh);
-        auto fds = location.first.idx();
-        location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(query_target, aabb_tree, mesh);
-        auto fdt = location.first.idx();
-
         double ret_dis = Base::unreachable;
         auto leaf_nodes = tree.level_nodes[tree.max_level];
-        for (auto pid1: face_point_map[fds]){
-            for (auto pid2: face_point_map[fdt]){
+        for (auto pid1: face_point_map[fid_s]){
+            for (auto pid2: face_point_map[fid_t]){
                 vector<PartitionTreeNode*> As, At;
                 tree.getPathToRoot(leaf_nodes[pid1], As);
                 tree.getPathToRoot(leaf_nodes[pid2], At);

@@ -67,6 +67,7 @@ namespace Base{
     const double unreachable = numeric_limits<double>::max();
 
 
+
     // memory used in KB.
     size_t physical_memory_used_by_process()
     {
@@ -105,6 +106,40 @@ namespace Base{
     Point pointRotationAroundVector(Point p, Point vec_source, Point vec_target, double theta);
 
     double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
+
+    void getOpt2(int argc, char **argv, int &generate_queries, string &file_name, int &q_num,
+                 double &eps, int &sp_num, int &algo_type, int &lqt_lev, string &output_file) {
+        struct option long_options[] = {
+                {"generate", required_argument, 0, 'g'},
+                {"mesh", required_argument, 0, 'm'},
+                {"query_num", required_argument, 0, 'q'},
+                {"algo", required_argument, 0, 'a'},
+                {"eps", required_argument, 0, 'e'},
+                {"sp_num", required_argument, 0, 's'},
+                {"lqt_lev", required_argument, 0, 'l'},
+                {"output", required_argument, 0, 'o'},
+                {0, 0, 0, 0}
+        };
+        int opt;
+        const char* opt_string = "g:m:q:a:e:s:l:o:";
+        int option_index = 0;
+        generate_queries = 0;
+        lqt_lev = 0;
+        while ((opt = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1){
+            char ch = (char)opt;
+            switch (ch){
+                case 'g': generate_queries = atoi(optarg); break;
+                case 'm': file_name = optarg; break;
+                case 'q': q_num = atoi(optarg); break;
+                case 'a': algo_type = atoi(optarg); break;
+                case 'e': eps = atof(optarg); break;
+                case 's': sp_num = atoi(optarg); break;
+                case 'l': lqt_lev = atoi(optarg); break;
+                case 'o': output_file = optarg; break;
+                default: break;
+            }
+        }
+    }
 
     void getOpt(int argc, char **argv, string &file_name, double &eps, int &type, int &point_num, int &level, int &q_num, int &q_type) {
         struct option long_options[] = {
@@ -284,6 +319,37 @@ namespace Base{
 //        cout << x_gen << " || " << y_gen << " || " << z_cor_min << endl;
         return make_pair(ret_point, fid);
     }
+
+    vector<pair<Point, Point> > generateQueriesA2A(string &file_name, int q_num, vector<pair<int, int> > &A2A_fid) {
+        vector<pair<Point, Point> > A2A_query = {};
+        A2A_fid.clear();
+        srand((int)time(0));
+        Mesh surface_mesh;
+        ifstream fin(file_name);
+        fin >> surface_mesh;
+        Base::AABB_tree aabb_tree;
+        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+        for (auto i = 0; i < q_num; i++){
+            auto p1_pair = generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+            auto p2_pair = generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+            A2A_query.emplace_back(p1_pair.first, p2_pair.first);
+            A2A_fid.emplace_back(p1_pair.second, p2_pair.second);
+        }
+        return A2A_query;
+    }
+
+    void loadQueriesA2A(vector<pair<Point, Point> > &A2A_query, vector<pair<int, int> > &A2A_fid){
+        ifstream fin("A2A.query");
+        Point p1, p2;
+        int fid1, fid2;
+        A2A_query.clear();
+        A2A_fid.clear();
+        while (fin >> p1 >> fid1 >> p2 >> fid2){
+            A2A_query.emplace_back(p1, p2);
+            A2A_fid.emplace_back(fid1, fid2);
+        }
+    }
+
 }
 
 

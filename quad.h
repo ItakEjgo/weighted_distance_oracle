@@ -169,7 +169,7 @@ namespace Quad{
 //                root->boundary_points_id.insert(pid);
 //            }
         }
-        cout << "Root maximum side length: " << max(root->x_max - root->x_min, root->y_max - root->y_min) << endl;
+//        cout << "Root maximum side length: " << max(root->x_max - root->x_min, root->y_max - root->y_min) << endl;
 //        for (auto &val: root.boundary_points_id){
 //            cout << val << " ";
 //        }
@@ -475,26 +475,16 @@ namespace Quad{
     pair<double, bool> queryA2A(Base::Mesh &m, kSkip::Graph spanner,
                                 kSkip::Graph base_graph, map<int, vector<int> > &face_point_map,
                                 map<int, Base::Point> &point_location_map,
-                                Base::Point s, Base::Point t,
-                                quadTree &quad_tree, map<int, int> &new_id,
-                                WeightedDistanceOracle::PartitionTree &tree,
-                                set<WeightedDistanceOracle::nodePair> &node_pairs,
-                                Base::AABB_tree &aabb_tree, bool check_first_flag = 0){
-
-
-        auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(s, aabb_tree, m);
-        auto fds = location.first.idx();
-        location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(t, aabb_tree, m);
-        auto fdt = location.first.idx();
-        auto point_s = s;
-        auto point_t = t;
+                                Base::Point s, int fid_s,
+                                Base::Point t, int fid_t,
+                                quadTree &quad_tree, map<int, int> &new_id){
 
         auto box_s = quad_tree.root, box_t = quad_tree.root;
         //find the leaf contains s and t
         while (box_s->sons.size() > 0){
             for (auto son: box_s->sons){
-                if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
+                if (Base::doubleCmp(s.x() - son->x_min) >= 0 && Base::doubleCmp(s.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(s.y() - son->y_min) >= 0 && Base::doubleCmp(s.y() - son->y_max) <= 0){
                     box_s = son;
                     break;
                 }
@@ -502,8 +492,8 @@ namespace Quad{
         }
         while (box_t->sons.size() > 0){
             for (auto son: box_t->sons){
-                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
+                if (Base::doubleCmp(t.x() - son->x_min) >= 0 && Base::doubleCmp(t.x() - son->x_max) <= 0 &&
+                    Base::doubleCmp(t.y() - son->y_min) >= 0 && Base::doubleCmp(t.y() - son->y_max) <= 0){
                     box_t = son;
                     break;
                 }
@@ -512,11 +502,10 @@ namespace Quad{
 //        cout << "box_id = " << box_s->node_id << " " << box_t->node_id << endl;
 
         if (box_s->node_id != box_t->node_id){
-//        if (false){
             auto final_s = spanner.addVertex();
             for (auto bpid: box_s->boundary_points_id){
                 double d = Base::unreachable;
-                for (auto pid: face_point_map[fds]){
+                for (auto pid: face_point_map[fid_s]){
                     double t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
                     if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
                 }
@@ -525,7 +514,7 @@ namespace Quad{
             auto final_t = spanner.addVertex();
             for (auto bpid: box_t->boundary_points_id){
                 double d = Base::unreachable;
-                for (auto pid: face_point_map[fdt]){
+                for (auto pid: face_point_map[fid_t]){
                     double t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
                     if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
                 }
@@ -536,12 +525,12 @@ namespace Quad{
         }
         else{
             auto sid = base_graph.addVertex();
-            for (auto pid: face_point_map[fds]){
+            for (auto pid: face_point_map[fid_s]){
                 double dis = CGAL::squared_distance(s, point_location_map[pid]);
                 base_graph.addEdge(sid, pid, sqrt(dis));
             }
             auto tid = base_graph.addVertex();
-            for (auto pid: face_point_map[fdt]){
+            for (auto pid: face_point_map[fid_t]){
                 double dis = CGAL::squared_distance(t, point_location_map[pid]);
                 base_graph.addEdge(pid, tid, sqrt(dis));
             }

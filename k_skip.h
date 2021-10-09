@@ -340,6 +340,25 @@ namespace kSkip{
         return static_cast<double>(duration.count());
     }
 
+    double queryGraphA2A(Graph g, Base::Point s, int fid_s, Base::Point t, int fid_t,
+                         map<int, vector<int> > &face_point_map, map<int, Base::Point> &point_location_map){
+        //  add edges from s to its neighbor Steiner points
+        int sid = g.addVertex();
+        for (auto pid: face_point_map[fid_s]){
+            auto pt = point_location_map[pid];
+            double dis = sqrt(CGAL::squared_distance(s, pt));
+            g.addEdge(sid, pid, dis);
+        }
+        //  add edges from t's neighbor Steiner points to t
+        int tid = g.addVertex();
+        for (auto pid: face_point_map[fid_t]){
+            auto pt = point_location_map[pid];
+            double dis = sqrt(CGAL::squared_distance(t, pt));
+            g.addEdge(pid, tid, dis);
+        }
+        return dijkstra(g, sid, tid).first;
+    }
+
     pair<double, double> queryKSkipGraph(Graph &g, Graph k_skip_graph, set<int> &k_cover_V, map<int, int> &k_cover_vertex_id, int query_s, int query_t){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
@@ -370,8 +389,6 @@ namespace kSkip{
                     }
                     if (!first_appear) continue;
                     k_skip_graph.addEdge(sid, k_cover_vertex_id[t], d[t]);
-//                    k_skip_graph.addEdge(k_cover_vertex_id[t], k_cover_vertex_id[query_s], d[t]);
-
                 }
             }
         }
