@@ -481,6 +481,7 @@ namespace Quad{
 
         auto box_s = quad_tree.root, box_t = quad_tree.root;
         //find the leaf contains s and t
+
         while (box_s->sons.size() > 0){
             for (auto son: box_s->sons){
                 if (Base::doubleCmp(s.x() - son->x_min) >= 0 && Base::doubleCmp(s.x() - son->x_max) <= 0 &&
@@ -499,6 +500,7 @@ namespace Quad{
                 }
             }
         }
+
 //        cout << "box_id = " << box_s->node_id << " " << box_t->node_id << endl;
 
         if (box_s->node_id != box_t->node_id){

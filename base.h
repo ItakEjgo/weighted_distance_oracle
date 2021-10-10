@@ -62,7 +62,7 @@ namespace Base{
     using AABB_face_graph_traits = CGAL::AABB_traits<Kernel, AABB_face_graph_primitive>;
     using AABB_tree = CGAL::AABB_tree<AABB_face_graph_traits>;
 
-    const double eps = 1e-6;
+    const double eps = 1e-5;
     const double PI = acos(-1.0);
     const double unreachable = numeric_limits<double>::max();
 
@@ -301,12 +301,12 @@ namespace Base{
         }
     }
 
-    pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh, AABB_tree &aabb_tree){
+    pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh){
         auto fid = rand() % mesh.num_faces();
 //        cout << "fid = " << fid << endl;
         auto fd = *(mesh.faces().begin() + fid);
 
-        uniform_real_distribution<double> gen(0.0, 1.0);
+        uniform_real_distribution<double> gen(0.02, 0.98);
         unsigned seed = chrono::system_clock::now().time_since_epoch().count();
         default_random_engine e(seed);
         double a = gen(e), b = gen(e), c = gen(e);
@@ -316,6 +316,7 @@ namespace Base{
         }
         Point A = p[0] + (p[1] - p[0]) * a, B = p[0] + (p[2] - p[0]) * b;
         Point ret_point = A + (B - A) * c;
+
 //        cout << x_gen << " || " << y_gen << " || " << z_cor_min << endl;
         return make_pair(ret_point, fid);
     }
@@ -327,11 +328,16 @@ namespace Base{
         Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-        Base::AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+//        double x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
+//        for (auto px: surface_mesh.points()){
+//            if (doubleCmp(px.x() - x_min) <= 0) x_min = px.x();
+//            if (doubleCmp(px.y() - y_min) <= 0) y_min = px.y();
+//            if (doubleCmp(px.x() - x_max) >= 0) x_max = px.x();
+//            if (doubleCmp(px.y() - y_max) >= 0) y_max = px.y();
+//        }
         for (auto i = 0; i < q_num; i++){
-            auto p1_pair = generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
-            auto p2_pair = generateArbitrarySurfacePoint(surface_mesh, aabb_tree);
+            auto p1_pair = generateArbitrarySurfacePoint(surface_mesh);
+            auto p2_pair = generateArbitrarySurfacePoint(surface_mesh);
             A2A_query.emplace_back(p1_pair.first, p2_pair.first);
             A2A_fid.emplace_back(p1_pair.second, p2_pair.second);
         }

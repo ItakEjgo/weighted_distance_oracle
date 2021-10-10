@@ -28,9 +28,11 @@ pair<vector<double>, pair<double, double> > SE_A2A(ofstream &fout, string &file_
     auto memory_begin = Base::physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
 
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, sp_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, sp_num, edge_bisector_map,
+                                                                            bisector_point_map, point_face_map,
+                                                                            point_location_map, face_point_map);
     int num_base_graph_vertices = ret_place_points.second;
     fout << "base graph |V| = " << num_base_graph_vertices << endl;
 
@@ -111,8 +113,10 @@ pair<vector<double>, pair<double, double> > LQT_A2A(ofstream &fout, string &file
     auto memory_begin = Base::physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-//    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
+                                                                            bisector_point_map, point_face_map,
+                                                                            point_location_map, face_point_map);
 
     fout << "base graph |V| = " << ret_place_points.second << endl;
     Quad::quadTree quad_tree(surface_mesh, face_point_map);
@@ -166,11 +170,19 @@ pair<vector<double>, pair<double, double> > LQT_A2A(ofstream &fout, string &file
     double query_time = 0.0;
     int same_box = 0, diff_box = 0;
 
+    int percent = 1;
     for (auto i = 0; i < q_num; i++){
+
+        if (i > percent * q_num / 10){
+            fout << percent++ << "0% queries finished." << endl;
+        }
+
         auto s = A2A_query[i].first;
         auto t = A2A_query[i].second;
         auto fid_s = A2A_fid[i].first;
         auto fid_t = A2A_fid[i].second;
+
+//        fout << "s = " << s << " t = " << t << endl;
 
         auto q_start = chrono::_V2::system_clock::now();
         auto ret = Quad::queryA2A(surface_mesh, spanner, kSkip::my_base_graph, face_point_map, point_location_map,
@@ -247,7 +259,9 @@ pair<vector<double>, pair<double, double> > bisectorFixedScheme(ofstream &fout, 
     map<int, int> point_face_map;
     map<int, Base::Point> point_location_map;
 
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsFixed(surface_mesh, point_num, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
+                                                                            bisector_point_map, point_face_map,
+                                                                            point_location_map, face_point_map);
     int num_base_graph_vertices = ret_place_points.second;
     fout << "base graph |V| = " << num_base_graph_vertices << endl;
 
@@ -295,7 +309,9 @@ pair<vector<double>, pair<double, double> > bisectorUnfixedScheme(ofstream &fout
     map<int, Base::Point> point_location_map;
 
     vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-    auto ret_place_points = WeightedDistanceOracle::placeBisectorPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map,
+                                                                           bisector_point_map, point_face_map,
+                                                                           point_location_map, face_point_map);
 
     int num_base_graph_vertices = ret_place_points.second;
     fout << "base graph |V| = " << num_base_graph_vertices << endl;
@@ -328,6 +344,66 @@ pair<vector<double>, pair<double, double> > bisectorUnfixedScheme(ofstream &fout
     return make_pair(A2A_result, make_pair(0, query_time));
 }
 
+pair<vector<double>, pair<double, double> > KAlgo_A2A(ofstream &fout, string &file_name, int q_num, int K){
+
+    srand((int)time(0));
+    Base::Mesh surface_mesh;
+    ifstream fin(file_name);
+    fin >> surface_mesh;
+    Base::AABB_tree aabb_tree;
+    CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+
+    vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+    double l_min = 1e60;
+    for (auto fd: surface_mesh.faces()){
+        for (auto hed: surface_mesh.halfedges_around_face(surface_mesh.halfedge(fd))){
+            auto p0 = surface_mesh.points()[surface_mesh.source(hed)],
+                p1 = surface_mesh.points()[surface_mesh.target(hed)];
+            double e_len = sqrt(CGAL::squared_distance(p0, p1));
+            if (Base::doubleCmp(e_len - l_min) < 0){
+                l_min = e_len;
+            }
+        }
+    }
+
+    map<int, vector<int> > edge_point_map, face_point_map;
+    map<int, int> point_face_map;
+    map<int, Base::Point> point_location_map;
+
+    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsKAlgo(surface_mesh, K, l_min, edge_point_map,
+                                                                            point_face_map, point_location_map, face_point_map);
+    int num_base_graph_vertices = ret_place_points.second;
+    fout << "base graph |V| = " << num_base_graph_vertices << endl;
+
+    WeightedDistanceOracle::constructKAlgoGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_point_map,
+                                                point_face_map, point_location_map);
+
+    vector<double> A2A_result = {};
+
+    double query_time = 0.0;
+    int percent = 1;
+    for (auto i = 0; i < q_num; i++){
+        if (i > percent * q_num / 10){
+            fout << percent++ << "0% queries finished." << endl;
+        }
+        auto s = A2A_query[i].first;
+        auto t = A2A_query[i].second;
+        int fid_s = A2A_fid[i].first;
+        int fid_t = A2A_fid[i].second;
+        auto q_start = chrono::_V2::system_clock::now();
+
+        double dijk_distance = kSkip::queryGraphA2A(kSkip::my_base_graph, s, fid_s, t, fid_t, face_point_map, point_location_map);
+
+        auto q_end = chrono::_V2::system_clock::now();
+        auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+        query_time += static_cast<double>(q_duration.count());
+
+        A2A_result.push_back(dijk_distance);
+    }
+    return make_pair(A2A_result, make_pair(0, query_time));
+}
+
+
 void run(int argc, char* argv[]){
     int generate_queries, algo_type, q_num, sp_num, lqt_lev;
     double eps;
@@ -338,7 +414,7 @@ void run(int argc, char* argv[]){
         A2A_query = Base::generateQueriesA2A(mesh_file, q_num, A2A_fid);
         ofstream fout("A2A.query");
         for (auto i = 0; i < A2A_query.size(); i++){
-            fout << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
+            fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
         }
         cout << q_num << " A2A queries generate finished." << endl;
     }
@@ -348,10 +424,9 @@ void run(int argc, char* argv[]){
             case 0: prefix = "../results/fixedS/"; break;
             case 1: prefix = "../results/unfixedS/"; break;
             case 2: prefix = "../results/KAlgo/"; break;
-            case 3: prefix = "../results/SP/"; break;
-            case 4: prefix = "../results/SE/"; break;
-            case 5: prefix = "../results/LQT/"; break;
-            case 6: prefix = "../results/MMP/"; break;
+            case 3: prefix = "../results/SE/"; break;
+            case 4: prefix = "../results/LQT/"; break;
+            case 5: prefix = "../results/MMP/"; break;
             default: break;
         }
 
@@ -361,14 +436,15 @@ void run(int argc, char* argv[]){
         Base::loadQueriesA2A(A2A_query, A2A_fid);
         fout << "Load A2A queries finished." << endl;
 
+        fout << fixed << setprecision(3) << "eps = " << eps << endl;
+
         fout << "Run algorithm " << algo_type;
         // Algo 0: Bisector Fixed Scheme
         // Algo 1: Bisector Unfixed Scheme
         // Algo 2: K-Algo
-        // Algo 3: SP-Oracle
-        // Algo 4: SE-Oracle
-        // Algo 5: LQT-Oracle
-        // Algo 6: MMP-Algo # approximate construction on unweighted terrain
+        // Algo 3: SE-Oracle
+        // Algo 4: LQT-Oracle
+        // Algo 5: MMP-Algo # approximate construction on unweighted terrain
         if (algo_type == 0){
             fout << ": Bisector-Fixed-Scheme" << endl;
             auto res_bisector_fixed_S = bisectorFixedScheme(fout, mesh_file, q_num, sp_num);
@@ -385,7 +461,16 @@ void run(int argc, char* argv[]){
             }
             fout << fixed << setprecision(3) << "[Running Time] Bisector-Unfixed-Scheme: " << res_bisector_unfixed_S.second.second << " ms" << endl;
         }
-        else if (algo_type == 4){
+        else if (algo_type == 2){
+            fout << ": K-Algo on the fly" << endl;
+            int K = floor(1 / eps + 1);
+            auto res_KAlgo = KAlgo_A2A(fout, mesh_file, q_num, K);
+            for (auto dis: res_KAlgo.first){
+                fout << fixed << setprecision(3) << dis << endl;
+            }
+            fout << fixed << setprecision(3) << "[Running Time] K-Algo on the fly: " << res_KAlgo.second.second << " ms" << endl;
+        }
+        else if (algo_type == 3){
             fout << ": SE-oracle" << endl;
             auto res_SE = SE_A2A(fout, mesh_file, eps, sp_num, q_num);
             for (auto dis: res_SE.first){
@@ -394,7 +479,7 @@ void run(int argc, char* argv[]){
             fout << fixed << setprecision(3) << "[Index Time] SE-oracle: " << res_SE.second.first << " ms" << endl;
             fout << fixed << setprecision(3) << "[Running Time] SE-oracle: " << res_SE.second.second << " ms" << endl;
         }
-        else if (algo_type == 5){
+        else if (algo_type == 4){
             fout << ": LQT-oracle" << endl;
             auto res_LQT = LQT_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num);
             for (auto dis: res_LQT.first){
@@ -403,7 +488,7 @@ void run(int argc, char* argv[]){
             fout << fixed << setprecision(3) << "[Index Time] LQT-oracle: " << res_LQT.second.first << " ms" << endl;
             fout << fixed << setprecision(3) << "[Running Time] LQT-oracle: " << res_LQT.second.second << " ms" << endl;
         }
-        else if (algo_type == 6){
+        else if (algo_type == 5){
             fout << ": MMP-Algorithm" << endl;
             auto res_MMP = MMP_A2A(fout, mesh_file, q_num);
             for (auto dis: res_MMP.first){
@@ -412,7 +497,7 @@ void run(int argc, char* argv[]){
             fout << fixed << setprecision(3) << "[Running Time] MMP-Algo: " << res_MMP.second.second << " ms" << endl;
         }
         else{
-            cout << "Algorithm from 0 to 6!" << endl;
+            cout << "Algorithm from 0 to 5!" << endl;
         }
 
     }

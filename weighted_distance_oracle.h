@@ -121,13 +121,13 @@ namespace WeightedDistanceOracle {
 //                                                                     bisector_point_map, point_face_map, point_location_map);
 //
 //    cout << "[TIME] Base graph construction: " << fixed << setprecision(2) << ret_base_graph << " ms" << endl;
-    placeBisectorPointsJACM(Base::Mesh &mesh, const double &eps,
-                                              vector<double> &gama,
-                                              map<int, vector<int>> &edge_bisector_map,
-                                              map<int, vector<int>> &bisector_point_map,
-                                              map<int, int> &point_face_map,
-                                              map<int, Base::Point> &point_location_map,
-                                              map<int, vector<int>> &face_point_map){
+    placeSteinerPointsJACM(Base::Mesh &mesh, const double &eps,
+                           vector<double> &gama,
+                           map<int, vector<int>> &edge_bisector_map,
+                           map<int, vector<int>> &bisector_point_map,
+                           map<int, int> &point_face_map,
+                           map<int, Base::Point> &point_location_map,
+                           map<int, vector<int>> &face_point_map){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         int num_vertices = static_cast<int>(mesh.num_vertices());
@@ -181,12 +181,12 @@ namespace WeightedDistanceOracle {
         return make_pair(static_cast<double>(duration.count()), num_vertices);
     }
 
-    pair<double, int> placeBisectorPointsFixed(Base::Mesh &mesh, const int &point_num,
-                                               map<int, vector<int>> &edge_bisector_map,
-                                               map<int, vector<int>> &bisector_point_map,
-                                               map<int, int> &point_face_map,
-                                               map<int, Base::Point> &point_location_map,
-                                               map<int, vector<int>> &face_point_map) {
+    pair<double, int> placeSteinerPointsFixed(Base::Mesh &mesh, const int &point_num,
+                                              map<int, vector<int>> &edge_bisector_map,
+                                              map<int, vector<int>> &bisector_point_map,
+                                              map<int, int> &point_face_map,
+                                              map<int, Base::Point> &point_location_map,
+                                              map<int, vector<int>> &face_point_map) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         int num_vertices = static_cast<int>(mesh.num_vertices());
@@ -205,6 +205,7 @@ namespace WeightedDistanceOracle {
                     }
                     face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
                 }
+
                 vector<int> cur_bisector = {};
                 cur_bisector.push_back(pid[0]);
 
@@ -234,6 +235,117 @@ namespace WeightedDistanceOracle {
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
         return make_pair(static_cast<double>(duration.count()), num_vertices);
     }
+
+    pair<double, int> placeSteinerPointsKAlgo(Base::Mesh &mesh, const int &K, const double &l_min,
+                                               map<int, vector<int>> &edge_point_map,
+                                               map<int, int> &point_face_map,
+                                               map<int, Base::Point> &point_location_map,
+                                               map<int, vector<int>> &face_point_map) {
+        auto start_time = chrono::_V2::system_clock::now();  //  timer
+
+        int num_vertices = static_cast<int>(mesh.num_vertices());
+        for (auto fd: mesh.faces()) {
+
+            vector<Base::Point> p(3);
+            vector<int> pid(3);
+            int i = 0;
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
+                p[i] = mesh.points()[mesh.source(hed)];
+                pid[i] = static_cast<int>(mesh.source(hed).idx());
+                if (point_location_map.find(pid[i]) == point_location_map.end()) {
+                    point_location_map[pid[i]] = p[i];
+                }
+                face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
+                i++;
+            }
+
+//            cout << "i = " << i << endl;
+
+            double theta_m = 1e60;
+            theta_m = min(theta_m, CGAL::approximate_angle(p[0], p[1], p[2]));
+            theta_m = min(theta_m, CGAL::approximate_angle(p[1], p[2], p[0]));
+            theta_m = min(theta_m, CGAL::approximate_angle(p[2], p[0], p[1]));
+            double delta_I = l_min / 2 / sqrt(2 * (1 - cos(theta_m))) / K;
+
+            for (auto hed:mesh.halfedges_around_face(mesh.halfedge(fd))) {
+                auto p0 = mesh.points()[mesh.source(hed)],
+                    p1 = mesh.points()[mesh.target(hed)];
+                int eid = static_cast<int>(mesh.edge(hed).idx());
+                if (edge_point_map.find(eid) == edge_point_map.end()){
+                    edge_point_map[eid] = {};
+                }
+                edge_point_map[eid].push_back(mesh.source(hed).idx());
+
+                Base::Vector vec01(p1 - p0);
+                double limit_distance = sqrt(CGAL::squared_distance(p0, p1));
+                int num_point_this_edge = floor(limit_distance / delta_I);
+//                cout << "limit_distance = " << limit_distance << " # of points this edge = " << num_point_this_edge << endl;
+                
+                for (auto i = 1; i < num_point_this_edge; i++){
+                    Base::Point next_p = p0 + 1.0 * i / num_point_this_edge * vec01;
+                    point_location_map[num_vertices] = next_p;
+                    point_face_map[num_vertices] = static_cast<int>(fd.idx());
+                    face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
+                    edge_point_map[eid].push_back(num_vertices++);
+                }
+            }
+        }
+
+        auto end_time = chrono::_V2::system_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        return make_pair(static_cast<double>(duration.count()), num_vertices);
+    }
+
+    double constructKAlgoGraph(Base::Mesh &mesh,
+                              vector<double> &face_weight,
+                              int num_vertices,
+                              map<int, vector<int>> &edge_point_map,
+                              map<int, int> &point_face_map,
+                              map<int, Base::Point> &point_location_map) {
+        auto start_time = chrono::_V2::system_clock::now();  //  timer
+
+        bool g_flag = true;
+        if (kSkip::my_base_graph.num_V != num_vertices){
+            g_flag = false;
+            kSkip::my_base_graph.init(num_vertices);
+        }
+        vector<pair<int, int> > base_graph_edges = {};
+        vector<double> base_graph_weights = {};
+
+        for (auto fd: mesh.faces()){
+            vector<int> eids;
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
+                eids.push_back(mesh.edge(hed).idx());
+            }
+            for (auto i = 0; i < 3; i++){
+                for (auto pid_1: edge_point_map[eids[i]]){
+                    // connect the other two edges
+                    for (auto pid_2: edge_point_map[eids[(i + 1) % 3]]){
+                        double dis = sqrt(CGAL::squared_distance(point_location_map[pid_1], point_location_map[pid_2]));
+                        base_graph_edges.emplace_back(pid_1, pid_2);
+                        base_graph_weights.push_back(dis);
+                        if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
+                    }
+
+                    for (auto pid_2: edge_point_map[eids[(i + 2) % 3]]){
+                        double dis = sqrt(CGAL::squared_distance(point_location_map[pid_1], point_location_map[pid_2]));
+                        base_graph_edges.emplace_back(pid_1, pid_2);
+                        base_graph_weights.push_back(dis);
+                        if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
+                    }
+                }
+            }
+        }
+
+        base_graph = Base::Graph(begin(base_graph_edges), end(base_graph_edges), begin(base_graph_weights),
+                                 num_vertices);
+
+
+        auto end_time = chrono::_V2::system_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        return static_cast<double>(duration.count());
+    }
+
 
     double constructBaseGraph(Base::Mesh &mesh,
                               vector<double> &face_weight,
