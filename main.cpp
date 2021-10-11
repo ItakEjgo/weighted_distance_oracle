@@ -350,8 +350,6 @@ pair<vector<double>, pair<double, double> > KAlgo_A2A(ofstream &fout, string &fi
     Base::Mesh surface_mesh;
     ifstream fin(file_name);
     fin >> surface_mesh;
-    Base::AABB_tree aabb_tree;
-    CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
     vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
     double l_min = 1e60;
@@ -366,19 +364,9 @@ pair<vector<double>, pair<double, double> > KAlgo_A2A(ofstream &fout, string &fi
         }
     }
 
-    map<int, vector<int> > edge_point_map, face_point_map;
-    map<int, int> point_face_map;
-    map<int, Base::Point> point_location_map;
-
-    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsKAlgo(surface_mesh, K, l_min, edge_point_map,
-                                                                            point_face_map, point_location_map, face_point_map);
-    int num_base_graph_vertices = ret_place_points.second;
-    fout << "base graph |V| = " << num_base_graph_vertices << endl;
-
-    WeightedDistanceOracle::constructKAlgoGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_point_map,
-                                                point_face_map, point_location_map);
-
     vector<double> A2A_result = {};
+    kSkip::Graph g;
+    kSkip::constructMeshGraph(surface_mesh, g);
 
     double query_time = 0.0;
     int percent = 1;
@@ -392,13 +380,14 @@ pair<vector<double>, pair<double, double> > KAlgo_A2A(ofstream &fout, string &fi
         int fid_t = A2A_fid[i].second;
         auto q_start = chrono::_V2::system_clock::now();
 
-        double dijk_distance = kSkip::queryGraphA2A(kSkip::my_base_graph, s, fid_s, t, fid_t, face_point_map, point_location_map);
+//        double dijk_distance = kSkip::queryGraphA2A(kSkip::my_base_graph, s, fid_s, t, fid_t, face_point_map, point_location_map);
+        double kAlgo_distance = kSkip::computeDistanceBound(surface_mesh, g, K, s, fid_s, t, fid_t, l_min);
 
         auto q_end = chrono::_V2::system_clock::now();
         auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
         query_time += static_cast<double>(q_duration.count());
 
-        A2A_result.push_back(dijk_distance);
+        A2A_result.push_back(kAlgo_distance);
     }
     return make_pair(A2A_result, make_pair(0, query_time));
 }
@@ -499,7 +488,6 @@ void run(int argc, char* argv[]){
         else{
             cout << "Algorithm from 0 to 5!" << endl;
         }
-
     }
 }
 
