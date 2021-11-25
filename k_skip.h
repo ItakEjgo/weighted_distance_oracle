@@ -376,8 +376,9 @@ namespace kSkip{
         return static_cast<float>(duration.count());
     }
 
-    float queryGraphA2A(Graph g, Base::Point s, int fid_s, Base::Point t, int fid_t,
+    float queryGraphA2A(Graph &g, Base::Point s, int fid_s, Base::Point t, int fid_t,
                          map<int, vector<int> > &face_point_map, map<int, Base::Point> &point_location_map){
+        int V_flag = g.num_V, E_flag = g.num_E;
         //  add edges from s to its neighbor Steiner points
         int sid = g.addVertex();
         for (auto pid: face_point_map[fid_s]){
@@ -392,7 +393,17 @@ namespace kSkip{
             float dis = sqrt(CGAL::squared_distance(t, pt));
             g.addEdge(pid, tid, dis);
         }
-        return dijkstra(g, sid, tid).first;
+        float res = dijkstra(g, sid, tid).first;
+
+        while (g.num_E > E_flag){
+            int eid = g.num_E - 1;
+            g.removeEdge(eid);
+        }
+        while (g.num_V > V_flag){
+            int vid = g.num_V - 1;
+            g.removeVertex(vid);
+        }
+        return res;
     }
 
     pair<float, float> queryKSkipGraph(Graph &g, Graph k_skip_graph, set<int> &k_cover_V, map<int, int> &k_cover_vertex_id, int query_s, int query_t){
@@ -652,7 +663,7 @@ namespace kSkip{
                             theta_m = angle;
                         }
                     }
-                    // cout << "theta_m = " << theta_m << endl;
+//                    cout << "theta_m = " << theta_m << endl;
                     // compute |O_iO_i+1|min and delta_I.
                     float OO_min = 0.5 * l_min * sqrt(2 * (1 - cos(theta_m / 180 * Base::PI)));
                     float delta_I = OO_min / K;
@@ -672,11 +683,12 @@ namespace kSkip{
                             int j = 1;
                             float e_len = sqrt(CGAL::squared_distance(v_a, v_b));
 //                             cout << "num cut vertices = " << floor(e_len / delta_I) << endl;
-                            while (j <= floor(e_len / delta_I)){
+                            float t_delta_I = max(delta_I, e_len / 12);
+                            while (j <= floor(e_len / t_delta_I)){
                                 int v_c_id = -1;
                                 decltype(v_a) v_c;
                                 if (edge_cut_vertex.find(L_id[x]) == edge_cut_vertex.end() || edge_cut_vertex[L_id[x]].size() < j){
-                                    v_c = v_a + (v_b - v_a) / e_len * j * delta_I; // cut-vertex coordinate
+                                    v_c = v_a + (v_b - v_a) / e_len * j * t_delta_I; // cut-vertex coordinate
                                     m.add_vertex(v_c);  //  add the vertex to mesh
                                     v_c_id = g.addVertex(); //   vertex id
                                     assert(v_c != m.points()[u]);

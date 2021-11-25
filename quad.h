@@ -509,50 +509,50 @@ namespace Quad{
 
         if (box_s->node_id != box_t->node_id){
 
-            if (box_s->boundary_points_id.size() * box_t->boundary_points_id.size() > 0 &&
-                    box_s->boundary_points_id.size() * box_t->boundary_points_id.size() < 2000){
-                float res = Base::unreachable;
-                map<int, float> d_1, d_2;
-
-                for (auto bpid1: box_s->boundary_points_id) {
-                    float dt = Base::unreachable;
-                    for (auto pid1: face_point_map[fid_s]) {
-                        float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid1])) +
-                                      LQT_distance_map[make_pair(pid1, bpid1)];
-                        if (Base::floatCmp(t_dis - dt) < 0) dt = t_dis;
-                    }
-                    d_1[bpid1] = dt;
-                }
-
-                for (auto bpid2: box_t->boundary_points_id) {
-                    float dt = Base::unreachable;
-                    for (auto pid2: face_point_map[fid_t]) {
-                        float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid2])) +
-                                      LQT_distance_map[make_pair(pid2, bpid2)];
-                        if (Base::floatCmp(t_dis - dt) < 0) dt = t_dis;
-                    }
-                    d_2[bpid2] = dt;
-                }
-
-                vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
-                vector<WeightedDistanceOracle::PartitionTreeNode *> As, At;
-
-                for (auto bpid1: box_s->boundary_points_id){
-                    for (auto bpid2: box_t->boundary_points_id){
-                        As.clear(); At.clear();
-                        tree.getPathToRoot(leaf_nodes[new_id[bpid1]], As);
-                        tree.getPathToRoot(leaf_nodes[new_id[bpid2]], At);
-                        cout << "check: " << leaf_nodes[new_id[bpid1]]->center_idx << " | " << bpid1 << endl;
-                        cout << "check: " << leaf_nodes[new_id[bpid2]]->center_idx << " | " << bpid2 << endl;
-                        cout << "check: " << d_1[bpid1] << " | " << d_2[bpid2] << endl;
-
-                        float t_dis = d_1[bpid1] + WeightedDistanceOracle::distanceQueryEfficient(node_pairs, As, At) + d_2[bpid2];
-                        if (Base::floatCmp(t_dis - res) < 0) res = t_dis;
-                    }
-                }
-                return make_pair(res, box_s->node_id == box_t->node_id);
-
-            }
+//            if (box_s->boundary_points_id.size() * box_t->boundary_points_id.size() > 0 &&
+//                    box_s->boundary_points_id.size() * box_t->boundary_points_id.size() < 2000){
+//                float res = Base::unreachable;
+//                map<int, float> d_1, d_2;
+//
+//                for (auto bpid1: box_s->boundary_points_id) {
+//                    float dt = Base::unreachable;
+//                    for (auto pid1: face_point_map[fid_s]) {
+//                        float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid1])) +
+//                                      LQT_distance_map[make_pair(pid1, bpid1)];
+//                        if (Base::floatCmp(t_dis - dt) < 0) dt = t_dis;
+//                    }
+//                    d_1[bpid1] = dt;
+//                }
+//
+//                for (auto bpid2: box_t->boundary_points_id) {
+//                    float dt = Base::unreachable;
+//                    for (auto pid2: face_point_map[fid_t]) {
+//                        float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid2])) +
+//                                      LQT_distance_map[make_pair(pid2, bpid2)];
+//                        if (Base::floatCmp(t_dis - dt) < 0) dt = t_dis;
+//                    }
+//                    d_2[bpid2] = dt;
+//                }
+//
+//                vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
+//                vector<WeightedDistanceOracle::PartitionTreeNode *> As, At;
+//
+//                for (auto bpid1: box_s->boundary_points_id){
+//                    for (auto bpid2: box_t->boundary_points_id){
+//                        As.clear(); At.clear();
+//                        tree.getPathToRoot(leaf_nodes[new_id[bpid1]], As);
+//                        tree.getPathToRoot(leaf_nodes[new_id[bpid2]], At);
+//                        cout << "check: " << leaf_nodes[new_id[bpid1]]->center_idx << " | " << bpid1 << endl;
+//                        cout << "check: " << leaf_nodes[new_id[bpid2]]->center_idx << " | " << bpid2 << endl;
+//                        cout << "check: " << d_1[bpid1] << " | " << d_2[bpid2] << endl;
+//
+//                        float t_dis = d_1[bpid1] + WeightedDistanceOracle::distanceQueryEfficient(node_pairs, As, At) + d_2[bpid2];
+//                        if (Base::floatCmp(t_dis - res) < 0) res = t_dis;
+//                    }
+//                }
+//                return make_pair(res, box_s->node_id == box_t->node_id);
+//
+//            }
 
             int V_flag = spanner.num_V, E_flag = spanner.num_E; //  backup
 

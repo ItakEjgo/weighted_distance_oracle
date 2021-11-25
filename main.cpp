@@ -10,7 +10,7 @@ vector<pair<int, int> > V2V_query;
 vector<pair<Base::Point, Base::Point> > A2A_query;
 vector<pair<int, int> > A2A_fid;
 
-pair<vector<float>, pair<float, float> > SE_A2A(ofstream &fout, string &file_name, float eps, int sp_num, int q_num){
+pair<vector<float>, pair<float, float> > SE_A2A(ofstream &fout, string &file_name, float eps, int sp_num, int q_num, int weight_flag){
     srand((int)time(0));
     Base::Mesh surface_mesh;
     ifstream fin(file_name);
@@ -19,6 +19,9 @@ pair<vector<float>, pair<float, float> > SE_A2A(ofstream &fout, string &file_nam
     CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
     vector<float> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+    if (weight_flag){
+        face_weight = Base::generateFaceWeight(surface_mesh.num_faces());
+    }
 
     map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
     map<int, int> point_face_map;
@@ -97,14 +100,14 @@ pair<vector<float>, pair<float, float> > SE_A2A(ofstream &fout, string &file_nam
     return make_pair(V2V_results, make_pair(index_time, query_time));
 }
 
-pair<vector<float>, pair<float, float> > LQT_A2A(ofstream &fout, string &file_name, float eps, int point_num, int level, int q_num) {
+pair<vector<float>, pair<float, float> > LQT_A2A(ofstream &fout, string &file_name, float eps, int point_num, int level, int q_num, int weight_flag, vector<float> &face_weight) {
     srand((int)time(0));
     Base::Mesh surface_mesh;
     ifstream fin(file_name);
     fin >> surface_mesh;
     Base::AABB_tree aabb_tree;
     CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
-    vector<float> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+
 //    vector<float> face_weight = Base::generateFaceWeight(surface_mesh.num_faces());
 
     map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
@@ -250,7 +253,7 @@ pair<vector<float>, pair<float, float> > MMP_A2A(ofstream &fout, string &mesh_fi
     return make_pair(A2A_result, make_pair(0.0, query_time));
 }
 
-pair<vector<float>, pair<float, float> > bisectorFixedScheme(ofstream &fout, string &file_name, int q_num, int point_num){
+pair<vector<float>, pair<float, float> > bisectorFixedScheme(ofstream &fout, string &file_name, int q_num, int point_num, int weight_flag, vector<float> &face_weight){
 
     srand((int)time(0));
     Base::Mesh surface_mesh;
@@ -259,7 +262,6 @@ pair<vector<float>, pair<float, float> > bisectorFixedScheme(ofstream &fout, str
     Base::AABB_tree aabb_tree;
     CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-    vector<float> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
 //    vector<float> face_weight = Base::generateFaceWeight(surface_mesh.num_faces());
 
     map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
@@ -300,7 +302,7 @@ pair<vector<float>, pair<float, float> > bisectorFixedScheme(ofstream &fout, str
     return make_pair(A2A_result, make_pair(0, query_time));
 }
 
-pair<vector<float>, pair<float, float> > bisectorUnfixedScheme(ofstream &fout, string &file_name, float eps, int q_num){
+pair<vector<float>, pair<float, float> > bisectorUnfixedScheme(ofstream &fout, string &file_name, float eps, int q_num, int weight_flag, vector<float> &face_weight){
 
     srand((int)time(0));
     Base::Mesh surface_mesh;
@@ -309,7 +311,6 @@ pair<vector<float>, pair<float, float> > bisectorUnfixedScheme(ofstream &fout, s
     Base::AABB_tree aabb_tree;
     CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-    vector<float> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
 //    vector<float> face_weight = Base::generateFaceWeight(surface_mesh.num_vertices());
 
     map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
@@ -362,7 +363,7 @@ pair<vector<float>, pair<float, float> > KAlgo_A2A(ofstream &fout, string &file_
     vector<float> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
 
 
-    float l_min = 1e60;
+    float l_min = 1e60, theta_m = -1.0;
     for (auto fd: surface_mesh.faces()){
         for (auto hed: surface_mesh.halfedges_around_face(surface_mesh.halfedge(fd))){
             auto p0 = surface_mesh.points()[surface_mesh.source(hed)],
@@ -372,7 +373,27 @@ pair<vector<float>, pair<float, float> > KAlgo_A2A(ofstream &fout, string &file_
                 l_min = e_len;
             }
         }
+        if (fd != Base::Mesh::null_face()) {
+            vector<int> vids = {};
+            auto hed = surface_mesh.halfedge(fd);
+            for (int i = 0; i != 3; i++) {
+                int uid = surface_mesh.source(hed).idx();
+                vids.push_back(uid);
+                hed = surface_mesh.next(hed);
+            }
+            for (int i = 0; i != 3; i++) {
+                auto t_u = CGAL::SM_Vertex_index(vids[i]),
+                        t_v = CGAL::SM_Vertex_index(vids[(i + 1) % 3]),
+                        t_w = CGAL::SM_Vertex_index(vids[(i + 2) % 3]);
+                float angle = CGAL::approximate_angle(surface_mesh.points()[t_u], surface_mesh.points()[t_v], surface_mesh.points()[t_w]);
+//                cout << "angle = " << angle << endl;
+                if (Base::floatCmp(theta_m) < 0 || Base::floatCmp(angle - theta_m) < 0) {
+                    theta_m = angle;
+                }
+            }
+        }
     }
+    fout << "theta_m = " << theta_m << endl;
 
     vector<float> A2A_result = {};
     kSkip::Graph g;
@@ -486,10 +507,10 @@ void getLambdaGamma(string &file_name, int point_num) {
 
 
 void run(int argc, char* argv[]){
-    int generate_queries, algo_type, q_num, sp_num, lqt_lev;
+    int generate_queries, algo_type, q_num, sp_num, lqt_lev, weight_flag;
     float eps;
     string mesh_file, output_file;
-    Base::getOpt2(argc, argv, generate_queries, mesh_file, q_num, eps, sp_num, algo_type, lqt_lev, output_file);
+    Base::getOpt2(argc, argv, generate_queries, mesh_file, weight_flag, q_num, eps, sp_num, algo_type, lqt_lev, output_file);
 
     if (lqt_lev < 0 && algo_type == 4){
         lqt_lev = findProperQuadLevel(mesh_file, sp_num);
@@ -508,19 +529,39 @@ void run(int argc, char* argv[]){
             fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
         }
         cout << q_num << " A2A queries generate finished." << endl;
+        auto face_weight = Base::generateFaceWeight(mesh_file);
+        ofstream fout2("face_weight.query");
+        for (auto i = 0; i < face_weight.size(); i++){
+            fout2 << fixed << setprecision(6) << face_weight[i] << endl;
+        }
+        cout << "face weight generate finished." << endl;
     }
     else{
         string prefix;
 
-        switch (algo_type) {
-            case 0: prefix = "../results/unweighted/fixedS/"; break;
-            case 1: prefix = "../results/unweighted/unfixedS/"; break;
-            case 2: prefix = "../results/unweighted/KAlgo/"; break;
-            case 3: prefix = "../results/unweighted/SE/"; break;
-            case 4: prefix = "../results/unweighted/LQT/"; break;
-            case 5: prefix = "../results/unweighted/MMP/"; break;
-            default: break;
+        if (weight_flag){
+            switch (algo_type) {
+                case 0: prefix = "../results/weighted/fixedS/"; break;
+                case 1: prefix = "../results/weighted/unfixedS/"; break;
+                case 2: prefix = "../results/weighted/KAlgo/"; break;
+                case 3: prefix = "../results/weighted/SE/"; break;
+                case 4: prefix = "../results/weighted/LQT/"; break;
+                case 5: prefix = "../results/weighted/MMP/"; break;
+                default: break;
+            }
         }
+        else{
+            switch (algo_type) {
+                case 0: prefix = "../results/unweighted/fixedS/"; break;
+                case 1: prefix = "../results/unweighted/unfixedS/"; break;
+                case 2: prefix = "../results/unweighted/KAlgo/"; break;
+                case 3: prefix = "../results/unweighted/SE/"; break;
+                case 4: prefix = "../results/unweighted/LQT/"; break;
+                case 5: prefix = "../results/unweighted/MMP/"; break;
+                default: break;
+            }
+        }
+
 
         output_file = prefix + output_file;
         ofstream fout(output_file);
@@ -528,7 +569,22 @@ void run(int argc, char* argv[]){
         Base::loadQueriesA2A(A2A_query, A2A_fid);
         fout << "Load A2A queries finished." << endl;
 
+        vector<float> face_weight = {};
+        fout << "Load face weights..." << endl;
+        Base::loadFaceWeight(face_weight);
+        fout << "Load face weights finished." << endl;
+
         fout << fixed << setprecision(3) << "eps = " << eps << endl;
+        if (weight_flag){
+            fout << "Terrain type is: Weighted." << endl;
+        }
+        else{
+            fout << "Terrain type is: Unweighted" << endl;
+            for (auto i = 0; i < face_weight.size(); i++){
+                face_weight[i] = 1.000000;
+            }
+            fout << "Face weight are set to be 1.0" << endl;
+        }
 
         fout << "Run algorithm " << algo_type;
         // Algo 0: Bisector Fixed Scheme
@@ -539,7 +595,7 @@ void run(int argc, char* argv[]){
         // Algo 5: MMP-Algo # approximate construction on unweighted terrain
         if (algo_type == 0){
             fout << ": Bisector-Fixed-Scheme" << endl;
-            auto res_bisector_fixed_S = bisectorFixedScheme(fout, mesh_file, q_num, sp_num);
+            auto res_bisector_fixed_S = bisectorFixedScheme(fout, mesh_file, q_num, sp_num, weight_flag, face_weight);
             fout << "Query results begin: " << endl;
             for (auto dis: res_bisector_fixed_S.first){
                 fout << fixed << setprecision(3) << dis << endl;
@@ -549,7 +605,7 @@ void run(int argc, char* argv[]){
         }
         else if (algo_type == 1){
             fout << ": Bisector-Unfixed-Scheme" << endl;
-            auto res_bisector_unfixed_S = bisectorUnfixedScheme(fout, mesh_file, eps, q_num);
+            auto res_bisector_unfixed_S = bisectorUnfixedScheme(fout, mesh_file, eps, q_num, weight_flag, face_weight);
             fout << "Query results begin: " << endl;
             for (auto dis: res_bisector_unfixed_S.first){
                 fout << fixed << setprecision(3) << dis << endl;
@@ -570,7 +626,7 @@ void run(int argc, char* argv[]){
         }
         else if (algo_type == 3){
             fout << ": SE-oracle" << endl;
-            auto res_SE = SE_A2A(fout, mesh_file, eps, sp_num, q_num);
+            auto res_SE = SE_A2A(fout, mesh_file, eps, sp_num, q_num, weight_flag);
             fout << "Query results begin: " << endl;
             for (auto dis: res_SE.first){
                 fout << fixed << setprecision(3) << dis << endl;
@@ -581,7 +637,7 @@ void run(int argc, char* argv[]){
         }
         else if (algo_type == 4){
             fout << ": LQT-oracle" << endl;
-            auto res_LQT = LQT_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num);
+            auto res_LQT = LQT_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
             fout << "Query results begin: " << endl;
             for (auto dis: res_LQT.first){
                 fout << fixed << setprecision(3) << dis << endl;

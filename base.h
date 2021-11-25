@@ -62,7 +62,7 @@ namespace Base {
     using AABB_face_graph_traits = CGAL::AABB_traits<Kernel, AABB_face_graph_primitive>;
     using AABB_tree = CGAL::AABB_tree<AABB_face_graph_traits>;
 
-    const float eps = 1e-6;
+    const float eps = 1e-7;
     const float PI = acos(-1.0);
     const float unreachable = numeric_limits<float>::max();
 
@@ -105,11 +105,12 @@ namespace Base {
 
     float distanceSnell(Mesh &mesh, vector<float> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
 
-    void getOpt2(int argc, char **argv, int &generate_queries, string &file_name, int &q_num,
+    void getOpt2(int argc, char **argv, int &generate_queries, string &file_name, int &weight, int &q_num,
                  float &eps, int &sp_num, int &algo_type, int &lqt_lev, string &output_file) {
         struct option long_options[] = {
                 {"generate",  required_argument, 0, 'g'},
                 {"mesh",      required_argument, 0, 'm'},
+                {"weight", required_argument, 0, 'w'},
                 {"query_num", required_argument, 0, 'q'},
                 {"algo",      required_argument, 0, 'a'},
                 {"eps",       required_argument, 0, 'e'},
@@ -119,7 +120,7 @@ namespace Base {
                 {0, 0,                           0, 0}
         };
         int opt;
-        const char *opt_string = "g:m:q:a:e:s:l:o:";
+        const char *opt_string = "g:m:w:q:a:e:s:l:o:";
         int option_index = 0;
         generate_queries = 0;
         lqt_lev = 0;
@@ -131,6 +132,9 @@ namespace Base {
                     break;
                 case 'm':
                     file_name = optarg;
+                    break;
+                case 'w':
+                    weight = atoi(optarg);
                     break;
                 case 'q':
                     q_num = atoi(optarg);
@@ -345,6 +349,21 @@ namespace Base {
         return face_weight;
     }
 
+    vector<float> generateFaceWeight(string &file_name) {
+        Mesh surface_mesh;
+        ifstream fin(file_name);
+        fin >> surface_mesh;
+        auto n = surface_mesh.num_faces();
+        uniform_real_distribution<float> gen(1.000001, 5);
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        default_random_engine e(seed);
+        vector<float> face_weight = {};
+        for (auto i = 0; i < n; i++) {
+            face_weight.emplace_back(gen(e));
+        }
+        return face_weight;
+    }
+
     pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh) {
         auto fid = rand() % mesh.num_faces();
 //        cout << "fid = " << fid << endl;
@@ -417,6 +436,15 @@ namespace Base {
         while (fin >> p1 >> fid1 >> p2 >> fid2) {
             A2A_query.emplace_back(p1, p2);
             A2A_fid.emplace_back(fid1, fid2);
+        }
+    }
+
+    void loadFaceWeight(vector<float> &face_weight) {
+        face_weight.clear();
+        ifstream fin("face_weight.query");
+        float w;
+        while (fin >> w) {
+            face_weight.emplace_back(w);
         }
     }
 
