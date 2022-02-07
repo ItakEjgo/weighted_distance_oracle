@@ -251,131 +251,6 @@ namespace kSkip{
         return res;
     }
 
-    pair<double, double> queryKSkipGraph(Graph &g, Graph k_skip_graph, set<int> &k_cover_V, map<int, int> &k_cover_vertex_id, int query_s, int query_t){
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-        // add s to k_skip_graph
-        int sid, tid;
-        if (k_cover_V.find(query_s) == k_cover_V.end()){
-            sid = k_skip_graph.addVertex();
-            vector<double> d; vector<int> fa;
-            map<int, int> ori_v_id, v_id;
-            auto v_lambda = generateVLambda(g, query_s, v_id, ori_v_id, K);
-            auto k_hop_vector = generateShortestPathTree(g, v_lambda, query_s, d, fa);
-
-            for (auto t: k_hop_vector){
-                if (k_cover_V.find(t) != k_cover_V.end()){
-                    bool first_appear = true;
-                    int cur = t;
-                    stack<int> path = {};
-                    while (cur != -1){
-                        path.emplace(cur);
-                        cur = fa[cur];
-                    }
-                    while (!path.empty()){
-                        int top = path.top(); path.pop();
-                        if (top != query_s && top != t && k_cover_V.find(top) != k_cover_V.end()){
-                            first_appear = false;
-                            break;
-                        }
-                    }
-                    if (!first_appear) continue;
-                    k_skip_graph.addEdge(sid, k_cover_vertex_id[t], d[t]);
-                }
-            }
-        }
-        else{
-//            cout << "s in the k-skip graph." << endl;
-            sid = k_cover_vertex_id[query_s];
-        }
-        if (k_cover_V.find(query_t) == k_cover_V.end()){
-            tid = k_skip_graph.addVertex();
-            vector<double> d; vector<int> fa;
-            map<int, int> ori_v_id, v_id;
-            auto v_lambda = generateVLambda(g, query_t, v_id, ori_v_id, K);
-            auto k_hop_vector = generateShortestPathTree(g, v_lambda, query_t, d, fa);
-
-            for (auto t: k_hop_vector){
-                if (k_cover_V.find(t) != k_cover_V.end()){
-                    bool first_appear = true;
-                    int cur = t;
-                    stack<int> path = {};
-                    while (cur != -1){
-                        path.emplace(cur);
-                        cur = fa[cur];
-                    }
-                    while (!path.empty()){
-                        int top = path.top(); path.pop();
-                        if (top != query_t && top != t && k_cover_V.find(top) != k_cover_V.end()){
-                            first_appear = false;
-                            break;
-                        }
-                    }
-                    if (!first_appear) continue;
-                    k_skip_graph.addEdge(k_cover_vertex_id[t], tid, d[t]);
-//                    k_skip_graph.addEdge(k_cover_vertex_id[query_t], k_cover_vertex_id[t], d[t]);
-
-                }
-            }
-        }
-        else{
-//            cout << "t in the k-skip graph." << endl;
-            tid = k_cover_vertex_id[query_t];
-        }
-
-        double ret_dis = dijkstra(k_skip_graph, sid, tid).first;
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-
-        return make_pair(ret_dis, static_cast<double>(duration.count()));
-    }
-
-    double constructGraph(Graph &g, Base::Mesh &mesh,
-                                 vector<double> &face_weight,
-                                 int num_vertices,
-                                 map<int, vector<int>> &edge_bisector_map,
-                                 map<int, vector<int>> &bisector_point_map,
-                                 map<int, int> &point_face_map,
-                                 map<int, Base::Point> &point_location_map) {
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-//        vector<pair<int, int> > base_graph_edges = {};
-//        vector<double> base_graph_weights = {};
-        for (auto it = edge_bisector_map.begin(); it != edge_bisector_map.end(); it++) {
-            auto neighbor_bisectors = it->second;
-            auto common_eid = it->first;
-            for (auto &bisector_1: neighbor_bisectors) {
-                for (auto &bisector_2: neighbor_bisectors) {
-                    for (auto i = 0; i != bisector_point_map[bisector_1].size(); i++) {
-                        for (auto j = 0; j != bisector_point_map[bisector_2].size(); j++) {
-                            auto pid_1 = bisector_point_map[bisector_1][i];
-                            auto pid_2 = bisector_point_map[bisector_2][j];
-                            if (pid_1 == pid_2) continue;
-                            auto fid_1 = i ? pid_1 : bisector_point_map[bisector_1][i + 1],
-                                    fid_2 = j ? pid_2 : bisector_point_map[bisector_2][j + 1];
-                            fid_1 = point_face_map[fid_1];
-                            fid_2 = point_face_map[fid_2];
-                            auto point_1 = point_location_map[pid_1];
-                            auto point_2 = point_location_map[pid_2];
-                            double dis = Base::distanceSnell(mesh, face_weight,
-                                                             point_location_map[pid_1], fid_1,
-                                                             point_location_map[pid_2], fid_2,
-                                                             common_eid);
-//                            base_graph_edges.emplace_back(pid_1, pid_2);
-                            g.addEdge(pid_1, pid_2, dis);
-//                            base_graph_weights.push_back(dis);
-                        }
-                    }
-                }
-            }
-        }
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<double>(duration.count());
-    }
-
     void constructMeshGraph(Base::Mesh &mesh, Graph &g){
         g.init(mesh.num_vertices());
         g.head.resize(mesh.num_vertices(), 0);
@@ -402,16 +277,11 @@ namespace kSkip{
         }
         else{
             int halfedge_id = cut_vertex_halfedge[u];
-            // cout << "halfedge id = " << halfedge_id << endl;
             auto hed = CGAL::SM_Halfedge_index(halfedge_id);
             adj_face_ids.push_back(m.face(hed).idx());
             adj_face_ids.push_back(m.face(m.opposite(hed)).idx());
         }
-        // cout << "adjacent_faces: ";
-        // for (auto fid: adj_face_ids){
-        //     cout << fid << " ";
-        // }
-        // cout << endl;
+
     }
 
     // VLDB'2015 implementation
@@ -458,13 +328,7 @@ namespace kSkip{
         while (!q.empty()){
             QNode f = q.top();
             q.pop();
-//             cout << f.u << " " << f.d_u << endl;
-//             cout << "cnt = " << cnt++ << endl;
-            // int w; cin >> w;
             if (t == f.p){
-//                double lambda = 1.0 - 1.0 / K;
-//                bounds.first = lambda * D[f.u];
-//                bounds.second = D[f.u];
                 return D[f.p];
             }
             if (vis[f.p]) continue;
@@ -476,7 +340,6 @@ namespace kSkip{
             getAdjacentFaces(m, g, cut_vertex_halfedge, f.p, adj_face_ids);
             for (auto fid: adj_face_ids){
                 auto fd = CGAL::SM_Face_index(fid);
-                // auto fd = *vbegin++;
                 if (fd != Base::Mesh::null_face()){
                     vector<int> vids = {};
                     pair<int, int> opposite_edge = {};
