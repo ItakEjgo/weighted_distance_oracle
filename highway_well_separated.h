@@ -11,19 +11,19 @@ namespace Highway{
     using namespace std;
 
     struct Edge{
-        float w;
+        double w;
         int from, to, next, label;
-        Edge(int u, int v, float len, int nxt, int lb = 0): from(u), to(v), next(nxt), w(len), label(lb){}
+        Edge(int u, int v, double len, int nxt, int lb = 0): from(u), to(v), next(nxt), w(len), label(lb){}
     };
 
     struct QNode{
         int p;
-        float dis;
+        double dis;
         bool operator < (const QNode& x) const{
-//            return Base::floatCmp(dis - x.dis) < 0 || !Base::floatCmp(dis - x.dis) && p < x.p;
-            return Base::floatCmp(dis - x.dis) > 0 || !Base::floatCmp(dis - x.dis) && p < x.p;
+//            return Base::doubleCmp(dis - x.dis) < 0 || !Base::doubleCmp(dis - x.dis) && p < x.p;
+            return Base::doubleCmp(dis - x.dis) > 0 || !Base::doubleCmp(dis - x.dis) && p < x.p;
         }
-        QNode(int pid, float d_val): p(pid), dis(d_val){}
+        QNode(int pid, double d_val): p(pid), dis(d_val){}
     };
 
     struct HighwayGraph{
@@ -50,24 +50,24 @@ namespace Highway{
             num_H++;
         }
 
-        void addEdge(int u, int v, float w){
+        void addEdge(int u, int v, double w){
             edges.emplace_back(u, v, w, head[u]);
             head[u] = num_E;
             num_E++;
         }
 
-        void addHighway(int u, int v, float w, int lb){
+        void addHighway(int u, int v, double w, int lb){
             edges_highway.emplace_back(u, v, w, head[u], lb);
             head_highway[u] = num_H;
             num_H++;
         }
 
-        static inline float wellSeparatedRadius(const float dis, const float eps){
+        static inline double wellSeparatedRadius(const double dis, const double eps){
             return dis / (2 / eps + 2);
         }
 
-        void highwayPropagate(int s, const float eps){ //  generate first-well-separated-highway
-            vector<float> d(num_V, Base::unreachable);
+        void highwayPropagate(int s, const double eps){ //  generate first-well-separated-highway
+            vector<double> d(num_V, Base::unreachable);
             vector<bool> vis(num_V, false), vis_cir(num_V, false);
             d[s] = 0;
             priority_queue<QNode> q = {};
@@ -81,12 +81,12 @@ namespace Highway{
 
                 // get the distance of q.top(), generate highways.
                 if (f.p != s) circle_heap.push(f);
-                float max_radius = wellSeparatedRadius(d[f.p], eps);
+                double max_radius = wellSeparatedRadius(d[f.p], eps);
                 bool new_cir_level_flag = false;
                 while (!circle_heap.empty()){
                     QNode f_cir = circle_heap.top();
                     if (vis_cir[f_cir.p]) continue;
-                    if (Base::floatCmp(d[f_cir.p] - max_radius) <= 0){
+                    if (Base::doubleCmp(d[f_cir.p] - max_radius) <= 0){
                         if (!new_cir_level_flag) new_cir_level_flag = true;
                         vis_cir[f_cir.p] = true;
                         addHighway(s, f_cir.p, d[f_cir.p], cir_label);
@@ -114,8 +114,8 @@ namespace Highway{
 
                 for (int eid = head[f.p]; eid; eid = edges[eid].next){
                     int v = edges[eid].to;
-                    float w = edges[eid].w;
-                    if (Base::floatCmp(d[f.p] + w - d[v]) < 0){
+                    double w = edges[eid].w;
+                    if (Base::doubleCmp(d[f.p] + w - d[v]) < 0){
                         d[v] = d[f.p] + w;
                         q.push(QNode(v, d[v]));
                     }
@@ -124,8 +124,8 @@ namespace Highway{
             }
         }
 
-        float queryHighway(int s, int t){
-            vector<float> d(num_V, Base::unreachable);
+        double queryHighway(int s, int t){
+            vector<double> d(num_V, Base::unreachable);
             vector<bool> vis(num_V, false);
             d[s] = 0;
             priority_queue<QNode> q = {};
@@ -137,8 +137,8 @@ namespace Highway{
 
                 for (int eid = head_highway[f.p]; eid; eid = edges_highway[eid].next){
                     int v = edges_highway[eid].to;
-                    float w = edges_highway[eid].w;
-                    if (Base::floatCmp(d[f.p] + w - d[v]) < 0){
+                    double w = edges_highway[eid].w;
+                    if (Base::doubleCmp(d[f.p] + w - d[v]) < 0){
                         d[v] = d[f.p] + w;
                         q.push(QNode(v, d[v]));
                     }
@@ -149,8 +149,8 @@ namespace Highway{
             return d[t];
         }
 
-        float queryOriginGraph(int s, int t){
-            vector<float> d(num_V, Base::unreachable);
+        double queryOriginGraph(int s, int t){
+            vector<double> d(num_V, Base::unreachable);
             vector<bool> vis(num_V, false);
             d[s] = 0;
             priority_queue<QNode> q = {};
@@ -162,8 +162,8 @@ namespace Highway{
 
                 for (int eid = head[f.p]; eid; eid = edges[eid].next){
                     int v = edges[eid].to;
-                    float w = edges[eid].w;
-                    if (Base::floatCmp(d[f.p] + w - d[v]) < 0){
+                    double w = edges[eid].w;
+                    if (Base::doubleCmp(d[f.p] + w - d[v]) < 0){
                         d[v] = d[f.p] + w;
                         q.push(QNode(v, d[v]));
                     }
@@ -175,24 +175,24 @@ namespace Highway{
         }
 
         // return the distance and whether is hit on Highway Graph
-        pair<float, bool> distanceQuery(int s, int t){
-            float ret = queryHighway(s, t);
+        pair<double, bool> distanceQuery(int s, int t){
+            double ret = queryHighway(s, t);
             bool hit = false;
-            if (!Base::floatCmp(ret - Base::unreachable)){
+            if (!Base::doubleCmp(ret - Base::unreachable)){
                 ret = queryOriginGraph(s, t);
             }
             else{
                 hit = true;
             }
-            if (!Base::floatCmp(ret - Base::unreachable)) {
+            if (!Base::doubleCmp(ret - Base::unreachable)) {
                 cout << "ERROR! could not found distance on both Highway & OriginGraph" << endl;
             }
             return make_pair(ret, hit);
         }
     };
 
-    float constructHighwayGraph(HighwayGraph &g, Base::Mesh &mesh,
-                              vector<float> &face_weight,
+    double constructHighwayGraph(HighwayGraph &g, Base::Mesh &mesh,
+                              vector<double> &face_weight,
                               int num_vertices,
                               map<int, vector<int>> &edge_bisector_map,
                               map<int, vector<int>> &bisector_point_map,
@@ -201,7 +201,7 @@ namespace Highway{
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
 //        vector<pair<int, int> > base_graph_edges = {};
-//        vector<float> base_graph_weights = {};
+//        vector<double> base_graph_weights = {};
         for (auto it = edge_bisector_map.begin(); it != edge_bisector_map.end(); it++) {
             auto neighbor_bisectors = it->second;
             auto common_eid = it->first;
@@ -218,7 +218,7 @@ namespace Highway{
                             fid_2 = point_face_map[fid_2];
                             auto point_1 = point_location_map[pid_1];
                             auto point_2 = point_location_map[pid_2];
-                            float dis = Base::distanceSnell(mesh, face_weight,
+                            double dis = Base::distanceSnell(mesh, face_weight,
                                                              point_location_map[pid_1], fid_1,
                                                              point_location_map[pid_2], fid_2,
                                                              common_eid);
@@ -233,7 +233,7 @@ namespace Highway{
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<float>(duration.count());
+        return static_cast<double>(duration.count());
     }
 
 }
