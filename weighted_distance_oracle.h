@@ -15,67 +15,6 @@ namespace WeightedDistanceOracle {
     Base::Graph base_graph;
     map<int, vector<double> > distance_map, bound_map;
 
-    // return the vertex id of inserted point
-    int addVertexEdgeToBaseGraph(Base::Mesh &mesh, Base::Point &p, int fid, map<int, vector<int> > &face_point_map,
-                                  map<int, Base::Point> &point_location_map){
-        auto fd = *(mesh.faces().begin() + fid);
-        int V = boost::num_vertices(base_graph);
-//        cout << "old V size = " << V << endl;
-        for (auto pid: face_point_map[fid]){
-            double w = sqrt(CGAL::squared_distance(p, point_location_map[pid]));
-//            cout << "u,v,w = " << V << " " << pid << " " << w << endl;
-            boost::add_edge(V, pid, w, base_graph);
-            boost::add_edge(pid, V, w, base_graph);
-        }
-        return V;
-//        cout << "new V size = " << boost::num_vertices(base_graph) << endl;
-    }
-
-    double getFaceMaxLength(Base::Mesh &mesh, vector<double> &face_max_length) {
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-        face_max_length.resize(mesh.num_faces(), 0.0);
-        double max_length = -1.0, e_length;
-        for (auto fd: mesh.faces()) {
-            max_length = -1.0;
-            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
-                e_length = sqrt(
-                        CGAL::squared_distance(mesh.points()[mesh.source(hed)], mesh.points()[mesh.target(hed)]));
-                max_length = Base::doubleCmp(e_length - max_length) > 0 ? e_length : max_length;
-            }
-            face_max_length[fd.idx()] = max_length;
-        }
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<double>(duration.count());
-    }
-
-    double getFaceMaxMinLength(Base::Mesh &mesh, vector<double> &face_max_length, vector<double> &face_min_length) {
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-        face_max_length.resize(mesh.num_faces(), 0.0);
-        face_min_length.resize(mesh.num_faces(), 0.0);
-
-        double max_length = -1.0, min_length = 1e60, e_length;
-        for (auto fd: mesh.faces()) {
-            max_length = -1.0;
-            min_length = 1e60;
-            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
-                e_length = sqrt(
-                        CGAL::squared_distance(mesh.points()[mesh.source(hed)], mesh.points()[mesh.target(hed)]));
-                max_length = Base::doubleCmp(e_length - max_length) > 0 ? e_length : max_length;
-                min_length = Base::doubleCmp(e_length - min_length) < 0 ? e_length : min_length;
-            }
-            face_max_length[fd.idx()] = max_length;
-            face_min_length[fd.idx()] = min_length;
-        }
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<double>(duration.count());
-    }
-
     vector<double> getVertexGamma(Base::Mesh &mesh, vector<double> &face_weights){
         map<int, vector<int> > vertex_face_map = {};
         vector<double> gama(mesh.num_vertices());
@@ -236,117 +175,6 @@ namespace WeightedDistanceOracle {
         return make_pair(static_cast<double>(duration.count()), num_vertices);
     }
 
-    pair<double, int> placeSteinerPointsKAlgo(Base::Mesh &mesh, const int &K, const double &l_min,
-                                               map<int, vector<int>> &edge_point_map,
-                                               map<int, int> &point_face_map,
-                                               map<int, Base::Point> &point_location_map,
-                                               map<int, vector<int>> &face_point_map) {
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-        int num_vertices = static_cast<int>(mesh.num_vertices());
-        for (auto fd: mesh.faces()) {
-
-            vector<Base::Point> p(3);
-            vector<int> pid(3);
-            int i = 0;
-            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
-                p[i] = mesh.points()[mesh.source(hed)];
-                pid[i] = static_cast<int>(mesh.source(hed).idx());
-                if (point_location_map.find(pid[i]) == point_location_map.end()) {
-                    point_location_map[pid[i]] = p[i];
-                }
-                face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
-                i++;
-            }
-
-//            cout << "i = " << i << endl;
-
-            double theta_m = 1e60;
-            theta_m = min(theta_m, CGAL::approximate_angle(p[0], p[1], p[2]));
-            theta_m = min(theta_m, CGAL::approximate_angle(p[1], p[2], p[0]));
-            theta_m = min(theta_m, CGAL::approximate_angle(p[2], p[0], p[1]));
-            double delta_I = l_min / 2 / sqrt(2 * (1 - cos(theta_m))) / K;
-
-            for (auto hed:mesh.halfedges_around_face(mesh.halfedge(fd))) {
-                auto p0 = mesh.points()[mesh.source(hed)],
-                    p1 = mesh.points()[mesh.target(hed)];
-                int eid = static_cast<int>(mesh.edge(hed).idx());
-                if (edge_point_map.find(eid) == edge_point_map.end()){
-                    edge_point_map[eid] = {};
-                }
-                edge_point_map[eid].push_back(mesh.source(hed).idx());
-
-                Base::Vector vec01(p1 - p0);
-                double limit_distance = sqrt(CGAL::squared_distance(p0, p1));
-                int num_point_this_edge = floor(limit_distance / delta_I);
-//                cout << "limit_distance = " << limit_distance << " # of points this edge = " << num_point_this_edge << endl;
-
-                for (auto i = 1; i < num_point_this_edge; i++){
-                    Base::Point next_p = p0 + 1.0 * i / num_point_this_edge * vec01;
-                    point_location_map[num_vertices] = next_p;
-                    point_face_map[num_vertices] = static_cast<int>(fd.idx());
-                    face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
-                    edge_point_map[eid].push_back(num_vertices++);
-                }
-            }
-        }
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return make_pair(static_cast<double>(duration.count()), num_vertices);
-    }
-
-    double constructKAlgoGraph(Base::Mesh &mesh,
-                              vector<double> &face_weight,
-                              int num_vertices,
-                              map<int, vector<int>> &edge_point_map,
-                              map<int, int> &point_face_map,
-                              map<int, Base::Point> &point_location_map) {
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-        bool g_flag = true;
-        if (kSkip::my_base_graph.num_V != num_vertices){
-            g_flag = false;
-            kSkip::my_base_graph.init(num_vertices);
-        }
-        vector<pair<int, int> > base_graph_edges = {};
-        vector<double> base_graph_weights = {};
-
-        for (auto fd: mesh.faces()){
-            vector<int> eids;
-            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
-                eids.push_back(mesh.edge(hed).idx());
-            }
-            for (auto i = 0; i < 3; i++){
-                for (auto pid_1: edge_point_map[eids[i]]){
-                    // connect the other two edges
-                    for (auto pid_2: edge_point_map[eids[(i + 1) % 3]]){
-                        double dis = sqrt(CGAL::squared_distance(point_location_map[pid_1], point_location_map[pid_2]));
-                        base_graph_edges.emplace_back(pid_1, pid_2);
-                        base_graph_weights.push_back(dis);
-                        if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
-                    }
-
-                    for (auto pid_2: edge_point_map[eids[(i + 2) % 3]]){
-                        double dis = sqrt(CGAL::squared_distance(point_location_map[pid_1], point_location_map[pid_2]));
-                        base_graph_edges.emplace_back(pid_1, pid_2);
-                        base_graph_weights.push_back(dis);
-                        if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
-                    }
-                }
-            }
-        }
-
-        base_graph = Base::Graph(begin(base_graph_edges), end(base_graph_edges), begin(base_graph_weights),
-                                 num_vertices);
-
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<double>(duration.count());
-    }
-
-
     double constructBaseGraph(Base::Mesh &mesh,
                               vector<double> &face_weight,
                               int num_vertices,
@@ -401,98 +229,6 @@ namespace WeightedDistanceOracle {
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
         return static_cast<double>(duration.count());
-    }
-
-    // method type{0: enlarged surface disk; 1: surface disk} # Do not use method 1!!!
-    pair<double, double> distanceBoundMapPreprocessing(Base::Mesh &mesh, int method_type,
-                                                       map<int, int> &point_face_map,
-                                                       vector<double> &face_max_length,
-                                                       map<int, Base::Point> &point_location_map,
-                                                       vector<int> &pid_list) {
-        double bound_pre_time = 0.0;
-        auto start_time = chrono::_V2::system_clock::now();  //  timer
-
-        distance_map.clear();
-        bound_map.clear();
-
-        auto geodesic_pre_start = chrono::_V2::system_clock::now();
-        Base::Surface_mesh_shortest_path shortest_paths(mesh);
-        auto geodesic_pre_end = chrono::_V2::system_clock::now();
-        auto geodesic_pre_duration = chrono::duration_cast<chrono::milliseconds>(geodesic_pre_end - geodesic_pre_start);
-        auto geodesic_pre_time = static_cast<double>(geodesic_pre_duration.count());
-
-        auto V = pid_list.size();
-        int cnt = 1;
-        vector<double> dall(V, -1);
-        vector<int> fa(V, -1);
-        vector<double> b(V, 0);
-        for (auto i = 0; i < V; i++) {
-            auto s = pid_list[i];
-            if (i > cnt * V / 10) {
-                cout << cnt++ << "0% nodes are preprocessed." << endl;
-            }
-            dall.resize(num_vertices(base_graph), Base::unreachable);
-            fa.resize(num_vertices(base_graph), -1);
-            b.resize(num_vertices(base_graph), 0);
-            if (!method_type) {
-                Base::dijkstra_SSAD(base_graph, s, dall, fa);
-            }
-            else {
-                auto vd = *(mesh.vertices().begin() + s);
-                shortest_paths.add_source_point(vd);
-            }
-            vector<double> d(dall.begin(), dall.begin() + num_vertices(base_graph));
-            for (auto j = 0; j < V; j++) {
-                auto t = pid_list[j];
-                if (!method_type) {
-                    auto bound_pre_start = chrono::_V2::system_clock::now();
-
-//                    int id = t;
-//                    while (id != s) {
-//                        if (id < V && fa[id] < V) {
-//                            b[t] += sqrt(CGAL::squared_distance(point_location_map[id], point_location_map[fa[id]]));
-//                        } else {
-//                            b[t] += face_max_length[point_face_map[id]];
-//                        }
-//                        id = fa[id];
-//                    }
-
-                    auto bound_pre_end = chrono::_V2::system_clock::now();
-                    auto bound_pre_duration = chrono::duration_cast<chrono::milliseconds>(bound_pre_end - bound_pre_start);
-                    bound_pre_time += static_cast<double>(bound_pre_duration.count());
-                }
-                else {
-                    auto target_vd = *(mesh.vertices().begin() + t);
-                    auto dis_pair = shortest_paths.shortest_distance_to_source_points(target_vd);
-                    d[t] = dis_pair.first;
-                }
-            }
-            if (method_type == 1) {
-                shortest_paths.remove_all_source_points();
-            }
-            distance_map[s] = d;
-            bound_map[s] = d;
-//            bound_map[s] = b;
-
-//            cout << "s = " << s;
-//            for (auto x = 0; x < V; x++){
-//                if (!Base::doubleCmp(d[pid_list[x]])){
-//                    cout << " id = " << pid_list[x] << " dis = " << d[pid_list[x]] << endl;
-//                    cout << point_location_map[s] << " on face " << point_face_map[s] << endl;
-//                    cout << point_location_map[pid_list[x]] << " on face " << point_face_map[pid_list[x]] << endl;
-//                }
-//            }
-        }
-        cout << "Distance/Bound map preprocessing finished." << endl;
-
-        auto end_time = chrono::_V2::system_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        if (!method_type) {
-//            cout << "[Debug Info] Bound pre time = " << bound_pre_time << " ms" << endl;
-            return make_pair(static_cast<double>(duration.count()) - geodesic_pre_time - bound_pre_time, bound_pre_time);
-        } else {
-            return make_pair(static_cast<double>(duration.count()), 0.0);
-        }
     }
 
     class PartitionTreeNode {
@@ -564,7 +300,6 @@ namespace WeightedDistanceOracle {
 
         double constructTree(ofstream &fout, vector<int> &pid_list, double l);
 
-        double findEnhancedDistance(int uid, int vid);
     };
 
     PartitionTree::PartitionTree() { stop_flag = 0; num_tree_nodes = 0; }
@@ -593,24 +328,6 @@ namespace WeightedDistanceOracle {
             rhs = (8 / eps + 4) * max(node1->radius, node2->radius);
         }
         return rhs;
-    }
-
-    double PartitionTree::findEnhancedDistance(int uid, int vid){
-        vector<PartitionTreeNode*> u_path;
-        vector<PartitionTreeNode*> v_path;
-        auto u_node = level_nodes[max_level][uid];
-        auto v_node = level_nodes[max_level][vid];
-        assert(u_node->center_idx == uid);
-        assert(v_node->center_idx == vid);
-        getPathToRoot(u_node, u_path);
-        getPathToRoot(v_node, v_path);
-        for (auto i = 0; i < u_path.size(); i++){
-            if (enhanced_edges.find(make_pair(u_path[i]->center_idx, v_path[i]->center_idx)) != enhanced_edges.end()){
-                return enhanced_edges[make_pair(u_path[i]->center_idx, v_path[i]->center_idx)];
-            }
-        }
-        cout << "<ERROR> No Enhanced Edges found." << endl;
-        return -1;
     }
 
     double PartitionTree::generateNodePairSet(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set) {
@@ -822,28 +539,6 @@ namespace WeightedDistanceOracle {
         return static_cast<int>(cur_level_nodes.size());
     }
 
-    double distanceQueryBf(set<nodePair> &node_pairs,
-                           vector<PartitionTreeNode*> &As,
-                           vector<PartitionTreeNode*> &At){
-        double approximate_distance = 0.0;
-        int cnt = 0;
-        for (auto i = 0; i != As.size(); i++){
-            for (auto j = 0; j != At.size(); j++){
-                nodePair query_pair = make_pair(As[i], At[j]);
-                if (node_pairs.find(query_pair) != node_pairs.end()){
-                    cnt++;
-//                    approximate_distance = distance_map[As[i]->center_idx][At[j]->center_idx];
-                    approximate_distance = enhanced_edges[make_pair(As[i]->center_idx, At[j]->center_idx)];
-                }
-            }
-        }
-        assert(cnt == 1);
-        if (cnt != 1){
-            cout << "[ERROR] multiple node pairs found!!! cnt = " << cnt << endl;
-        }
-        return approximate_distance;
-    }
-
     double distanceQueryEfficient(set<nodePair> &node_pairs,
                                   vector<PartitionTreeNode*> &As,
                                   vector<PartitionTreeNode*> &At){
@@ -880,79 +575,6 @@ namespace WeightedDistanceOracle {
             cout << "Multiple distance found! cnt = " << cnt << endl;
         }
         return approximate_distance;
-    }
-
-    double distanceQueryBf(double source_dis,
-                           double target_dis,
-                           PartitionTree &tree,
-                           set<nodePair> &node_pairs,
-                           vector<PartitionTreeNode*> &As,
-                           vector<PartitionTreeNode*> &At,
-                           map<int, int> &new_id){
-        double approximate_distance = -1.0;
-        int nearest_sid = As[0]->center_idx, nearest_tid = At[0]->center_idx, cnt = 0;
-
-        for (auto i = 0; i != As.size(); i++){
-            for (auto j = 0; j != At.size(); j++){
-                nodePair query_pair = make_pair(As[i], At[j]);
-//                cout << "As.radius = " << As[i]->radius << " source_dis = " << source_dis << endl;
-//                cout << "At.radius = " << At[i]->radius << " target_dis = " << target_dis << endl;
-
-                vector<PartitionTreeNode*> tAs, tAt;
-
-                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[As[i]->center_idx]], tAs);
-                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[nearest_sid]], tAt);
-
-                bool is_cover_source = false, is_cover_target = false;
-//                if (Base::doubleCmp(As[i]->radius - (distance_map[As[i]->center_idx][nearest_sid] + source_dis)) >= 0){
-                double t_dis = distanceQueryBf(node_pairs, tAs, tAt);
-//                if (Base::doubleCmp(As[i]->radius - (enhanced_edges[make_pair(As[i]->center_idx, nearest_sid)] + source_dis)) >= 0){
-                if (Base::doubleCmp(As[i]->radius - (t_dis + source_dis)) >= 0){
-                        is_cover_source = true;
-                }
-//                if (Base::doubleCmp(At[j]->radius - (distance_map[At[j]->center_idx][nearest_tid] + target_dis)) >= 0){
-//                if (Base::doubleCmp(At[j]->radius - (enhanced_edges[make_pair(At[j]->center_idx, nearest_tid)] + target_dis)) >= 0){
-                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[At[j]->center_idx]], tAs);
-                tree.getPathToRoot(tree.level_nodes[tree.max_level][new_id[nearest_tid]], tAt);
-                t_dis = distanceQueryBf(node_pairs, tAs, tAt);
-
-                if (Base::doubleCmp(At[j]->radius - (t_dis + target_dis)) >= 0){
-                    is_cover_target = true;
-                }
-
-                if (is_cover_source && is_cover_target && node_pairs.find(query_pair) != node_pairs.end()){
-                    cnt++;
-//                    approximate_distance = distance_map[As[i]->center_idx][At[j]->center_idx];
-                    approximate_distance = enhanced_edges[make_pair(As[i]->center_idx, At[j]->center_idx)];
-
-                }
-            }
-        }
-        if (cnt > 0){
-            assert(cnt == 1);
-            if (cnt != 1){
-                cout << "[ERROR] Multiple node pairs found!" << endl;
-            }
-        }
-        return approximate_distance;
-    }
-
-    pair<int, double> findNearestVertex(Base::Point &p,
-                          Base::Mesh &mesh,
-                          Base::AABB_tree &aabb_tree){
-        auto location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(p, aabb_tree, mesh);
-        auto fd = location.first;
-        double nearest_dis = 1e100;
-        int nearest_id = -1;
-        for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
-            double dis = CGAL::squared_distance(mesh.points()[vd], p);
-//            cout << "dis = " << dis << endl;
-            if (Base::doubleCmp(dis - nearest_dis) < 0){
-                nearest_dis = dis;
-                nearest_id = vd.idx();
-            }
-        }
-        return make_pair(nearest_id, sqrt(nearest_dis));
     }
 
     double distanceQueryA2A(Base::Point &query_source,

@@ -316,55 +316,6 @@ namespace Quad{
         return g;
     }
 
-    pair<double, bool> queryWSPD(Base::Mesh &m, quadTree &tree, int sid, int tid,
-                                 set<WeightedDistanceOracle::nodePair> &node_pairs,
-                                 WeightedDistanceOracle::PartitionTree &partition_tree,
-                                 map<int, int> &new_id){
-        auto box_s = tree.root, box_t = tree.root;
-        auto point_s = m.points()[*(m.vertices_begin() + sid)];
-        auto point_t = m.points()[*(m.vertices_begin() + tid)];
-        //find the leaf contains s and t
-        while (box_s->sons.size() > 0){
-            for (auto son: box_s->sons){
-                if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
-                    box_s = son;
-                    break;
-                }
-            }
-        }
-        while (box_t->sons.size() > 0){
-            for (auto son: box_t->sons){
-                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
-                    box_t = son;
-                    break;
-                }
-            }
-        }
-
-        if (box_s->node_id == box_t->node_id){
-            return make_pair(kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
-        }
-        else{
-            vector<double> ds, dt;
-            kSkip::covered_dijkstra(kSkip::my_base_graph, sid, box_s->boundary_points_id, ds);
-            kSkip::covered_dijkstra(kSkip::my_base_graph, tid, box_t->boundary_points_id, dt);
-
-            double dis_min = Base::unreachable;
-            for (auto pid1: box_s->boundary_points_id){
-                for (auto pid2: box_t->boundary_points_id){
-                    vector<WeightedDistanceOracle::PartitionTreeNode*> As, At;
-                    partition_tree.getPathToRoot(partition_tree.level_nodes[partition_tree.max_level][new_id[pid1]], As);
-                    partition_tree.getPathToRoot(partition_tree.level_nodes[partition_tree.max_level][new_id[pid2]], At);
-                    double cur_dis = ds[pid1] + WeightedDistanceOracle::distanceQueryBf(node_pairs, As, At) + dt[pid2];
-                    if (Base::doubleCmp(cur_dis - dis_min) < 0) dis_min = cur_dis;
-                }
-            }
-            return make_pair(dis_min, box_s->node_id == box_t->node_id);
-        }
-    }
-
     void distancePreprocessing(quadTree &quad_tree, kSkip::Graph &base_graph, map<int, vector<int> > &face_point_map){
         auto leaf = quad_tree.level_nodes[quad_tree.level];
         for (auto node: leaf){
@@ -385,93 +336,6 @@ namespace Quad{
                 }
             }
 
-        }
-    }
-
-    //dealing with V2V queries
-    pair<double, bool> querySpanner(Base::Mesh &m, kSkip::Graph spanner, int sid, int tid, quadTree &quad_tree,
-                                    map<int, int> &new_id, WeightedDistanceOracle::PartitionTree &tree, Base::AABB_tree &aabb_tree,
-                                    set<WeightedDistanceOracle::nodePair> &node_pairs, bool check_first_flag = 0){
-        auto box_s = quad_tree.root, box_t = quad_tree.root;
-        auto point_s = m.points()[*(m.vertices_begin() + sid)];
-        auto point_t = m.points()[*(m.vertices_begin() + tid)];
-
-        //find the leaf contains s and t
-        while (box_s->sons.size() > 0){
-            for (auto son: box_s->sons){
-                if (Base::doubleCmp(point_s.x() - son->x_min) >= 0 && Base::doubleCmp(point_s.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(point_s.y() - son->y_min) >= 0 && Base::doubleCmp(point_s.y() - son->y_max) <= 0){
-                    box_s = son;
-                    break;
-                }
-            }
-        }
-        while (box_t->sons.size() > 0){
-            for (auto son: box_t->sons){
-                if (Base::doubleCmp(point_t.x() - son->x_min) >= 0 && Base::doubleCmp(point_t.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(point_t.y() - son->y_min) >= 0 && Base::doubleCmp(point_t.y() - son->y_max) <= 0){
-                    box_t = son;
-                    break;
-                }
-            }
-        }
-
-//        cout << "box_s = " << box_s->node_id << " box_t = " << box_t->node_id << endl;
-//        cout << "box_s son = " << box_s->sons.size() << " box_t son = " << box_t->sons.size() << endl;
-
-        double min_ds = 1e60, min_dt = 1e60;
-        int closest_pid_s = -1, closest_pid_t = -1;
-        if (box_s->node_id != box_t->node_id){
-            int final_s, final_t;
-
-            if (new_id.find(sid) == new_id.end()){
-                final_s = spanner.addVertex();
-
-                for (auto pid: box_s->boundary_points_id) {
-                    if (LQT_distance_map.find(make_pair(sid, pid)) == LQT_distance_map.end()) {
-                        cout << "ERROR: distance not found in LQT_distance_map !!!" << endl;
-                        cout << sid << "--" << pid << endl;
-                    }
-                    spanner.addEdge(final_s, new_id[pid], LQT_distance_map[make_pair(sid, pid)]);
-
-                }
-            }
-            else{
-                final_s = new_id[sid];
-                min_ds = 0;
-                closest_pid_s = sid;
-            }
-            if (new_id.find(tid) == new_id.end()){
-                final_t = spanner.addVertex();
-
-                for (auto pid: box_t->boundary_points_id){
-                    if (LQT_distance_map.find(make_pair(tid, pid)) == LQT_distance_map.end()) {
-                        cout << "ERROR: distance not found in LQT_distance_map !!!" << endl;
-                    }
-                    spanner.addEdge(new_id[pid], final_t, LQT_distance_map[make_pair(tid, pid)]);
-
-                }
-            }
-            else{
-                final_t = new_id[tid];
-                min_dt = 0;
-                closest_pid_t = tid;
-            }
-
-            double ret_dis = -1.0;
-
-            if (Base::doubleCmp(ret_dis) < 0){
-                ret_dis = kSkip::dijkstra(spanner, final_s, final_t).first;
-            }
-            else{
-                WSPD_hit++;
-            }
-
-            return make_pair(ret_dis, box_s->node_id == box_t->node_id);
-        }
-        else{
-            // in the same box, just SE_A2A dijkstra untill find the result.
-            return make_pair(kSkip::dijkstra(kSkip::my_base_graph, sid, tid).first, box_s->node_id == box_t->node_id);
         }
     }
 
@@ -505,54 +369,8 @@ namespace Quad{
             }
         }
 
-//        cout << "box_id = " << box_s->node_id << " " << box_t->node_id << endl;
 
         if (box_s->node_id != box_t->node_id){
-
-//            if (box_s->boundary_points_id.size() * box_t->boundary_points_id.size() > 0 &&
-//                    box_s->boundary_points_id.size() * box_t->boundary_points_id.size() < 2000){
-//                double res = Base::unreachable;
-//                map<int, double> d_1, d_2;
-//
-//                for (auto bpid1: box_s->boundary_points_id) {
-//                    double dt = Base::unreachable;
-//                    for (auto pid1: face_point_map[fid_s]) {
-//                        double t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid1])) +
-//                                      LQT_distance_map[make_pair(pid1, bpid1)];
-//                        if (Base::doubleCmp(t_dis - dt) < 0) dt = t_dis;
-//                    }
-//                    d_1[bpid1] = dt;
-//                }
-//
-//                for (auto bpid2: box_t->boundary_points_id) {
-//                    double dt = Base::unreachable;
-//                    for (auto pid2: face_point_map[fid_t]) {
-//                        double t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid2])) +
-//                                      LQT_distance_map[make_pair(pid2, bpid2)];
-//                        if (Base::doubleCmp(t_dis - dt) < 0) dt = t_dis;
-//                    }
-//                    d_2[bpid2] = dt;
-//                }
-//
-//                vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
-//                vector<WeightedDistanceOracle::PartitionTreeNode *> As, At;
-//
-//                for (auto bpid1: box_s->boundary_points_id){
-//                    for (auto bpid2: box_t->boundary_points_id){
-//                        As.clear(); At.clear();
-//                        tree.getPathToRoot(leaf_nodes[new_id[bpid1]], As);
-//                        tree.getPathToRoot(leaf_nodes[new_id[bpid2]], At);
-//                        cout << "check: " << leaf_nodes[new_id[bpid1]]->center_idx << " | " << bpid1 << endl;
-//                        cout << "check: " << leaf_nodes[new_id[bpid2]]->center_idx << " | " << bpid2 << endl;
-//                        cout << "check: " << d_1[bpid1] << " | " << d_2[bpid2] << endl;
-//
-//                        double t_dis = d_1[bpid1] + WeightedDistanceOracle::distanceQueryEfficient(node_pairs, As, At) + d_2[bpid2];
-//                        if (Base::doubleCmp(t_dis - res) < 0) res = t_dis;
-//                    }
-//                }
-//                return make_pair(res, box_s->node_id == box_t->node_id);
-//
-//            }
 
             int V_flag = spanner.num_V, E_flag = spanner.num_E; //  backup
 
