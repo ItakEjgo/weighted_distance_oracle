@@ -97,6 +97,13 @@ namespace Base {
         return x < 0 ? -1 : 1;
     }
 
+    // Generate a random value in [l, r] uniformly.
+    double uniformRandomValue(const double &l, const double &r){
+        uniform_real_distribution<double> gen(l, r);
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        default_random_engine e(seed);
+        return gen(e);
+    }
 
     // Return the point rotate around a vector with given angle.
     Point pointRotationAroundVector(Point p, Point vec_source, Point vec_target, double theta);
@@ -296,6 +303,15 @@ namespace Base {
         return face_weight;
     }
 
+    pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh, const double &x_min,
+                                                   const double &x_max, const double &y_min,
+                                                   const double &y_max){
+        Base::AABB_tree aabb_tree;
+        CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
+
+    }
+
+
     pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh) {
         auto fid = rand() % mesh.num_faces();
 //        cout << "fid = " << fid << endl;
@@ -321,7 +337,9 @@ namespace Base {
         srand((int) time(0));
         Mesh surface_mesh;
         ifstream fin(file_name);
+        cout << "mesh file = " << file_name << endl;
         fin >> surface_mesh;
+        cout << "V= " << surface_mesh.num_vertices() << " E= " << surface_mesh.num_edges() << " F= " << surface_mesh.num_faces() << endl;
         for (auto i = 0; i < q_num; i++) {
             auto p1_pair = generateArbitrarySurfacePoint(surface_mesh);
             auto p2_pair = generateArbitrarySurfacePoint(surface_mesh);

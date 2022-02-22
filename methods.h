@@ -14,7 +14,6 @@ namespace Methods{
 
     using namespace std;
 
-    vector<pair<int, int> > V2V_query;
     vector<pair<Base::Point, Base::Point> > A2A_query;
     vector<pair<int, int> > A2A_fid;
 
@@ -23,8 +22,8 @@ namespace Methods{
         Base::Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-        Base::AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+//        Base::AABB_tree aabb_tree;
+//        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
         vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
 
@@ -110,8 +109,8 @@ namespace Methods{
         Base::Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-        Base::AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+//        Base::AABB_tree aabb_tree;
+//        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
 //    vector<double> face_weight = Base::generateFaceWeight(surface_mesh.num_faces());
 
