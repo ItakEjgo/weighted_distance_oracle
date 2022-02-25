@@ -14,9 +14,8 @@
 namespace Methods{
 
     using namespace std;
+    using namespace Base;
 
-    vector<pair<Base::Point, Base::Point> > A2A_query;
-    vector<pair<int, int> > A2A_fid;
 
     pair<vector<double>, pair<double, double> > SE_A2A(ofstream &fout, string &file_name, double eps, int sp_num, int q_num, int weight_flag){
         srand((int)time(0));
@@ -585,175 +584,177 @@ namespace Methods{
         Base::AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
         vector<double> mesh_boundary = Base::retrieveMeshBoundary(mesh);
-        for (auto &val: mesh_boundary){
-            cout << val << " ";
+        generateQueriesA2A(mesh, mesh_boundary, aabb_tree, 1000, grid_num, 1);
+        for (auto i = 0; i != A2A_query.size(); i++){
+            cout << "i = " << i;
+            cout << A2A_query[i].first << " " << A2A_fid[i].first << " : " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
         }
     }
 
     void run(int argc, char* argv[]){
-        int generate_queries, algo_type, q_num, sp_num, lqt_lev, weight_flag;
-        double eps;
-        string mesh_file, output_file;
-        Base::getOpt2(argc, argv, generate_queries, mesh_file, weight_flag, q_num, eps, sp_num, algo_type, lqt_lev, output_file);
-
-        if (lqt_lev < 0 && algo_type == 4){
-            lqt_lev = findProperQuadLevel(mesh_file, sp_num);
-        }
-
-        if (generate_queries){
-            cout << "Generate A2A queries start..." << endl;
-            A2A_query = Base::generateQueriesA2A(mesh_file, q_num, A2A_fid);
-            ofstream fout("A2A.query");
-            for (auto i = 0; i < A2A_query.size(); i++){
-                fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
-            }
-            cout << q_num << " A2A queries generate finished." << endl;
-            auto face_weight = Base::generateFaceWeight(mesh_file);
-            ofstream fout2("face_weight.query");
-            for (auto i = 0; i < face_weight.size(); i++){
-                fout2 << fixed << setprecision(6) << face_weight[i] << endl;
-            }
-            cout << "face weight generate finished." << endl;
-        }
-        else{
-            string prefix;
-
-            if (weight_flag){
-                switch (algo_type) {
-                    case 0: prefix = "../results/weighted/fixedS/"; break;
-                    case 1: prefix = "../results/weighted/unfixedS/"; break;
-                    case 2: prefix = "../results/weighted/KAlgo/"; break;
-                    case 3: prefix = "../results/weighted/SE/"; break;
-                    case 4: prefix = "../results/weighted/LQT/"; break;
-                    case 5: prefix = "../results/weighted/MMP/"; break;
-                    case 6: prefix = "../results/weighted/greedy/"; break;
-                    default: break;
-                }
-            }
-            else{
-                switch (algo_type) {
-                    case 0: prefix = "../results/unweighted/fixedS/"; break;
-                    case 1: prefix = "../results/unweighted/unfixedS/"; break;
-                    case 2: prefix = "../results/unweighted/KAlgo/"; break;
-                    case 3: prefix = "../results/unweighted/SE/"; break;
-                    case 4: prefix = "../results/unweighted/LQT/"; break;
-                    case 5: prefix = "../results/unweighted/MMP/"; break;
-                    case 6: prefix = "../results/unweighted/greedy/"; break;
-                    default: break;
-                }
-            }
-
-
-            output_file = prefix + output_file;
-            ofstream fout(output_file);
-            fout << "Load A2A queries..." << endl;
-            Base::loadQueriesA2A(A2A_query, A2A_fid);
-            fout << "Load A2A queries finished." << endl;
-
-            vector<double> face_weight = {};
-            fout << "Load face weights..." << endl;
-            Base::loadFaceWeight(face_weight);
-            fout << "Load face weights finished." << endl;
-
-            fout << fixed << setprecision(3) << "eps = " << eps << endl;
-            if (weight_flag){
-                fout << "Terrain type is: Weighted." << endl;
-            }
-            else{
-                fout << "Terrain type is: Unweighted" << endl;
-                for (auto i = 0; i < face_weight.size(); i++){
-                    face_weight[i] = 1.000000;
-                }
-                fout << "Face weight are set to be 1.0" << endl;
-            }
-
-            fout << "Run algorithm " << algo_type;
-            // Algo 0: Bisector Fixed Scheme
-            // Algo 1: Bisector Unfixed Scheme
-            // Algo 2: K-Algo
-            // Algo 3: SE-Oracle
-            // Algo 4: LQT-Oracle
-            // Algo 5: MMP-Algo # approximate construction on unweighted terrain
-            // Algo 6: greedy-Algo # generate spanner by the greedy algorithm
-            if (algo_type == 0){
-                fout << ": Bisector-Fixed-Scheme" << endl;
-                auto res_bisector_fixed_S = bisectorFixedScheme(fout, mesh_file, q_num, sp_num, weight_flag, face_weight);
-                fout << "Query results begin: " << endl;
-                for (auto dis: res_bisector_fixed_S.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Running Time] Bisector-Fixed-Scheme: " << res_bisector_fixed_S.second.second << " ms" << endl;
-            }
-            else if (algo_type == 1){
-                fout << ": Bisector-Unfixed-Scheme" << endl;
-                auto res_bisector_unfixed_S = bisectorUnfixedScheme(fout, mesh_file, eps, q_num, weight_flag, face_weight);
-                fout << "Query results begin: " << endl;
-                for (auto dis: res_bisector_unfixed_S.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Running Time] Bisector-Unfixed-Scheme: " << res_bisector_unfixed_S.second.second << " ms" << endl;
-            }
-            else if (algo_type == 2){
-                fout << ": K-Algo on the fly" << endl;
-                int K = floor(1 / eps + 1);
-                auto res_KAlgo = KAlgo_A2A(fout, mesh_file, q_num, K);
-                fout << "Query results begin: " << endl;
-                for (auto dis: res_KAlgo.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Running Time] K-Algo on the fly: " << res_KAlgo.second.second << " ms" << endl;
-            }
-            else if (algo_type == 3){
-                fout << ": SE-oracle" << endl;
-                auto res_SE = SE_A2A(fout, mesh_file, eps, sp_num, q_num, weight_flag);
-                fout << "Query results begin: " << endl;
-                for (auto dis: res_SE.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Index Time] SE-oracle: " << res_SE.second.first << " ms" << endl;
-                fout << fixed << setprecision(3) << "[Running Time] SE-oracle: " << res_SE.second.second << " ms" << endl;
-            }
-            else if (algo_type == 4){
-                fout << ": LQT-oracle" << endl;
-                auto res_LQT = LQT_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
-                fout << "Query results begin: " << endl;
-                for (auto dis: res_LQT.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Index Time] LQT-oracle: " << res_LQT.second.first << " ms" << endl;
-                fout << fixed << setprecision(3) << "[Running Time] LQT-oracle: " << res_LQT.second.second << " ms" << endl;
-            }
-            else if (algo_type == 5){
-                fout << ": MMP-Algorithm" << endl;
-                auto res_MMP = MMP_A2A(fout, mesh_file, q_num);
-                fout << "Query results begin: " << endl;
-
-                for (auto dis: res_MMP.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Running Time] MMP-Algo: " << res_MMP.second.second << " ms" << endl;
-            }
-            else if (algo_type == 6){
-                fout << ": GreedySpanner Algorithm" << endl;
-                auto res_greedy = New_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
-                fout << "Query results begin: " << endl;
-                for (auto dis: res_greedy.first){
-                    fout << fixed << setprecision(3) << dis << endl;
-                }
-                fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Index Time] Greedy-Spanner: " << res_greedy.second.first << " ms" << endl;
-                fout << fixed << setprecision(3) << "[Running Time] Greedy-Spanner: " << res_greedy.second.second << " ms" << endl;
-            }
-            else{
-                cout << "Algorithm from 0 to 5!" << endl;
-            }
-        }
+//        int generate_queries, algo_type, q_num, sp_num, lqt_lev, weight_flag;
+//        double eps;
+//        string mesh_file, output_file;
+//        Base::getOpt2(argc, argv, generate_queries, mesh_file, weight_flag, q_num, eps, sp_num, algo_type, lqt_lev, output_file);
+//
+//        if (lqt_lev < 0 && algo_type == 4){
+//            lqt_lev = findProperQuadLevel(mesh_file, sp_num);
+//        }
+//
+//        if (generate_queries){
+//            cout << "Generate A2A queries start..." << endl;
+//            A2A_query = Base::generateQueriesA2A(mesh_file, q_num, A2A_fid);
+//            ofstream fout("A2A.query");
+//            for (auto i = 0; i < A2A_query.size(); i++){
+//                fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
+//            }
+//            cout << q_num << " A2A queries generate finished." << endl;
+//            auto face_weight = Base::generateFaceWeight(mesh_file);
+//            ofstream fout2("face_weight.query");
+//            for (auto i = 0; i < face_weight.size(); i++){
+//                fout2 << fixed << setprecision(6) << face_weight[i] << endl;
+//            }
+//            cout << "face weight generate finished." << endl;
+//        }
+//        else{
+//            string prefix;
+//
+//            if (weight_flag){
+//                switch (algo_type) {
+//                    case 0: prefix = "../results/weighted/fixedS/"; break;
+//                    case 1: prefix = "../results/weighted/unfixedS/"; break;
+//                    case 2: prefix = "../results/weighted/KAlgo/"; break;
+//                    case 3: prefix = "../results/weighted/SE/"; break;
+//                    case 4: prefix = "../results/weighted/LQT/"; break;
+//                    case 5: prefix = "../results/weighted/MMP/"; break;
+//                    case 6: prefix = "../results/weighted/greedy/"; break;
+//                    default: break;
+//                }
+//            }
+//            else{
+//                switch (algo_type) {
+//                    case 0: prefix = "../results/unweighted/fixedS/"; break;
+//                    case 1: prefix = "../results/unweighted/unfixedS/"; break;
+//                    case 2: prefix = "../results/unweighted/KAlgo/"; break;
+//                    case 3: prefix = "../results/unweighted/SE/"; break;
+//                    case 4: prefix = "../results/unweighted/LQT/"; break;
+//                    case 5: prefix = "../results/unweighted/MMP/"; break;
+//                    case 6: prefix = "../results/unweighted/greedy/"; break;
+//                    default: break;
+//                }
+//            }
+//
+//
+//            output_file = prefix + output_file;
+//            ofstream fout(output_file);
+//            fout << "Load A2A queries..." << endl;
+//            Base::loadQueriesA2A(A2A_query, A2A_fid);
+//            fout << "Load A2A queries finished." << endl;
+//
+//            vector<double> face_weight = {};
+//            fout << "Load face weights..." << endl;
+//            Base::loadFaceWeight(face_weight);
+//            fout << "Load face weights finished." << endl;
+//
+//            fout << fixed << setprecision(3) << "eps = " << eps << endl;
+//            if (weight_flag){
+//                fout << "Terrain type is: Weighted." << endl;
+//            }
+//            else{
+//                fout << "Terrain type is: Unweighted" << endl;
+//                for (auto i = 0; i < face_weight.size(); i++){
+//                    face_weight[i] = 1.000000;
+//                }
+//                fout << "Face weight are set to be 1.0" << endl;
+//            }
+//
+//            fout << "Run algorithm " << algo_type;
+//            // Algo 0: Bisector Fixed Scheme
+//            // Algo 1: Bisector Unfixed Scheme
+//            // Algo 2: K-Algo
+//            // Algo 3: SE-Oracle
+//            // Algo 4: LQT-Oracle
+//            // Algo 5: MMP-Algo # approximate construction on unweighted terrain
+//            // Algo 6: greedy-Algo # generate spanner by the greedy algorithm
+//            if (algo_type == 0){
+//                fout << ": Bisector-Fixed-Scheme" << endl;
+//                auto res_bisector_fixed_S = bisectorFixedScheme(fout, mesh_file, q_num, sp_num, weight_flag, face_weight);
+//                fout << "Query results begin: " << endl;
+//                for (auto dis: res_bisector_fixed_S.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] Bisector-Fixed-Scheme: " << res_bisector_fixed_S.second.second << " ms" << endl;
+//            }
+//            else if (algo_type == 1){
+//                fout << ": Bisector-Unfixed-Scheme" << endl;
+//                auto res_bisector_unfixed_S = bisectorUnfixedScheme(fout, mesh_file, eps, q_num, weight_flag, face_weight);
+//                fout << "Query results begin: " << endl;
+//                for (auto dis: res_bisector_unfixed_S.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] Bisector-Unfixed-Scheme: " << res_bisector_unfixed_S.second.second << " ms" << endl;
+//            }
+//            else if (algo_type == 2){
+//                fout << ": K-Algo on the fly" << endl;
+//                int K = floor(1 / eps + 1);
+//                auto res_KAlgo = KAlgo_A2A(fout, mesh_file, q_num, K);
+//                fout << "Query results begin: " << endl;
+//                for (auto dis: res_KAlgo.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] K-Algo on the fly: " << res_KAlgo.second.second << " ms" << endl;
+//            }
+//            else if (algo_type == 3){
+//                fout << ": SE-oracle" << endl;
+//                auto res_SE = SE_A2A(fout, mesh_file, eps, sp_num, q_num, weight_flag);
+//                fout << "Query results begin: " << endl;
+//                for (auto dis: res_SE.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Index Time] SE-oracle: " << res_SE.second.first << " ms" << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] SE-oracle: " << res_SE.second.second << " ms" << endl;
+//            }
+//            else if (algo_type == 4){
+//                fout << ": LQT-oracle" << endl;
+//                auto res_LQT = LQT_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
+//                fout << "Query results begin: " << endl;
+//                for (auto dis: res_LQT.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Index Time] LQT-oracle: " << res_LQT.second.first << " ms" << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] LQT-oracle: " << res_LQT.second.second << " ms" << endl;
+//            }
+//            else if (algo_type == 5){
+//                fout << ": MMP-Algorithm" << endl;
+//                auto res_MMP = MMP_A2A(fout, mesh_file, q_num);
+//                fout << "Query results begin: " << endl;
+//
+//                for (auto dis: res_MMP.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] MMP-Algo: " << res_MMP.second.second << " ms" << endl;
+//            }
+//            else if (algo_type == 6){
+//                fout << ": GreedySpanner Algorithm" << endl;
+//                auto res_greedy = New_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
+//                fout << "Query results begin: " << endl;
+//                for (auto dis: res_greedy.first){
+//                    fout << fixed << setprecision(3) << dis << endl;
+//                }
+//                fout << "Query results end..." << endl;
+//                fout << fixed << setprecision(3) << "[Index Time] Greedy-Spanner: " << res_greedy.second.first << " ms" << endl;
+//                fout << fixed << setprecision(3) << "[Running Time] Greedy-Spanner: " << res_greedy.second.second << " ms" << endl;
+//            }
+//            else{
+//                cout << "Algorithm from 0 to 5!" << endl;
+//            }
+//        }
     }
 
 }

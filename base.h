@@ -70,6 +70,9 @@ namespace Base {
     const double PI = acos(-1.0);
     const double unreachable = numeric_limits<double>::max();
 
+    vector<pair<Point, Point> > A2A_query;
+    vector<pair<unsigned, unsigned> > A2A_fid;
+
 
     // memory used in KB.
     size_t physical_memory_used_by_process() {
@@ -210,7 +213,7 @@ namespace Base {
         auto norm1 = CGAL::normal(points_f1[0], points_f1[1], points_f1[2]);
         auto norm2 = CGAL::normal(points_f2[0], points_f2[1], points_f2[2]);
 
-        double theta = Base::PI * CGAL::approximate_angle(norm1, norm2) / 180;
+        double theta = PI * CGAL::approximate_angle(norm1, norm2) / 180;
         auto common_ed = *(mesh.edges().begin() + eid);
         Point vec_source = mesh.points()[mesh.source(mesh.halfedge(common_ed))];
         Point vec_target = mesh.points()[mesh.target(mesh.halfedge(common_ed))];
@@ -288,7 +291,7 @@ namespace Base {
         M[2][1] = v * w * (1 - cos(theta)) + u * sin(theta);
         M[2][2] = w * w + (u * u + v * v) * cos(theta);
         M[2][3] = (c * (u * u + v * v) - w * (a * u + b * v)) * (1 - cos(theta)) + (a * v - b * u) * sin(theta);
-        Base::Aff_transformation_3 trans(
+        Aff_transformation_3 trans(
                 M[0][0], M[0][1], M[0][2], M[0][3],
                 M[1][0], M[1][1], M[1][2], M[1][3],
                 M[2][0], M[2][1], M[2][2], M[2][3]
@@ -327,28 +330,46 @@ namespace Base {
         return face_weight;
     }
 
-    Point generateArbitrarySurfacePoint(Mesh &mesh, Base::AABB_tree &aabb_tree,
+    // return an arbitrary surface point and its face location within a given region.
+    pair<Point, unsigned> generateArbitrarySurfacePoint(Mesh &mesh, AABB_tree &aabb_tree,
                                         const double &x_min, const double &x_max,
                                         const double &y_min, const double &y_max){
-
-        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        unsigned seed = system_clock::now().time_since_epoch().count();
         uniform_real_distribution<double> gen_x(x_min, x_max);
         uniform_real_distribution<double> gen_y(y_min, y_max);
         default_random_engine e(seed);
         Ray_intersection intersection;
         do{
             double x_rand = gen_x(e), y_rand = gen_y(e);
-            Base::Point bot(x_rand, y_rand, 0), top(x_rand, y_rand, 1);
-            Base::Ray ray(bot, top);
+            Point bot(x_rand, y_rand, 0), top(x_rand, y_rand, 1);
+            Ray ray(bot, top);
             intersection = aabb_tree.first_intersection(ray);
         } while(intersection && boost::get<Point>(&(intersection->first)));
 
         const Point* p =  boost::get<Point>(&(intersection->first) );
-        std::cout <<  *p << std::endl;
-        return *p;
+        auto p_location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(*p, aabb_tree, mesh);
+        return make_pair(*p, p_location.first.idx());
     }
 
-    
+    bool generateQueriesA2A(Mesh &mesh, vector<double> &mesh_boundary, AABB_tree &aabb_tree,
+                            const unsigned &q_num, const unsigned &grid_num,
+                            const bool &inner_flag){
+        unsigned seed = system_clock::now().time_since_epoch().count();
+        default_random_engine e(seed);
+        uniform_int_distribution<unsigned> gen_grid_id(0, grid_num);
+        for (auto i = 0; i != q_num; i++){
+            unsigned grid_id1 = gen_grid_id(e);
+            unsigned grid_id2 = grid_id1;
+            do{
+                if (inner_flag) break;
+                grid_id2 = gen_grid_id(e);
+            } while (grid_id1 == grid_id2);
+            auto s = generateArbitrarySurfacePoint(mesh, aabb_tree, mesh_boundary[0], mesh_boundary[1], mesh_boundary[2], mesh_boundary[3]),
+                t = generateArbitrarySurfacePoint(mesh, aabb_tree, mesh_boundary[0], mesh_boundary[1], mesh_boundary[2], mesh_boundary[3]);
+            A2A_query.emplace_back(s.first, t.first);
+            A2A_fid.emplace_back(s.second, t.second);
+        }
+    }
 
 
     pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh) {
@@ -379,7 +400,7 @@ namespace Base {
         cout << "mesh file = " << file_name << endl;
         fin >> surface_mesh;
         cout << "V= " << surface_mesh.num_vertices() << " E= " << surface_mesh.num_edges() << " F= " << surface_mesh.num_faces() << endl;
-        Base::AABB_tree aabb_tree;
+        AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
         double x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
         for (auto vd: surface_mesh.vertices()){
@@ -399,11 +420,6 @@ namespace Base {
             }
         }
         int cnt = 0;
-        for (auto i = 0; i < 100; i++){
-            auto ret = generateArbitrarySurfacePoint(surface_mesh, aabb_tree, x_min, x_max, y_min, y_max);
-            auto location_s = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(ret, aabb_tree, surface_mesh);
-            cout << "generate a point on " << location_s.first << " cnt = " << ++cnt << endl;
-        }
         for (auto i = 0; i < q_num; i++) {
             auto p1_pair = generateArbitrarySurfacePoint(surface_mesh);
             auto p2_pair = generateArbitrarySurfacePoint(surface_mesh);
