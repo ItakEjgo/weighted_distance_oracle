@@ -575,9 +575,19 @@ namespace Methods{
 
     //TODO: Design new experiment running scheme
     void run_new(int argc, char* argv[]){
-        string input = getarg("", "-i", "--input"),
-            output = getarg("", "-o", "--output");
-        
+        string input = getarg("", "--input"),
+            output = getarg("", "--output");
+        int grid_num = getarg(4, "--grid-num");
+
+        Base::Mesh mesh;
+        ifstream fin(input);
+        fin >> mesh;
+        Base::AABB_tree aabb_tree;
+        CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
+        vector<double> mesh_boundary = Base::retrieveMeshBoundary(mesh);
+        for (auto &val: mesh_boundary){
+            cout << val << " ";
+        }
     }
 
     void run(int argc, char* argv[]){

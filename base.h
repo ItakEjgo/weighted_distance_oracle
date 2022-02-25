@@ -119,6 +119,21 @@ namespace Base {
         return ret;
     }
 
+    //get the boundary of the given mesh. The order of the returned values are x_min, x_max, y_min, y_max;
+    vector<double> retrieveMeshBoundary(Mesh &mesh){
+        double x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
+        for (auto vd: mesh.vertices()){
+            double x = mesh.points()[vd].x(),
+                    y = mesh.points()[vd].y();
+            x_min = doubleCmp(x - x_min) < 0 ? x : x_min;
+            x_max = doubleCmp(x - x_max) > 0 ? x : x_max;
+            y_min = doubleCmp(y - y_min) < 0 ? y : y_min;
+            y_max = doubleCmp(y - y_max) > 0 ? y : y_max;
+        }
+        vector<double> ret = {x_min, x_max, y_min, y_max};
+        return ret;
+    }
+
     void getOpt2(int argc, char **argv, int &generate_queries, string &file_name, int &weight, int &q_num,
                  double &eps, int &sp_num, int &algo_type, int &lqt_lev, string &output_file) {
 //        struct option long_options[] = {
@@ -332,6 +347,8 @@ namespace Base {
         std::cout <<  *p << std::endl;
         return *p;
     }
+
+    
 
 
     pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh) {
