@@ -3,6 +3,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    Methods::run(argc, argv);
+//    Methods::run(argc, argv);
+    Methods::run_new(argc, argv);
     return 0;
 }

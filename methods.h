@@ -9,6 +9,7 @@
 #include "weighted_distance_oracle.h"
 #include "greedySpanner.h"
 #include "quad.h"
+#include "getopt.hpp"
 
 namespace Methods{
 
@@ -570,6 +571,13 @@ namespace Methods{
         if (num_leaf_nodes >= floor(0.3 * surface_mesh.num_vertices())) level--;
         cout << "proper level = " << level << endl;
         return level;
+    }
+
+    //TODO: Design new experiment running scheme
+    void run_new(int argc, char* argv[]){
+        string input = getarg("", "-i", "--input"),
+            output = getarg("", "-o", "--output");
+        
     }
 
     void run(int argc, char* argv[]){

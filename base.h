@@ -8,7 +8,7 @@
 //#define PrintDetails
 
 #include <bits/stdc++.h>
-#include "getopt.h"
+//#include "getopt.h"
 #include "chrono"
 #include "assert.h"
 #include <random>
@@ -46,6 +46,7 @@ namespace Base {
     using Triangle = Kernel::Triangle_3;
     using Plane = Kernel::Plane_3;
     using Ray = Kernel::Ray_3;
+
     using Line = Kernel::Line_3;
     using Segment = Kernel::Segment_3;
     using Mesh = CGAL::Surface_mesh<Point>;
@@ -61,6 +62,9 @@ namespace Base {
     using AABB_face_graph_primitive = CGAL::AABB_face_graph_triangle_primitive<Mesh>;
     using AABB_face_graph_traits = CGAL::AABB_traits<Kernel, AABB_face_graph_primitive>;
     using AABB_tree = CGAL::AABB_tree<AABB_face_graph_traits>;
+
+    typedef boost::optional<AABB_tree::Intersection_and_primitive_id<Ray>::Type> Ray_intersection;
+
 
     const double eps = 1e-7;
     const double PI = acos(-1.0);
@@ -97,72 +101,77 @@ namespace Base {
         return x < 0 ? -1 : 1;
     }
 
-    // Generate a random value in [l, r] uniformly.
-    double uniformRandomValue(const double &l, const double &r){
-        uniform_real_distribution<double> gen(l, r);
-        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-        default_random_engine e(seed);
-        return gen(e);
-    }
-
     // Return the point rotate around a vector with given angle.
     Point pointRotationAroundVector(Point p, Point vec_source, Point vec_target, double theta);
 
     double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
 
+    //get the boundary of a given grid. The order of the returned values are x_min, x_max, y_min, y_max;
+    vector<double> fastRetrieveGridBoundary(int grid_id, double &mesh_xmin, double &mesh_xmax, double &mesh_ymin, double &mesh_ymax){
+        vector<double> ret = {};
+        int side_len = floor(sqrt(grid_id) + eps);
+        double delta_x = (mesh_xmax - mesh_xmin) / side_len,
+            delta_y = (mesh_ymax - mesh_ymin) / side_len;
+        ret.emplace_back(mesh_xmin + (grid_id % 4) * delta_x);
+        ret.emplace_back(mesh_xmin + (grid_id % 4 + 1) * delta_x);
+        ret.emplace_back(mesh_ymin + floor(grid_id / 4 + eps) * delta_y);
+        ret.emplace_back(mesh_ymin + floor(grid_id / 4 + 1 + eps) * delta_y);
+        return ret;
+    }
+
     void getOpt2(int argc, char **argv, int &generate_queries, string &file_name, int &weight, int &q_num,
                  double &eps, int &sp_num, int &algo_type, int &lqt_lev, string &output_file) {
-        struct option long_options[] = {
-                {"generate",  required_argument, 0, 'g'},
-                {"mesh",      required_argument, 0, 'm'},
-                {"weight", required_argument, 0, 'w'},
-                {"query_num", required_argument, 0, 'q'},
-                {"algo",      required_argument, 0, 'a'},
-                {"eps",       required_argument, 0, 'e'},
-                {"sp_num",    required_argument, 0, 's'},
-                {"lqt_lev",   required_argument, 0, 'l'},
-                {"output",    required_argument, 0, 'o'},
-                {0, 0,                           0, 0}
-        };
-        int opt;
-        const char *opt_string = "g:m:w:q:a:e:s:l:o:";
-        int option_index = 0;
-        generate_queries = 0;
-        lqt_lev = 0;
-        while ((opt = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1) {
-            char ch = (char) opt;
-            switch (ch) {
-                case 'g':
-                    generate_queries = atoi(optarg);
-                    break;
-                case 'm':
-                    file_name = optarg;
-                    break;
-                case 'w':
-                    weight = atoi(optarg);
-                    break;
-                case 'q':
-                    q_num = atoi(optarg);
-                    break;
-                case 'a':
-                    algo_type = atoi(optarg);
-                    break;
-                case 'e':
-                    eps = atof(optarg);
-                    break;
-                case 's':
-                    sp_num = atoi(optarg);
-                    break;
-                case 'l':
-                    lqt_lev = atoi(optarg);
-                    break;
-                case 'o':
-                    output_file = optarg;
-                    break;
-                default:
-                    break;
-            }
-        }
+//        struct option long_options[] = {
+//                {"generate",  required_argument, 0, 'g'},
+//                {"mesh",      required_argument, 0, 'm'},
+//                {"weight", required_argument, 0, 'w'},
+//                {"query_num", required_argument, 0, 'q'},
+//                {"algo",      required_argument, 0, 'a'},
+//                {"eps",       required_argument, 0, 'e'},
+//                {"sp_num",    required_argument, 0, 's'},
+//                {"lqt_lev",   required_argument, 0, 'l'},
+//                {"output",    required_argument, 0, 'o'},
+//                {0, 0,                           0, 0}
+//        };
+//        int opt;
+//        const char *opt_string = "g:m:w:q:a:e:s:l:o:";
+//        int option_index = 0;
+//        generate_queries = 0;
+//        lqt_lev = 0;
+//        while ((opt = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1) {
+//            char ch = (char) opt;
+//            switch (ch) {
+//                case 'g':
+//                    generate_queries = atoi(optarg);
+//                    break;
+//                case 'm':
+//                    file_name = optarg;
+//                    break;
+//                case 'w':
+//                    weight = atoi(optarg);
+//                    break;
+//                case 'q':
+//                    q_num = atoi(optarg);
+//                    break;
+//                case 'a':
+//                    algo_type = atoi(optarg);
+//                    break;
+//                case 'e':
+//                    eps = atof(optarg);
+//                    break;
+//                case 's':
+//                    sp_num = atoi(optarg);
+//                    break;
+//                case 'l':
+//                    lqt_lev = atoi(optarg);
+//                    break;
+//                case 'o':
+//                    output_file = optarg;
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
     }
 
     double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid) {
@@ -303,12 +312,25 @@ namespace Base {
         return face_weight;
     }
 
-    pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh, const double &x_min,
-                                                   const double &x_max, const double &y_min,
-                                                   const double &y_max){
-        Base::AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
+    Point generateArbitrarySurfacePoint(Mesh &mesh, Base::AABB_tree &aabb_tree,
+                                        const double &x_min, const double &x_max,
+                                        const double &y_min, const double &y_max){
 
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        uniform_real_distribution<double> gen_x(x_min, x_max);
+        uniform_real_distribution<double> gen_y(y_min, y_max);
+        default_random_engine e(seed);
+        Ray_intersection intersection;
+        do{
+            double x_rand = gen_x(e), y_rand = gen_y(e);
+            Base::Point bot(x_rand, y_rand, 0), top(x_rand, y_rand, 1);
+            Base::Ray ray(bot, top);
+            intersection = aabb_tree.first_intersection(ray);
+        } while(intersection && boost::get<Point>(&(intersection->first)));
+
+        const Point* p =  boost::get<Point>(&(intersection->first) );
+        std::cout <<  *p << std::endl;
+        return *p;
     }
 
 
@@ -340,6 +362,31 @@ namespace Base {
         cout << "mesh file = " << file_name << endl;
         fin >> surface_mesh;
         cout << "V= " << surface_mesh.num_vertices() << " E= " << surface_mesh.num_edges() << " F= " << surface_mesh.num_faces() << endl;
+        Base::AABB_tree aabb_tree;
+        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
+        double x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
+        for (auto vd: surface_mesh.vertices()){
+            double x = surface_mesh.points()[vd].x(),
+                y = surface_mesh.points()[vd].y();
+            if (doubleCmp(x - x_min) < 0){
+                x_min = x;
+            }
+            if (doubleCmp(x - x_max) > 0){
+                x_max = x;
+            }
+            if (doubleCmp(y - y_min) < 0){
+                y_min = y;
+            }
+            if (doubleCmp(y - y_max) > 0){
+                y_max = y;
+            }
+        }
+        int cnt = 0;
+        for (auto i = 0; i < 100; i++){
+            auto ret = generateArbitrarySurfacePoint(surface_mesh, aabb_tree, x_min, x_max, y_min, y_max);
+            auto location_s = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(ret, aabb_tree, surface_mesh);
+            cout << "generate a point on " << location_s.first << " cnt = " << ++cnt << endl;
+        }
         for (auto i = 0; i < q_num; i++) {
             auto p1_pair = generateArbitrarySurfacePoint(surface_mesh);
             auto p2_pair = generateArbitrarySurfacePoint(surface_mesh);
