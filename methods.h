@@ -589,7 +589,7 @@ namespace Methods{
 
         if (generate_flag){
             bool weighted_flag = getarg(0, "--weighted");
-
+            
             generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
             generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
             ofstream fout("A2A.query");
@@ -598,7 +598,7 @@ namespace Methods{
             }
             cout << q_num << " A2A queries generate finished." << endl;
 
-            vector<double> face_weight(1.0, mesh.num_faces());
+            vector<double> face_weight(mesh.num_faces(), 1.0);
             if (weighted_flag) face_weight = generateFaceWeight(mesh.num_faces());
             ofstream fout2("face_weight.query");
             for (auto i = 0; i < face_weight.size(); i++){
