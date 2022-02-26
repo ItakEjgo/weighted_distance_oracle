@@ -19,20 +19,20 @@ namespace Methods{
 
     pair<vector<double>, pair<double, double> > SE_A2A(ofstream &fout, string &file_name, double eps, int sp_num, int q_num, int weight_flag){
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-//        Base::AABB_tree aabb_tree;
+//        AABB_tree aabb_tree;
 //        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
         vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
 
         map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
         map<int, int> point_face_map;
-        map<int, Base::Point> point_location_map;
+        map<int, Point> point_location_map;
 
         auto index_start = chrono::_V2::system_clock::now();
-        auto memory_begin = Base::physical_memory_used_by_process();
+        auto memory_begin = physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
 //    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
@@ -66,7 +66,7 @@ namespace Methods{
         auto index_end = chrono::_V2::system_clock::now();
         auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
         double index_time = index_duration.count();
-        auto memory_end = Base::physical_memory_used_by_process();
+        auto memory_end = physical_memory_used_by_process();
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
         vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
@@ -76,7 +76,7 @@ namespace Methods{
             new_id[i] = i;
         }
 
-        Base::Surface_mesh_shortest_path shortest_paths(surface_mesh);
+        Surface_mesh_shortest_path shortest_paths(surface_mesh);
         vector<double> V2V_results = {};
         double query_time = 0.0;
 
@@ -106,20 +106,20 @@ namespace Methods{
 
     pair<vector<double>, pair<double, double> > LQT_A2A(ofstream &fout, string &file_name, double eps, int point_num, int level, int q_num, int weight_flag, vector<double> &face_weight) {
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-//        Base::AABB_tree aabb_tree;
+//        AABB_tree aabb_tree;
 //        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-//    vector<double> face_weight = Base::generateFaceWeight(surface_mesh.num_faces());
+//    vector<double> face_weight = generateFaceWeight(surface_mesh.num_faces());
 
         map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
         map<int, int> point_face_map;
-        map<int, Base::Point> point_location_map;
+        map<int, Point> point_location_map;
 
         auto index_start = chrono::_V2::system_clock::now();
-        auto memory_begin = Base::physical_memory_used_by_process();
+        auto memory_begin = physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
 //    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
@@ -174,7 +174,7 @@ namespace Methods{
         auto index_end = chrono::_V2::system_clock::now();
         auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
         double index_time = index_duration.count();
-        auto memory_end = Base::physical_memory_used_by_process();
+        auto memory_end = physical_memory_used_by_process();
 
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
@@ -218,16 +218,16 @@ namespace Methods{
 
     pair<vector<double>, pair<double, double> > New_A2A(ofstream &fout, string &file_name, double eps, int point_num, int level, int q_num, int weight_flag, vector<double> &face_weight) {
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
 
         map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
         map<int, int> point_face_map;
-        map<int, Base::Point> point_location_map;
+        map<int, Point> point_location_map;
 
         auto index_start = chrono::_V2::system_clock::now();
-        auto memory_begin = Base::physical_memory_used_by_process();
+        auto memory_begin = physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
 //    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
@@ -280,7 +280,7 @@ namespace Methods{
         auto index_end = chrono::_V2::system_clock::now();
         auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
         double index_time = index_duration.count();
-        auto memory_end = Base::physical_memory_used_by_process();
+        auto memory_end = physical_memory_used_by_process();
 
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
@@ -323,13 +323,13 @@ namespace Methods{
 
     pair<vector<double>, pair<double, double> > MMP_A2A(ofstream &fout, string &mesh_file, int q_num){
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(mesh_file);
         fin >> surface_mesh;
-        Base::AABB_tree aabb_tree;
+        AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-        Base::Surface_mesh_shortest_path shortest_paths(surface_mesh);
+        Surface_mesh_shortest_path shortest_paths(surface_mesh);
         vector<double> A2A_result = {};
         double query_time = 0.0;
 
@@ -365,17 +365,17 @@ namespace Methods{
     pair<vector<double>, pair<double, double> > bisectorFixedScheme(ofstream &fout, string &file_name, int q_num, int point_num, int weight_flag, vector<double> &face_weight){
 
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-        Base::AABB_tree aabb_tree;
+        AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-//    vector<double> face_weight = Base::generateFaceWeight(surface_mesh.num_faces());
+//    vector<double> face_weight = generateFaceWeight(surface_mesh.num_faces());
 
         map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
         map<int, int> point_face_map;
-        map<int, Base::Point> point_location_map;
+        map<int, Point> point_location_map;
 
         auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
                                                                                 bisector_point_map, point_face_map,
@@ -414,17 +414,17 @@ namespace Methods{
     pair<vector<double>, pair<double, double> > bisectorUnfixedScheme(ofstream &fout, string &file_name, double eps, int q_num, int weight_flag, vector<double> &face_weight){
 
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
-        Base::AABB_tree aabb_tree;
+        AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-//    vector<double> face_weight = Base::generateFaceWeight(surface_mesh.num_vertices());
+//    vector<double> face_weight = generateFaceWeight(surface_mesh.num_vertices());
 
         map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
         map<int, int> point_face_map;
-        map<int, Base::Point> point_location_map;
+        map<int, Point> point_location_map;
 
         vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
         auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map,
@@ -465,7 +465,7 @@ namespace Methods{
     pair<vector<double>, pair<double, double> > KAlgo_A2A(ofstream &fout, string &file_name, int q_num, int K){
 
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
 
@@ -478,11 +478,11 @@ namespace Methods{
                 auto p0 = surface_mesh.points()[surface_mesh.source(hed)],
                         p1 = surface_mesh.points()[surface_mesh.target(hed)];
                 double e_len = sqrt(CGAL::squared_distance(p0, p1));
-                if (Base::doubleCmp(e_len - l_min) < 0){
+                if (doubleCmp(e_len - l_min) < 0){
                     l_min = e_len;
                 }
             }
-            if (fd != Base::Mesh::null_face()) {
+            if (fd != Mesh::null_face()) {
                 vector<int> vids = {};
                 auto hed = surface_mesh.halfedge(fd);
                 for (int i = 0; i != 3; i++) {
@@ -496,7 +496,7 @@ namespace Methods{
                             t_w = CGAL::SM_Vertex_index(vids[(i + 2) % 3]);
                     double angle = CGAL::approximate_angle(surface_mesh.points()[t_u], surface_mesh.points()[t_v], surface_mesh.points()[t_w]);
 //                cout << "angle = " << angle << endl;
-                    if (Base::doubleCmp(theta_m) < 0 || Base::doubleCmp(angle - theta_m) < 0) {
+                    if (doubleCmp(theta_m) < 0 || doubleCmp(angle - theta_m) < 0) {
                         theta_m = angle;
                     }
                 }
@@ -535,7 +535,7 @@ namespace Methods{
     int findProperQuadLevel(string &file_name, int point_num){
 
         srand((int)time(0));
-        Base::Mesh surface_mesh;
+        Mesh surface_mesh;
         ifstream fin(file_name);
         fin >> surface_mesh;
         vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
@@ -547,7 +547,7 @@ namespace Methods{
 
             map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
             map<int, int> point_face_map;
-            map<int, Base::Point> point_location_map;
+            map<int, Point> point_location_map;
 
             auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
                                                                                     bisector_point_map, point_face_map,
@@ -574,21 +574,37 @@ namespace Methods{
 
     //TODO: Design new experiment running scheme
     void run_new(int argc, char* argv[]){
+        bool generate_flag = getarg(0, "--generate");
         string input = getarg("", "--input"),
             output = getarg("", "--output");
-        int grid_num = getarg(4, "--grid-num");
+        unsigned grid_num = getarg(4, "--grid-num");
+        unsigned q_num = getarg(1000, "--query-num");
 
-        Base::Mesh mesh;
+        Mesh mesh;
         ifstream fin(input);
         fin >> mesh;
-        Base::AABB_tree aabb_tree;
+        AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
-        vector<double> mesh_boundary = Base::retrieveMeshBoundary(mesh);
-        generateQueriesA2A(mesh, mesh_boundary, aabb_tree, 1000, grid_num, 1);
-        generateQueriesA2A(mesh, mesh_boundary, aabb_tree, 1000, grid_num, 0);
-        for (auto i = 0; i != A2A_query.size(); i++){
-            cout << "i = " << i << " ";
-            cout << A2A_query[i].first << " " << A2A_fid[i].first << " : " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
+        vector<double> mesh_boundary = retrieveMeshBoundary(mesh);
+
+        if (generate_flag){
+            bool weighted_flag = getarg(0, "--weighted");
+
+            generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
+            generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
+            ofstream fout("A2A.query");
+            for (auto i = 0; i < A2A_query.size(); i++){
+                fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
+            }
+            cout << q_num << " A2A queries generate finished." << endl;
+
+            vector<double> face_weight(1.0, mesh.num_faces());
+            if (weighted_flag) face_weight = generateFaceWeight(mesh.num_faces());
+            ofstream fout2("face_weight.query");
+            for (auto i = 0; i < face_weight.size(); i++){
+                fout2 << fixed << setprecision(6) << face_weight[i] << endl;
+            }
+            cout << "face weight generate finished." << endl;
         }
     }
 
@@ -596,7 +612,7 @@ namespace Methods{
 //        int generate_queries, algo_type, q_num, sp_num, lqt_lev, weight_flag;
 //        double eps;
 //        string mesh_file, output_file;
-//        Base::getOpt2(argc, argv, generate_queries, mesh_file, weight_flag, q_num, eps, sp_num, algo_type, lqt_lev, output_file);
+//        getOpt2(argc, argv, generate_queries, mesh_file, weight_flag, q_num, eps, sp_num, algo_type, lqt_lev, output_file);
 //
 //        if (lqt_lev < 0 && algo_type == 4){
 //            lqt_lev = findProperQuadLevel(mesh_file, sp_num);
@@ -604,13 +620,13 @@ namespace Methods{
 //
 //        if (generate_queries){
 //            cout << "Generate A2A queries start..." << endl;
-//            A2A_query = Base::generateQueriesA2A(mesh_file, q_num, A2A_fid);
+//            A2A_query = generateQueriesA2A(mesh_file, q_num, A2A_fid);
 //            ofstream fout("A2A.query");
 //            for (auto i = 0; i < A2A_query.size(); i++){
 //                fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
 //            }
 //            cout << q_num << " A2A queries generate finished." << endl;
-//            auto face_weight = Base::generateFaceWeight(mesh_file);
+//            auto face_weight = generateFaceWeight(mesh_file);
 //            ofstream fout2("face_weight.query");
 //            for (auto i = 0; i < face_weight.size(); i++){
 //                fout2 << fixed << setprecision(6) << face_weight[i] << endl;
@@ -649,12 +665,12 @@ namespace Methods{
 //            output_file = prefix + output_file;
 //            ofstream fout(output_file);
 //            fout << "Load A2A queries..." << endl;
-//            Base::loadQueriesA2A(A2A_query, A2A_fid);
+//            loadQueriesA2A(A2A_query, A2A_fid);
 //            fout << "Load A2A queries finished." << endl;
 //
 //            vector<double> face_weight = {};
 //            fout << "Load face weights..." << endl;
-//            Base::loadFaceWeight(face_weight);
+//            loadFaceWeight(face_weight);
 //            fout << "Load face weights finished." << endl;
 //
 //            fout << fixed << setprecision(3) << "eps = " << eps << endl;

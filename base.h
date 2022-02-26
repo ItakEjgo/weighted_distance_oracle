@@ -317,6 +317,16 @@ namespace Base {
         }
     }
 
+    // generate face weights for each face.
+    vector<double> generateFaceWeight(const int &num_faces){
+        uniform_real_distribution<double> gen(1.000001, 5);
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        default_random_engine e(seed);
+        vector<double> ret = {};
+        for (auto i = 0; i != num_faces; i++) ret.emplace_back(gen(e));
+        return ret;
+    }
+
     vector<double> generateFaceWeight(string &file_name) {
         Mesh surface_mesh;
         ifstream fin(file_name);
