@@ -589,7 +589,7 @@ namespace Methods{
 
         if (generate_flag){
             bool weighted_flag = getarg(0, "--weighted");
-            
+
             generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
             generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
             ofstream fout("A2A.query");
@@ -605,6 +605,9 @@ namespace Methods{
                 fout2 << fixed << setprecision(6) << face_weight[i] << endl;
             }
             cout << "face weight generate finished." << endl;
+        }
+        else{
+            //TODO: Optimize the method function calls and code quality: Fixed-S, Unfixed-S, K-Algo, SE, LQT, MMP
         }
     }
 
