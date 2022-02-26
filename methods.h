@@ -585,8 +585,9 @@ namespace Methods{
         CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
         vector<double> mesh_boundary = Base::retrieveMeshBoundary(mesh);
         generateQueriesA2A(mesh, mesh_boundary, aabb_tree, 1000, grid_num, 1);
+        generateQueriesA2A(mesh, mesh_boundary, aabb_tree, 1000, grid_num, 0);
         for (auto i = 0; i != A2A_query.size(); i++){
-            cout << "i = " << i;
+            cout << "i = " << i << " ";
             cout << A2A_query[i].first << " " << A2A_fid[i].first << " : " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
         }
     }

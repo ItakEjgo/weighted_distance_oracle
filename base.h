@@ -1,10 +1,9 @@
 //
 // Created by huang on 2021/7/6.
 //
-
+//#pragma once
 #ifndef CODE_BASE_H
 #define CODE_BASE_H
-
 //#define PrintDetails
 
 #include <bits/stdc++.h>
@@ -25,6 +24,8 @@
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Polygon_mesh_processing/orientation.h>
+
 
 
 //boost headers
@@ -110,20 +111,21 @@ namespace Base {
     double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
 
     //get the boundary of a given grid. The order of the returned values are x_min, x_max, y_min, y_max;
-    vector<double> fastRetrieveGridBoundary(int grid_id, double &mesh_xmin, double &mesh_xmax, double &mesh_ymin, double &mesh_ymax){
+    vector<double> fastRetrieveGridBoundary(const int &grid_id, const int &grid_num, const double &mesh_xmin, const double &mesh_xmax,
+                                            const double &mesh_ymin, const double &mesh_ymax){
         vector<double> ret = {};
-        int side_len = floor(sqrt(grid_id) + eps);
+        int side_len = floor(sqrt(grid_num) + eps);
         double delta_x = (mesh_xmax - mesh_xmin) / side_len,
             delta_y = (mesh_ymax - mesh_ymin) / side_len;
-        ret.emplace_back(mesh_xmin + (grid_id % 4) * delta_x);
-        ret.emplace_back(mesh_xmin + (grid_id % 4 + 1) * delta_x);
-        ret.emplace_back(mesh_ymin + floor(grid_id / 4 + eps) * delta_y);
-        ret.emplace_back(mesh_ymin + floor(grid_id / 4 + 1 + eps) * delta_y);
+        ret.emplace_back(mesh_xmin + (grid_id % side_len) * delta_x);
+        ret.emplace_back(mesh_xmin + (grid_id % side_len + 1) * delta_x);
+        ret.emplace_back(mesh_ymin + floor(grid_id / side_len + eps) * delta_y);
+        ret.emplace_back(mesh_ymin + floor(grid_id / side_len + 1 + eps) * delta_y);
         return ret;
     }
 
     //get the boundary of the given mesh. The order of the returned values are x_min, x_max, y_min, y_max;
-    vector<double> retrieveMeshBoundary(Mesh &mesh){
+    vector<double> retrieveMeshBoundary(const Mesh &mesh){
         double x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
         for (auto vd: mesh.vertices()){
             double x = mesh.points()[vd].x(),
@@ -331,32 +333,50 @@ namespace Base {
     }
 
     // return an arbitrary surface point and its face location within a given region.
-    pair<Point, unsigned> generateArbitrarySurfacePoint(Mesh &mesh, AABB_tree &aabb_tree,
+    pair<Point, unsigned> generateArbitrarySurfacePoint(const Mesh &mesh, const AABB_tree &aabb_tree,
                                         const double &x_min, const double &x_max,
                                         const double &y_min, const double &y_max){
         unsigned seed = system_clock::now().time_since_epoch().count();
         uniform_real_distribution<double> gen_x(x_min, x_max);
         uniform_real_distribution<double> gen_y(y_min, y_max);
         default_random_engine e(seed);
-        Ray_intersection intersection;
-        do{
-            double x_rand = gen_x(e), y_rand = gen_y(e);
-            Point bot(x_rand, y_rand, 0), top(x_rand, y_rand, 1);
-            Ray ray(bot, top);
-            intersection = aabb_tree.first_intersection(ray);
-        } while(intersection && boost::get<Point>(&(intersection->first)));
 
-        const Point* p =  boost::get<Point>(&(intersection->first) );
-        auto p_location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(*p, aabb_tree, mesh);
-        return make_pair(*p, p_location.first.idx());
+        Point pp;
+        while(1){
+            double x_rand = gen_x(e), y_rand = gen_y(e);
+            Point bot(x_rand, y_rand, 0), top(x_rand, y_rand, 1), top2(x_rand, y_rand, -1);
+            Ray ray(bot, top);
+            Ray_intersection intersection = aabb_tree.first_intersection(ray);
+            if (intersection){
+                if (boost::get<Point>(&(intersection->first))){
+                    const Point* p = boost::get<Point>(&(intersection->first));
+                    pp = *p;
+                    break;
+                }
+            }
+            else{
+                Ray ray2(bot, top2);
+                intersection = aabb_tree.first_intersection(ray2);
+                if (intersection){
+                    if (boost::get<Point>(&(intersection->first))){
+                        const Point* p = boost::get<Point>(&(intersection->first));
+                        pp = *p;
+                        break;
+                    }
+                }
+            }
+        }
+        auto p_location = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(pp, aabb_tree, mesh);
+        return make_pair(pp, p_location.first.idx());
     }
 
-    bool generateQueriesA2A(Mesh &mesh, vector<double> &mesh_boundary, AABB_tree &aabb_tree,
+    // generate A2A queries, if inner_flag is set, the queries will be inner-box queries.
+    bool generateQueriesA2A(const Mesh &mesh, const vector<double> &mesh_boundary, const AABB_tree &aabb_tree,
                             const unsigned &q_num, const unsigned &grid_num,
                             const bool &inner_flag){
         unsigned seed = system_clock::now().time_since_epoch().count();
         default_random_engine e(seed);
-        uniform_int_distribution<unsigned> gen_grid_id(0, grid_num);
+        uniform_int_distribution<unsigned> gen_grid_id(0, grid_num - 1);
         for (auto i = 0; i != q_num; i++){
             unsigned grid_id1 = gen_grid_id(e);
             unsigned grid_id2 = grid_id1;
@@ -364,8 +384,12 @@ namespace Base {
                 if (inner_flag) break;
                 grid_id2 = gen_grid_id(e);
             } while (grid_id1 == grid_id2);
-            auto s = generateArbitrarySurfacePoint(mesh, aabb_tree, mesh_boundary[0], mesh_boundary[1], mesh_boundary[2], mesh_boundary[3]),
-                t = generateArbitrarySurfacePoint(mesh, aabb_tree, mesh_boundary[0], mesh_boundary[1], mesh_boundary[2], mesh_boundary[3]);
+
+            vector<double> grid1_boundary = fastRetrieveGridBoundary(grid_id1, grid_num, mesh_boundary[0], mesh_boundary[1], mesh_boundary[2], mesh_boundary[3]);
+            vector<double> grid2_boundary = fastRetrieveGridBoundary(grid_id2, grid_num, mesh_boundary[0], mesh_boundary[1], mesh_boundary[2], mesh_boundary[3]);
+
+            auto s = generateArbitrarySurfacePoint(mesh, aabb_tree, grid1_boundary[0], grid1_boundary[1], grid1_boundary[2], grid1_boundary[3]),
+                t = generateArbitrarySurfacePoint(mesh, aabb_tree, grid2_boundary[0], grid2_boundary[1], grid2_boundary[2], grid2_boundary[3]);
             A2A_query.emplace_back(s.first, t.first);
             A2A_fid.emplace_back(s.second, t.second);
         }
@@ -451,6 +475,5 @@ namespace Base {
     }
 
 }
-
 
 #endif //CODE_BASE_H
