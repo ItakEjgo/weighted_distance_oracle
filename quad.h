@@ -60,8 +60,8 @@ namespace Quad{
     public:
         double x_min, y_min, x_max, y_max;
         int node_id;
-        set<int> boundary_points_id;
-        set<int> covered_faces_id;
+        set<unsigned> boundary_points_id;
+        set<unsigned> covered_faces_id;
         treeNode* parent;
         vector<treeNode*> sons; // 0/1/2/3 -- NE/NW/SW/SE
         treeNode();
@@ -92,26 +92,26 @@ namespace Quad{
 
     class quadTree{
     public:
-        quadTree(Base::Mesh &m, map<int, vector<int> > &face_point_map);
+        quadTree(const Base::Mesh &mesh, map<unsigned, vector<unsigned> > &face_point_map);
         int level;
         treeNode* root;
         int node_count;
         vector<vector<treeNode* > > level_nodes; // level 0 is the root
 
-        void buildLevel(Base::Mesh &m, map<int, vector<int> > &face_point_map);
+        void buildLevel(const Base::Mesh &mesh, map<unsigned, vector<unsigned> > &face_point_map);
 
     };
 
-    set<int> extractIntersectFaces(Base::Mesh &m, treeNode* tree_node, treeNode* fa_node = nullptr){
-        set<int> intersect_face_id = {};
+    set<unsigned> extractIntersectFaces(const Base::Mesh &mesh, treeNode* tree_node, treeNode* fa_node = nullptr){
+        set<unsigned> intersect_face_id = {};
         double x_min = tree_node->x_min, x_max = tree_node->x_max, y_min = tree_node->y_min, y_max = tree_node->y_max;
         if (fa_node == nullptr){
-            for (auto &f: m.faces()){
+            for (auto &f: mesh.faces()){
                 bool in_flag = false;
                 vector<my_point> p;
-                for (auto v: m.vertices_around_face(m.halfedge(f))){
-                    double x = m.points()[v].x();
-                    double y = m.points()[v].y();
+                for (auto v: mesh.vertices_around_face(mesh.halfedge(f))){
+                    double x = mesh.points()[v].x();
+                    double y = mesh.points()[v].y();
                     p.emplace_back(x, y);
                 }
                 if (triangle_segment_intersection(p[0], p[1], p[2], my_point(x_min, y_min), my_point(x_max, y_min)) ||
@@ -138,12 +138,12 @@ namespace Quad{
         }
         else{
             for (auto &fid: fa_node->covered_faces_id){
-                auto f = *(m.faces_begin() + fid);
+                auto f = *(mesh.faces_begin() + fid);
                 bool in_flag = false;
                 vector<my_point> p;
-                for (auto v: m.vertices_around_face(m.halfedge(f))){
-                    double x = m.points()[v].x();
-                    double y = m.points()[v].y();
+                for (auto v: mesh.vertices_around_face(mesh.halfedge(f))){
+                    double x = mesh.points()[v].x();
+                    double y = mesh.points()[v].y();
                     p.emplace_back(x, y);
                 }
                 if (triangle_segment_intersection(p[0], p[1], p[2], my_point(x_min, y_min), my_point(x_max, y_min)) ||
@@ -168,28 +168,26 @@ namespace Quad{
                 }
             }
         }
-
-
         return intersect_face_id;
     }
 
-    quadTree::quadTree(Base::Mesh &m, map<int, vector<int> > &face_point_map) {
+    quadTree::quadTree(const Base::Mesh &mesh, map<unsigned, vector<unsigned> > &face_point_map) {
         level = 0;
         root = new treeNode();
         node_count = 0;
         root->node_id = node_count++;
-        for (auto &v: m.vertices()){
-//            cout << m.points()[v].x() << " " << m.points()[v].y() << " " << m.points()[v].z() << endl;
-            double x = m.points()[v].x(), y = m.points()[v].y();
+        for (auto &v: mesh.vertices()){
+//            cout << mesh.points()[v].x() << " " << mesh.points()[v].y() << " " << mesh.points()[v].z() << endl;
+            double x = mesh.points()[v].x(), y = mesh.points()[v].y();
             if (Base::doubleCmp(x - root->x_min) < 0) root->x_min = x;
             if (Base::doubleCmp(x - root->x_max) > 0) root->x_max = x;
             if (Base::doubleCmp(y - root->y_min) < 0) root->y_min = y;
             if (Base::doubleCmp(y - root->y_max) > 0) root->y_max = y;
         }
-        set<int> intersect_faces = extractIntersectFaces(m, root);
+        set<unsigned> intersect_faces = extractIntersectFaces(mesh, root);
         for (auto fid: intersect_faces){
-            auto fd = *(m.faces_begin() + fid);
-            for (auto vd: m.vertices_around_face(m.halfedge(fd))){
+            auto fd = *(mesh.faces_begin() + fid);
+            for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
 //                cout << "vid = " << vd.idx() << endl;
                 root->boundary_points_id.insert(vd.idx());
             }
@@ -211,7 +209,7 @@ namespace Quad{
         level_nodes.push_back(cur_level_nodes);
     }
 
-    void quadTree::buildLevel(Base::Mesh &m, map<int, vector<int> > &face_point_map) {
+    void quadTree::buildLevel(const Base::Mesh &mesh, map<unsigned, vector<unsigned> > &face_point_map) {
         vector<treeNode*> last_level_nodes = level_nodes[level];
         vector<treeNode*> cur_level_nodes;
         level++;
@@ -243,34 +241,34 @@ namespace Quad{
             SE_son->x_max = node->x_max;
             SE_son->y_max = pivot_y;
 
-            set<int> faces = extractIntersectFaces(m, NW_son, node);
+            set<unsigned> faces = extractIntersectFaces(mesh, NW_son, node);
             for (auto fid: faces){
-                auto fd = *(m.faces_begin() + fid);
-                for (auto vd: m.vertices_around_face(m.halfedge(fd))){
+                auto fd = *(mesh.faces_begin() + fid);
+                for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
                     NW_son->boundary_points_id.insert(vd.idx());
                 }
             }
 
-            faces = extractIntersectFaces(m, NE_son, node);
+            faces = extractIntersectFaces(mesh, NE_son, node);
             for (auto fid: faces){
-                auto fd = *(m.faces_begin() + fid);
-                for (auto vd: m.vertices_around_face(m.halfedge(fd))){
+                auto fd = *(mesh.faces_begin() + fid);
+                for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
                     NE_son->boundary_points_id.insert(vd.idx());
                 }
             }
 
-            faces = extractIntersectFaces(m, SW_son, node);
+            faces = extractIntersectFaces(mesh, SW_son, node);
             for (auto fid: faces){
-                auto fd = *(m.faces_begin() + fid);
-                for (auto vd: m.vertices_around_face(m.halfedge(fd))){
+                auto fd = *(mesh.faces_begin() + fid);
+                for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
                     SW_son->boundary_points_id.insert(vd.idx());
                 }
             }
 
-            faces = extractIntersectFaces(m, SE_son, node);
+            faces = extractIntersectFaces(mesh, SE_son, node);
             for (auto fid: faces){
-                auto fd = *(m.faces_begin() + fid);
-                for (auto vd: m.vertices_around_face(m.halfedge(fd))){
+                auto fd = *(mesh.faces_begin() + fid);
+                for (auto vd: mesh.vertices_around_face(mesh.halfedge(fd))){
                     SE_son->boundary_points_id.insert(vd.idx());
                 }
             }
@@ -296,8 +294,8 @@ namespace Quad{
         level_nodes.push_back(cur_level_nodes);
     }
 
-    kSkip::Graph generateSpanner(vector<int> &pid_list, set<WeightedDistanceOracle::nodePair> &node_pairs,
-                                          map<int, int> &new_id){
+    kSkip::Graph generateSpanner(const vector<unsigned> &pid_list, set<WeightedDistanceOracle::nodePair> &node_pairs,
+                                          map<unsigned, unsigned> &new_id){
         new_id.clear();
         for (auto i = 0; i < pid_list.size(); i++){
             new_id[pid_list[i]] = i;
@@ -316,7 +314,7 @@ namespace Quad{
         return g;
     }
 
-    void distancePreprocessing(quadTree &quad_tree, kSkip::Graph &base_graph, map<int, vector<int> > &face_point_map){
+    void distancePreprocessing(quadTree &quad_tree, kSkip::Graph &base_graph, map<unsigned, vector<unsigned> > &face_point_map){
         auto leaf = quad_tree.level_nodes[quad_tree.level];
         for (auto node: leaf){
             set<int> covered_point = {};
@@ -339,13 +337,13 @@ namespace Quad{
         }
     }
 
-    pair<double, bool> queryA2A(Base::Mesh &m, kSkip::Graph &spanner,
-                                kSkip::Graph &base_graph, map<int, vector<int> > &face_point_map,
+    pair<double, bool> queryA2A(kSkip::Graph &spanner,
+                                kSkip::Graph &base_graph, map<unsigned, vector<unsigned> > &face_point_map,
                                 WeightedDistanceOracle::PartitionTree &tree, set<WeightedDistanceOracle::nodePair> &node_pairs,
-                                map<int, Base::Point> &point_location_map,
-                                Base::Point s, int fid_s,
-                                Base::Point t, int fid_t,
-                                quadTree &quad_tree, map<int, int> &new_id){
+                                map<unsigned, Base::Point> &point_location_map,
+                                const Base::Point &s, const unsigned &fid_s,
+                                const Base::Point &t, const unsigned &fid_t,
+                                quadTree &quad_tree, map<unsigned, unsigned> &new_id){
 
         auto box_s = quad_tree.root, box_t = quad_tree.root;
         //find the leaf contains s and t
@@ -372,7 +370,7 @@ namespace Quad{
 
         if (box_s->node_id != box_t->node_id){
 
-            int V_flag = spanner.num_V, E_flag = spanner.num_E; //  backup
+            auto V_flag = spanner.num_V, E_flag = spanner.num_E; //  backup
 
             auto final_s = spanner.addVertex();
 
@@ -398,18 +396,18 @@ namespace Quad{
             double res = kSkip::dijkstra(spanner, final_s, final_t).first;
 
             while (spanner.num_E > E_flag){
-                int eid = spanner.num_E - 1;
+                auto eid = spanner.num_E - 1;
                 spanner.removeEdge(eid);
             }
             while (spanner.num_V > V_flag){
-                int vid = spanner.num_V - 1;
+                auto vid = spanner.num_V - 1;
                 spanner.removeVertex(vid);
             }
 
             return make_pair(res, box_s->node_id == box_t->node_id);
         }
         else{
-            int V_flag = base_graph.num_V, E_flag = base_graph.num_E;
+            auto V_flag = base_graph.num_V, E_flag = base_graph.num_E;
             auto sid = base_graph.addVertex();
             for (auto pid: face_point_map[fid_s]){
                 double dis = CGAL::squared_distance(s, point_location_map[pid]);
@@ -423,11 +421,11 @@ namespace Quad{
             double res = kSkip::dijkstra(base_graph, sid, tid).first;
 
             while (base_graph.num_E > E_flag){
-                int eid = base_graph.num_E - 1;
+                auto eid = base_graph.num_E - 1;
                 base_graph.removeEdge(eid);
             }
             while (base_graph.num_V > V_flag){
-                int vid = base_graph.num_V - 1;
+                auto vid = base_graph.num_V - 1;
                 base_graph.removeVertex(vid);
             }
 

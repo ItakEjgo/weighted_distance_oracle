@@ -16,7 +16,7 @@ namespace WeightedDistanceOracle {
     map<int, vector<double> > distance_map, bound_map;
 
     //get the value of Gamme for each vertex of the terrain. Ref. JACM'2005 bisector
-    vector<double> getVertexGamma(Base::Mesh &mesh, vector<double> &face_weights){
+    vector<double> getVertexGamma(const Base::Mesh &mesh, const vector<double> &face_weights){
         map<unsigned, vector<unsigned> > vertex_face_map = {};
         vector<double> gama(mesh.num_vertices());
         double dis, w_min, w_max;
@@ -57,9 +57,9 @@ namespace WeightedDistanceOracle {
 
     pair<double, int>
     placeSteinerPointsJACM(const Base::Mesh &mesh, const double &eps,
-                           const double vector<double> &gama,
-                           map<unsigned, vector<unsigned>> &edge_bisector_map,
-                           map<unsigned, vector<unsigned>> &bisector_point_map,
+                           const vector<double> &gama,
+                           map<unsigned, vector<unsigned> > &edge_bisector_map,
+                           map<unsigned, vector<unsigned> > &bisector_point_map,
                            map<unsigned, unsigned> &point_face_map,
                            map<unsigned, Base::Point> &point_location_map,
                            map<unsigned, vector<unsigned>> &face_point_map){
@@ -287,15 +287,15 @@ namespace WeightedDistanceOracle {
 
         double constructTree(int num_vertices);
 
-        double generateNodePairSet(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set);
+        double generateNodePairSet(const double &eps, const int &type, const unsigned &sp_num, set<nodePair> &node_pair_set);
 
         static void getPathToRoot(PartitionTreeNode* node, vector<PartitionTreeNode*> &path);
 
-        void rootNodeSelect(vector<int> &pid_list);
+        void rootNodeSelect(const vector<unsigned> &pid_list);
 
-        int buildLevel(vector<int> &pid_list, double l);
+        int buildLevel(const vector<unsigned> &pid_list, const double &l);
 
-        double constructTree(ofstream &fout, vector<int> &pid_list, double l);
+        double constructTree(ofstream &fout, const vector<unsigned> &pid_list, const double &l);
 
     };
 
@@ -327,7 +327,7 @@ namespace WeightedDistanceOracle {
         return rhs;
     }
 
-    double PartitionTree::generateNodePairSet(double eps, int type, int bisector_point_num, set<nodePair> &node_pair_set) {
+    double PartitionTree::generateNodePairSet(const double &eps, const int &type, const unsigned &sp_num, set<nodePair> &node_pair_set) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         priority_queue<nodePairWithValue , vector<nodePairWithValue>, greater<nodePairWithValue> > q;
@@ -347,7 +347,7 @@ namespace WeightedDistanceOracle {
                 !Base::doubleCmp(l_node->radius - r_node->radius)
                 && l_node->center_idx <= r_node->center_idx){
                 for (auto &child: l_node->children){
-                    int child_idx = child.first;
+                    auto child_idx = child.first;
                     auto child_node = child.second;
 //                    center_distance = distance_map[child_idx][r_node->center_idx];
                     center_distance = enhanced_edges[make_pair(child_idx, r_node->center_idx)];
@@ -359,7 +359,7 @@ namespace WeightedDistanceOracle {
             //  Split the right node
             else{
                 for (auto &child: r_node->children){
-                    int child_idx = child.first;
+                    auto child_idx = child.first;
                     auto child_node = child.second;
 //                    center_distance = distance_map[l_node->center_idx][child_idx];
                     center_distance = enhanced_edges[make_pair(l_node->center_idx, child_idx)];
@@ -381,12 +381,14 @@ namespace WeightedDistanceOracle {
         return static_cast<double>(duration.count());
     }
 
-    double PartitionTree::constructTree(ofstream &fout, vector<int> &pid_list, double l) {
+    // Construct partition tree.
+    double PartitionTree::constructTree(ofstream &fout, const vector<unsigned> &pid_list, const double &l) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
+
         auto num_vertices = pid_list.size();
         rootNodeSelect(pid_list);
         while (!stop_flag){
-            int cur_num_level_nodes = buildLevel(pid_list, l);
+            unsigned cur_num_level_nodes = buildLevel(pid_list, l);
             int max_cover_set_size = -1, min_cover_set_size = num_vertices + 1;
             for (auto &node: level_nodes[max_level]){
                 max_cover_set_size = max(max_cover_set_size, static_cast<int>(node->cover_set.size()));
@@ -399,10 +401,11 @@ namespace WeightedDistanceOracle {
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+
         return static_cast<double>(duration.count());
     }
 
-    void PartitionTree::rootNodeSelect(vector<int> &pid_list) {
+    void PartitionTree::rootNodeSelect(const vector<unsigned> &pid_list) {
         auto num_vertices = pid_list.size();
         int root_index = pid_list[rand() % num_vertices];   // random select one point
 //        vector<double> d(distance_map[root_index]);
@@ -426,7 +429,7 @@ namespace WeightedDistanceOracle {
 //        cout << "[Partition Tree] Root = (" << root_index << "," << radius << ")" << endl;
     }
 
-    int PartitionTree::buildLevel(vector<int> &pid_list, double l){
+    int PartitionTree::buildLevel(const vector<unsigned> &pid_list, const double &l){
         auto num_vertices = pid_list.size();
         if (stop_flag){
             cout << "[Partition Tree] Already finish the building of partition tree." << endl;
@@ -574,13 +577,11 @@ namespace WeightedDistanceOracle {
         return approximate_distance;
     }
 
-    double distanceQueryA2A(Base::Point &query_source,
-                          int fid_s,
-                          Base::Point &query_target,
-                          int fid_t,
-                          PartitionTree &tree,
-                          map<int, vector<int> > &face_point_map,
-                          map<int, Base::Point> &point_location_map,
+    double distanceQueryA2A(const Base::Point &query_source, const unsigned &fid_s,
+                          const Base::Point &query_target, const unsigned &fid_t,
+                          const PartitionTree &tree,
+                          map<unsigned, vector<unsigned> > &face_point_map,
+                          map<unsigned, Base::Point> &point_location_map,
                           set<nodePair> &node_pairs
                           ){
         double ret_dis = Base::unreachable;

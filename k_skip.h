@@ -222,7 +222,7 @@ namespace kSkip{
     }
 
     double queryGraphA2A(Graph &g, const Base::Point &s, const unsigned &fid_s, const Base::Point &t, const unsigned &fid_t,
-                         const map<unsigned, vector<unsigned> > &face_point_map, const map<unsigned, Base::Point> &point_location_map){
+                         map<unsigned, vector<unsigned> > &face_point_map, map<unsigned, Base::Point> &point_location_map){
         unsigned V_flag = g.num_V, E_flag = g.num_E;
         //  add edges from s to its neighbor Steiner points
         unsigned sid = g.addVertex();
@@ -251,7 +251,7 @@ namespace kSkip{
         return res;
     }
 
-    void constructMeshGraph(Base::Mesh &mesh, Graph &g){
+    void constructMeshGraph(const Base::Mesh &mesh, Graph &g){
         g.init(mesh.num_vertices());
         g.head.resize(mesh.num_vertices(), 0);
         for (auto &fd: mesh.faces()){
@@ -286,36 +286,34 @@ namespace kSkip{
 
     // VLDB'2015 implementation
     double computeDistanceBound(
-            Base::Mesh m, Graph g,
-            int K, Base::Point point_s, int fid_s, Base::Point point_t, int fid_t,
+            Base::Mesh &mesh, Graph g,
+            const unsigned &K, const Base::Point &point_s, const unsigned &fid_s,
+            const Base::Point &point_t, const unsigned &fid_t,
             double l_min
-//            vector<double> &D,
-//            pair<double, double> &bounds,
-//            map<int, vector<int> > &edge_cut_vertex
     ){
-        auto vds = m.add_vertex(point_s);
+        auto vds = mesh.add_vertex(point_s);
         int s = vds.idx();
         g.addVertex();
-        auto fds = *(m.faces_begin() + fid_s);
-        for (auto vd: m.vertices_around_face(m.halfedge(fds))){
-            m.add_edge(vds, vd);
-            double dis = sqrt(CGAL::squared_distance(point_s, m.points()[vd]));
+        auto fds = *(mesh.faces_begin() + fid_s);
+        for (auto vd: mesh.vertices_around_face(mesh.halfedge(fds))){
+            mesh.add_edge(vds, vd);
+            double dis = sqrt(CGAL::squared_distance(point_s, mesh.points()[vd]));
             g.addEdge(s, vd.idx(), dis);
         }
-        auto vdt = m.add_vertex(point_t);
+        auto vdt = mesh.add_vertex(point_t);
         int t = vdt.idx();
         g.addVertex();
-        auto fdt = *(m.faces_begin() + fid_t);
-        for (auto vd: m.vertices_around_face(m.halfedge(fdt))){
-            m.add_edge(vdt, vd);
-            double dis = sqrt(CGAL::squared_distance(point_t, m.points()[vd]));
+        auto fdt = *(mesh.faces_begin() + fid_t);
+        for (auto vd: mesh.vertices_around_face(mesh.halfedge(fdt))){
+            mesh.add_edge(vdt, vd);
+            double dis = sqrt(CGAL::squared_distance(point_t, mesh.points()[vd]));
             g.addEdge(vd.idx(), t, dis);
         }
 
 
         map<int, vector<int> > edge_cut_vertex = {};
         map<int, int> cut_vertex_halfedge = {};
-        int vertices_num = m.num_vertices();
+        int vertices_num = mesh.num_vertices();
         vector<double> D;
         D.resize(vertices_num, -1.0);   // -1.0 means unreachable
         D[s] = 0.0;
@@ -333,11 +331,11 @@ namespace kSkip{
             }
             if (vis[f.p]) continue;
             // S = S U {u};
-            double d_ut = sqrt(CGAL::squared_distance(m.points()[CGAL::SM_Vertex_index(f.p)], m.points()[CGAL::SM_Vertex_index(t)]));
+            double d_ut = sqrt(CGAL::squared_distance(mesh.points()[CGAL::SM_Vertex_index(f.p)], mesh.points()[CGAL::SM_Vertex_index(t)]));
 
             auto u = CGAL::SM_Vertex_index(f.p);
             vector<int> adj_face_ids;
-            getAdjacentFaces(m, g, cut_vertex_halfedge, f.p, adj_face_ids);
+            getAdjacentFaces(mesh, g, cut_vertex_halfedge, f.p, adj_face_ids);
             for (auto fid: adj_face_ids){
                 auto fd = CGAL::SM_Face_index(fid);
                 if (fd != Base::Mesh::null_face()){
@@ -346,27 +344,27 @@ namespace kSkip{
                     int opposite_edge_id = -1;
                     // vector<pair<int, int> > adjacent_edges = {};
                     vector<int> L_id = {};
-                    auto hed = m.halfedge(fd);
+                    auto hed = mesh.halfedge(fd);
                     vector<pair<int, int> > L = {};
                     for (int i = 0; i != 3; i++){
-                        auto t_u = m.points()[m.source(hed)];
-                        auto t_v = m.points()[m.target(hed)];
-                        int uid = m.source(hed).idx();
-                        int vid = m.target(hed).idx();
+                        auto t_u = mesh.points()[mesh.source(hed)];
+                        auto t_v = mesh.points()[mesh.target(hed)];
+                        int uid = mesh.source(hed).idx();
+                        int vid = mesh.target(hed).idx();
                         Base::Segment seg(t_u, t_v);
                         vids.push_back(uid);
-                        if (!seg.has_on(m.points()[u])){
+                        if (!seg.has_on(mesh.points()[u])){
                             L.push_back(make_pair(uid, vid));
                             L_id.push_back(hed);
                         }
-                        hed = m.next(hed);
+                        hed = mesh.next(hed);
                     }
                     double theta_m = -1.0;
                     for (int i = 0; i != 3; i++){
                         auto t_u = CGAL::SM_Vertex_index(vids[i]),
                                 t_v = CGAL::SM_Vertex_index(vids[(i + 1) % 3]),
                                 t_w = CGAL::SM_Vertex_index(vids[(i + 2) % 3]);
-                        double angle = CGAL::approximate_angle(m.points()[t_u], m.points()[t_v], m.points()[t_w]);
+                        double angle = CGAL::approximate_angle(mesh.points()[t_u], mesh.points()[t_v], mesh.points()[t_w]);
                         if (Base::doubleCmp(theta_m) < 0 || Base::doubleCmp(angle - theta_m) < 0){
                             theta_m = angle;
                         }
@@ -381,11 +379,11 @@ namespace kSkip{
                     for (auto x = 0; x != L.size(); x++){
                         auto e = L[x];
                         // cout << "e = " << e.first << " " << e.second << endl;
-                        auto v_a = m.points()[CGAL::SM_Vertex_index(e.first)];
-                        auto v_b = m.points()[CGAL::SM_Vertex_index(e.second)];
+                        auto v_a = mesh.points()[CGAL::SM_Vertex_index(e.first)];
+                        auto v_b = mesh.points()[CGAL::SM_Vertex_index(e.second)];
                         double d_et = min(
-                                sqrt(CGAL::squared_distance(v_a, m.points()[CGAL::SM_Vertex_index(t)])),
-                                sqrt(CGAL::squared_distance(v_b, m.points()[CGAL::SM_Vertex_index(t)]))
+                                sqrt(CGAL::squared_distance(v_a, mesh.points()[CGAL::SM_Vertex_index(t)])),
+                                sqrt(CGAL::squared_distance(v_b, mesh.points()[CGAL::SM_Vertex_index(t)]))
                         );
                         if (Base::doubleCmp(d_ut - d_et) >= 0){
                             int j = 1;
@@ -397,9 +395,9 @@ namespace kSkip{
                                 decltype(v_a) v_c;
                                 if (edge_cut_vertex.find(L_id[x]) == edge_cut_vertex.end() || edge_cut_vertex[L_id[x]].size() < j){
                                     v_c = v_a + (v_b - v_a) / e_len * j * t_delta_I; // cut-vertex coordinate
-                                    m.add_vertex(v_c);  //  add the vertex to mesh
+                                    mesh.add_vertex(v_c);  //  add the vertex to mesh
                                     v_c_id = g.addVertex(); //   vertex id
-                                    assert(v_c != m.points()[u]);
+                                    assert(v_c != mesh.points()[u]);
                                     cut_vertex_halfedge[v_c_id] = L_id[x];
                                     D.push_back(-1.0);
                                     vis.push_back(0);
@@ -412,9 +410,9 @@ namespace kSkip{
                                 else{
                                     v_c_id = edge_cut_vertex[L_id[x]][j - 1];
                                     assert(edge_cut_vertex[L_id[x]].size() >= j);
-                                    v_c = m.points()[CGAL::SM_Vertex_index(v_c_id)];
+                                    v_c = mesh.points()[CGAL::SM_Vertex_index(v_c_id)];
                                 }
-                                double d_u_vc = sqrt(CGAL::squared_distance(m.points()[u], v_c));
+                                double d_u_vc = sqrt(CGAL::squared_distance(mesh.points()[u], v_c));
                                 if (Base::doubleCmp(d_u_vc - delta_I) >= 0){
                                     g.addEdge(f.p, v_c_id, d_u_vc);
                                 }
@@ -427,7 +425,7 @@ namespace kSkip{
                     if (!g.isCorner(f.p)){
                         for (auto id: vids){
                             auto v = CGAL::SM_Vertex_index(id);
-                            double w = sqrt(CGAL::squared_distance(m.points()[u], m.points()[v]));
+                            double w = sqrt(CGAL::squared_distance(mesh.points()[u], mesh.points()[v]));
                             g.addEdge(f.p, v.idx(), w);
                         }
                     }

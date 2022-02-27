@@ -16,50 +16,42 @@ namespace Methods{
     using namespace std;
     using namespace Base;
 
-
-    pair<vector<double>, pair<double, double> > SE_A2A(ofstream &fout, string &file_name, double eps, int sp_num, int q_num, int weight_flag){
-        srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-//        AABB_tree aabb_tree;
-//        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
-
-        vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
-
-        map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
-        map<int, int> point_face_map;
-        map<int, Point> point_location_map;
+    pair<vector<double>, tuple<double, double, double> > A2A_SE(ofstream &fout, const Mesh &mesh, const double &err,
+                                                       const unsigned &sp_num, const unsigned &q_num, const vector<double> &face_weight){
+        map<unsigned, vector<unsigned> > edge_bisector_map = {}, bisector_point_map = {},  face_point_map = {};
+        map<unsigned, unsigned> point_face_map = {};
+        map<unsigned, Point> point_location_map = {};
 
         auto index_start = chrono::_V2::system_clock::now();
         auto memory_begin = physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, err, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
 
-        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, sp_num, edge_bisector_map,
+        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(mesh, sp_num, edge_bisector_map,
                                                                                 bisector_point_map, point_face_map,
                                                                                 point_location_map, face_point_map);
-        int num_base_graph_vertices = ret_place_points.second;
+        unsigned num_base_graph_vertices = ret_place_points.second;
         fout << "base graph |V| = " << num_base_graph_vertices << endl;
 
-        vector<int> pid_list = {};  //  partition tree will index all vertices
+        vector<unsigned> pid_list = {};  //  partition tree will index all vertices
         for (auto i = 0; i < num_base_graph_vertices; i++){
             pid_list.push_back(i);
         }
 
-        WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
+        WeightedDistanceOracle::constructBaseGraph(mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                    bisector_point_map, point_face_map, point_location_map);
 
         WeightedDistanceOracle::PartitionTree tree = WeightedDistanceOracle::PartitionTree();
-        double l = 8 / eps + 6;
-        l *= 2;
+        double l = 8 / err + 6;
+        l *= 2; // Enhanced Edges
         fout << "Begin to build partition tree..." << endl;
         tree.constructTree(fout, pid_list, l);
         fout << "Partition tree finished." << endl;
 
         set<WeightedDistanceOracle::nodePair> node_pairs;
-        tree.generateNodePairSet(eps, 1, sp_num, node_pairs); // use approximation based on SGP'2013
+        tree.generateNodePairSet(err, 1, sp_num, node_pairs); // use approximation based on SGP'2013
+
         fout << "Node pair set size: " << node_pairs.size() << endl;
         fout << "Node pair percentage: " << fixed << setprecision(3) << 1.0 * node_pairs.size() / num_base_graph_vertices / num_base_graph_vertices << endl;
 
@@ -71,17 +63,17 @@ namespace Methods{
 
         vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
 
-        map<int, int> new_id;
+        map<unsigned, unsigned> new_id;
         for (auto i = 0; i < leaf_nodes.size(); i++){
             new_id[i] = i;
         }
 
-        Surface_mesh_shortest_path shortest_paths(surface_mesh);
+        Surface_mesh_shortest_path shortest_paths(mesh);
         vector<double> V2V_results = {};
-        double query_time = 0.0;
+        double inner_query_time = 0.0, inter_query_time = 0.0;
 
-        int percent = 1;
-        for (auto i = 0; i < q_num; i++){
+        unsigned percent = 1;
+        for (auto i = 0; i < q_num * 2; i++){
             if (i > percent * q_num / 10){
                 fout << percent++ << "0% queries finished." << endl;
             }
@@ -97,45 +89,45 @@ namespace Methods{
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
             V2V_results.push_back(oracle_distance);
-            query_time += static_cast<double>(q_duration.count());
+            if (i < q_num){
+                inner_query_time += static_cast<double>(q_duration.count());
+            }
+            else{
+                inter_query_time += static_cast<double>(q_duration.count());
+            }
+
         }
 
-
-        return make_pair(V2V_results, make_pair(index_time, query_time));
+        return make_pair(V2V_results, make_tuple(index_time, inner_query_time, inter_query_time));
     }
 
-    pair<vector<double>, pair<double, double> > LQT_A2A(ofstream &fout, string &file_name, double eps, int point_num, int level, int q_num, int weight_flag, vector<double> &face_weight) {
+    pair<vector<double>, tuple<double, double, double> > A2A_LQT(ofstream &fout, const Mesh &mesh, const double &err,
+                                                        const unsigned &sp_num, const unsigned &level, const unsigned &q_num,
+                                                        const vector<double> &face_weight) {
         srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-//        AABB_tree aabb_tree;
-//        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-//    vector<double> face_weight = generateFaceWeight(surface_mesh.num_faces());
-
-        map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
-        map<int, int> point_face_map;
-        map<int, Point> point_location_map;
+        map<unsigned, vector<unsigned> > edge_bisector_map, bisector_point_map, face_point_map;
+        map<unsigned, unsigned> point_face_map;
+        map<unsigned, Point> point_location_map;
 
         auto index_start = chrono::_V2::system_clock::now();
         auto memory_begin = physical_memory_used_by_process();
 
 //    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
-        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
+//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, err, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(mesh, sp_num, edge_bisector_map,
                                                                                 bisector_point_map, point_face_map,
                                                                                 point_location_map, face_point_map);
 
         fout << "base graph |V| = " << ret_place_points.second << endl;
-        Quad::quadTree quad_tree(surface_mesh, face_point_map);
+        Quad::quadTree quad_tree(mesh, face_point_map);
         double rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
         fout << "quad tree level = " << level << endl;
 //    fout << "root.Len / Lmin = " << rootLen / min_len << endl;
         for (auto i = 0; i < level; i++){
-            quad_tree.buildLevel(surface_mesh, face_point_map);
+            quad_tree.buildLevel(mesh, face_point_map);
         }
-        set<int> pids;
+        set<unsigned> pids;
         auto node = quad_tree.level_nodes[quad_tree.level][0];
         fout << "Leaf maximum side length: " << max(node->x_max - node->x_min, node->y_max - node->y_min) << endl;
         int leaf_boundary_vertices = -1;
@@ -145,28 +137,28 @@ namespace Methods{
                 pids.insert(pid);
             }
         }
-        fout << "V = " << surface_mesh.num_vertices() << " | ";
+        fout << "V = " << mesh.num_vertices() << " | ";
         fout << "LQT-Leaf = " << pids.size() << endl;
         fout << "maximum leaf node boundary vertices = " << leaf_boundary_vertices << endl;
-        vector<int> pid_list(pids.begin(), pids.end());
+        vector<unsigned> pid_list(pids.begin(), pids.end());
 
         int num_base_graph_vertices = ret_place_points.second;
 
-        WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
+        WeightedDistanceOracle::constructBaseGraph(mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                    bisector_point_map, point_face_map, point_location_map);
 
         WeightedDistanceOracle::PartitionTree tree = WeightedDistanceOracle::PartitionTree();
-        double l = 8 / eps + 10;
+        double l = 8 / err + 10;
         tree.constructTree(fout, pid_list, l);
 
         set<WeightedDistanceOracle::nodePair> node_pairs;
-        tree.generateNodePairSet(eps, 1, point_num, node_pairs); // use approximations based on SGP'2013
+        tree.generateNodePairSet(err, 1, sp_num, node_pairs); // use approximations based on SGP'2013
         fout << "Node pair set size: " << node_pairs.size() << endl;
         fout << "Node pair percentage: " << fixed << setprecision(2) << 1.0 * node_pairs.size() / ret_place_points.second / ret_place_points.second << endl;
 
         vector<WeightedDistanceOracle::PartitionTreeNode*> leaf_nodes(tree.level_nodes[tree.max_level].begin(), tree.level_nodes[tree.max_level].end());
 
-        map<int, int> new_id;
+        map<unsigned, unsigned> new_id;
         auto spanner = Quad::generateSpanner(pid_list, node_pairs, new_id);
 
         Quad::distancePreprocessing(quad_tree, kSkip::my_base_graph, face_point_map);
@@ -179,13 +171,13 @@ namespace Methods{
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
         vector<double> A2A_result = {};
-        double query_time = 0.0;
+        double inner_query_time = 0.0, inter_query_time = 0.0;
         int same_box = 0, diff_box = 0;
 
         int percent = 1;
-        for (auto i = 0; i < q_num; i++){
+        for (auto i = 0; i < q_num * 2; i++){
 
-            if (i > percent * q_num / 10){
+            if (i > percent * q_num * 2 / 10){
                 fout << percent++ << "0% queries finished." << endl;
             }
 
@@ -197,13 +189,18 @@ namespace Methods{
 //        fout << "s = " << s << " t = " << t << endl;
 
             auto q_start = chrono::_V2::system_clock::now();
-            auto ret = Quad::queryA2A(surface_mesh, spanner, kSkip::my_base_graph, face_point_map, tree, node_pairs,
+            auto ret = Quad::queryA2A(spanner, kSkip::my_base_graph, face_point_map, tree, node_pairs,
                                       point_location_map,
                                       s, fid_s, t, fid_t,quad_tree, new_id);
             double spanner_distance = ret.first;
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
-            query_time += static_cast<double>(q_duration.count());
+            if (i < q_num){
+                inner_query_time += static_cast<double>(q_duration.count());
+            }
+            else{
+                inter_query_time += static_cast<double>(q_duration.count());
+            }
             if (ret.second){
                 same_box++;
             }
@@ -213,140 +210,134 @@ namespace Methods{
             A2A_result.push_back(spanner_distance);
         }
         fout << fixed << setprecision(3) << "Quad query distribution: same/diff = " << 1.0 * same_box / q_num << " / " << 1.0 * diff_box / q_num << endl;
-        return make_pair(A2A_result, make_pair(index_time, query_time));
+        return make_pair(A2A_result, make_tuple(index_time, inner_query_time, inter_query_time));
     }
 
-    pair<vector<double>, pair<double, double> > New_A2A(ofstream &fout, string &file_name, double eps, int point_num, int level, int q_num, int weight_flag, vector<double> &face_weight) {
+//    pair<vector<double>, pair<double, double> > New_A2A(ofstream &fout, string &file_name, double eps, int point_num, int level, int q_num, int weight_flag, vector<double> &face_weight) {
+//        srand((int)time(0));
+//        Mesh surface_mesh;
+//        ifstream fin(file_name);
+//        fin >> surface_mesh;
+//
+//        map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
+//        map<int, int> point_face_map;
+//        map<int, Point> point_location_map;
+//
+//        auto index_start = chrono::_V2::system_clock::now();
+//        auto memory_begin = physical_memory_used_by_process();
+//
+////    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
+////    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
+//        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
+//                                                                                bisector_point_map, point_face_map,
+//                                                                                point_location_map, face_point_map);
+//
+//        fout << "base graph |V| = " << ret_place_points.second << endl;
+//        Quad::quadTree quad_tree(surface_mesh, face_point_map);
+//        double rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
+//        fout << "quad tree level = " << level << endl;
+////    fout << "root.Len / Lmin = " << rootLen / min_len << endl;
+//        for (auto i = 0; i < level; i++){
+//            quad_tree.buildLevel(surface_mesh, face_point_map);
+//        }
+//        set<int> pids;
+//        auto node = quad_tree.level_nodes[quad_tree.level][0];
+//        fout << "Leaf maximum side length: " << max(node->x_max - node->x_min, node->y_max - node->y_min) << endl;
+//        int leaf_boundary_vertices = -1;
+//        for (auto node: quad_tree.level_nodes[quad_tree.level]){
+//            leaf_boundary_vertices = max(leaf_boundary_vertices, static_cast<int>(node->boundary_points_id.size()));
+//            for (auto pid: node->boundary_points_id){
+//                pids.insert(pid);
+//            }
+//        }
+//        fout << "V = " << surface_mesh.num_vertices() << " | ";
+//        fout << "LQT-Leaf = " << pids.size() << endl;
+//        fout << "maximum leaf node boundary vertices = " << leaf_boundary_vertices << endl;
+//        vector<int> pid_list(pids.begin(), pids.end());
+//
+//        int num_base_graph_vertices = ret_place_points.second;
+//
+//        WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
+//                                                   bisector_point_map, point_face_map, point_location_map);
+//        fout << "Base graph construction finished." << endl;
+//        double s_value = 2 / eps + 1;
+//
+//        map<int, int> new_id;
+//        for (auto i = 0; i < pid_list.size(); i++){
+//            new_id[pid_list[i]] = i;
+//        }
+//        kSkip::Graph spanner;
+//        spanner.init(static_cast<int>(pid_list.size()));
+//        GreedySpanner::setSeparationValue(2 / eps + 1);
+//        GreedySpanner::setBoundaryVertexFlag(surface_mesh.num_vertices());
+//        GreedySpanner::generateGreedySpanner(pid_list, spanner, new_id);
+//        Quad::distancePreprocessing(quad_tree, kSkip::my_base_graph, face_point_map);
+//
+//
+//        auto index_end = chrono::_V2::system_clock::now();
+//        auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
+//        double index_time = index_duration.count();
+//        auto memory_end = physical_memory_used_by_process();
+//
+//        fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
+//
+//        vector<double> A2A_result = {};
+//        double query_time = 0.0;
+//        int same_box = 0, diff_box = 0;
+//
+//        int percent = 1;
+//        for (auto i = 0; i < q_num; i++){
+//
+//            if (i > percent * q_num / 10){
+//                fout << percent++ << "0% queries finished." << endl;
+//            }
+//
+//            auto s = A2A_query[i].first;
+//            auto t = A2A_query[i].second;
+//            auto fid_s = A2A_fid[i].first;
+//            auto fid_t = A2A_fid[i].second;
+//
+////        fout << "s = " << s << " t = " << t << endl;
+//
+//            auto q_start = chrono::_V2::system_clock::now();
+//            auto ret = Quad::queryA2A(surface_mesh, spanner, kSkip::my_base_graph, face_point_map, point_location_map,
+//                                      s, fid_s, t, fid_t,quad_tree, new_id);
+//            double spanner_distance = ret.first;
+//            auto q_end = chrono::_V2::system_clock::now();
+//            auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+//            query_time += static_cast<double>(q_duration.count());
+//            if (ret.second){
+//                same_box++;
+//            }
+//            else{
+//                diff_box++;
+//            }
+//            A2A_result.push_back(spanner_distance);
+//        }
+//        fout << fixed << setprecision(3) << "Quad query distribution: same/diff = " << 1.0 * same_box / q_num << " / " << 1.0 * diff_box / q_num << endl;
+//        return make_pair(A2A_result, make_pair(index_time, query_time));
+//    }
+
+    pair<vector<double>, tuple<double, double, double> > A2A_MMP(ofstream &fout, const Mesh &mesh, const AABB_tree &aabb_tree, const unsigned &q_num){
         srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
 
-        map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
-        map<int, int> point_face_map;
-        map<int, Point> point_location_map;
-
-        auto index_start = chrono::_V2::system_clock::now();
-        auto memory_begin = physical_memory_used_by_process();
-
-//    vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-//    auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map, bisector_point_map, point_face_map, point_location_map, face_point_map);
-        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
-                                                                                bisector_point_map, point_face_map,
-                                                                                point_location_map, face_point_map);
-
-        fout << "base graph |V| = " << ret_place_points.second << endl;
-        Quad::quadTree quad_tree(surface_mesh, face_point_map);
-        double rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
-        fout << "quad tree level = " << level << endl;
-//    fout << "root.Len / Lmin = " << rootLen / min_len << endl;
-        for (auto i = 0; i < level; i++){
-            quad_tree.buildLevel(surface_mesh, face_point_map);
-        }
-        set<int> pids;
-        auto node = quad_tree.level_nodes[quad_tree.level][0];
-        fout << "Leaf maximum side length: " << max(node->x_max - node->x_min, node->y_max - node->y_min) << endl;
-        int leaf_boundary_vertices = -1;
-        for (auto node: quad_tree.level_nodes[quad_tree.level]){
-            leaf_boundary_vertices = max(leaf_boundary_vertices, static_cast<int>(node->boundary_points_id.size()));
-            for (auto pid: node->boundary_points_id){
-                pids.insert(pid);
-            }
-        }
-        fout << "V = " << surface_mesh.num_vertices() << " | ";
-        fout << "LQT-Leaf = " << pids.size() << endl;
-        fout << "maximum leaf node boundary vertices = " << leaf_boundary_vertices << endl;
-        vector<int> pid_list(pids.begin(), pids.end());
-
-        int num_base_graph_vertices = ret_place_points.second;
-
-        WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
-                                                   bisector_point_map, point_face_map, point_location_map);
-        fout << "Base graph construction finished." << endl;
-        double s_value = 2 / eps + 1;
-
-        map<int, int> new_id;
-        for (auto i = 0; i < pid_list.size(); i++){
-            new_id[pid_list[i]] = i;
-        }
-        kSkip::Graph spanner;
-        spanner.init(static_cast<int>(pid_list.size()));
-        GreedySpanner::setSeparationValue(2 / eps + 1);
-        GreedySpanner::setBoundaryVertexFlag(surface_mesh.num_vertices());
-        GreedySpanner::generateGreedySpanner(pid_list, spanner, new_id);
-        Quad::distancePreprocessing(quad_tree, kSkip::my_base_graph, face_point_map);
-
-
-        auto index_end = chrono::_V2::system_clock::now();
-        auto index_duration = chrono::duration_cast<chrono::milliseconds>(index_end - index_start);
-        double index_time = index_duration.count();
-        auto memory_end = physical_memory_used_by_process();
-
-        fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
-
+        Surface_mesh_shortest_path shortest_paths(mesh);
         vector<double> A2A_result = {};
-        double query_time = 0.0;
-        int same_box = 0, diff_box = 0;
+        double inner_query_time = 0.0, inter_query_time = 0.0;
 
-        int percent = 1;
-        for (auto i = 0; i < q_num; i++){
-
-            if (i > percent * q_num / 10){
-                fout << percent++ << "0% queries finished." << endl;
-            }
-
-            auto s = A2A_query[i].first;
-            auto t = A2A_query[i].second;
-            auto fid_s = A2A_fid[i].first;
-            auto fid_t = A2A_fid[i].second;
-
-//        fout << "s = " << s << " t = " << t << endl;
-
-            auto q_start = chrono::_V2::system_clock::now();
-            auto ret = Quad::queryA2A(surface_mesh, spanner, kSkip::my_base_graph, face_point_map, point_location_map,
-                                      s, fid_s, t, fid_t,quad_tree, new_id);
-            double spanner_distance = ret.first;
-            auto q_end = chrono::_V2::system_clock::now();
-            auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
-            query_time += static_cast<double>(q_duration.count());
-            if (ret.second){
-                same_box++;
-            }
-            else{
-                diff_box++;
-            }
-            A2A_result.push_back(spanner_distance);
-        }
-        fout << fixed << setprecision(3) << "Quad query distribution: same/diff = " << 1.0 * same_box / q_num << " / " << 1.0 * diff_box / q_num << endl;
-        return make_pair(A2A_result, make_pair(index_time, query_time));
-    }
-
-    pair<vector<double>, pair<double, double> > MMP_A2A(ofstream &fout, string &mesh_file, int q_num){
-        srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(mesh_file);
-        fin >> surface_mesh;
-        AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
-
-        Surface_mesh_shortest_path shortest_paths(surface_mesh);
-        vector<double> A2A_result = {};
-        double query_time = 0.0;
-
-
-        int percent = 1;
-        for (auto i = 0; i < q_num; i++){
+        unsigned percent = 1;
+        for (auto i = 0; i < q_num * 2; i++){
             auto s = A2A_query[i].first;
             auto t = A2A_query[i].second;
 
-            if (i > percent * q_num / 10){
+            if (i > percent * q_num * 2 / 10){
                 fout << percent++ << "0% queries finished." << endl;
             }
 
             auto q_start = chrono::_V2::system_clock::now();
 
-            auto location_s = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(s, aabb_tree, surface_mesh);
-            auto location_t = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(t, aabb_tree, surface_mesh);
+            auto location_s = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(s, aabb_tree, mesh);
+            auto location_t = CGAL::Polygon_mesh_processing::locate_with_AABB_tree(t, aabb_tree, mesh);
             shortest_paths.add_source_point(location_s.first, location_s.second);
             auto ret_pair = shortest_paths.shortest_distance_to_source_points(location_t.first, location_t.second);
             double mmp_distance = ret_pair.first;
@@ -356,13 +347,18 @@ namespace Methods{
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
             A2A_result.push_back(mmp_distance);
-            query_time += static_cast<double>(q_duration.count());
+            if (i < q_num){
+                inner_query_time += static_cast<double>(q_duration.count());
+            }
+            else{
+                inter_query_time += static_cast<double>(q_duration.count());
+            }
         }
 
-        return make_pair(A2A_result, make_pair(0.0, query_time));
+        return make_pair(A2A_result, make_tuple(0.0, inner_query_time, inter_query_time));
     }
 
-    pair<vector<double>, pair<double, double> > A2A_FixedS(ofstream &fout, const Mesh &mesh,
+    pair<vector<double>, tuple<double, double, double> > A2A_FixedS(ofstream &fout, const Mesh &mesh,
                                                            const AABB_tree &aabb_tree,
                                                            const unsigned &q_num, const unsigned &sp_num,
                                                            const vector<double> &face_weight){
@@ -385,10 +381,10 @@ namespace Methods{
 
         vector<double> A2A_result = {};
 
-        double query_time = 0.0;
-        int percent = 1;
-        for (auto i = 0; i < q_num; i++){
-            if (i > percent * q_num / 10){
+        double inner_query_time = 0.0, inter_query_time = 0.0;
+        unsigned percent = 1;
+        for (auto i = 0; i < q_num * 2; i++){
+            if (i > percent * q_num * 2 / 10){
                 fout << percent++ << "0% queries finished." << endl;
             }
             auto s = A2A_query[i].first;
@@ -401,15 +397,20 @@ namespace Methods{
 
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
-            query_time += static_cast<double>(q_duration.count());
+            if (i < q_num){
+                inner_query_time += static_cast<double>(q_duration.count());
+            }
+            else{
+                inter_query_time += static_cast<double>(q_duration.count());
+            }
 
             A2A_result.push_back(dijk_distance);
         }
-        return make_pair(A2A_result, make_pair(0, query_time));
+        return make_pair(A2A_result, make_tuple(0, inner_query_time, inter_query_time));
     }
 
-    pair<vector<double>, pair<double, double> > A2A_UnfixedS(ofstream &fout, const Mesh &mesh, const AABB_tree &aabb_tree,
-                                                             const double &eps, const unsigned &q_num,
+    pair<vector<double>, tuple<double, double, double> > A2A_UnfixedS(ofstream &fout, const Mesh &mesh, const AABB_tree &aabb_tree,
+                                                             const double &err, const unsigned &q_num,
                                                              const vector<double> &face_weight){
 
         srand((int)time(0));
@@ -420,56 +421,56 @@ namespace Methods{
         map<unsigned, Point> point_location_map = {};
 
         vector<double> gama = WeightedDistanceOracle::getVertexGamma(mesh, face_weight);
-        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(mesh, eps, gama, edge_bisector_map,
+        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(mesh, err, gama, edge_bisector_map,
                                                                                bisector_point_map, point_face_map,
                                                                                point_location_map, face_point_map);
 
-        int num_base_graph_vertices = ret_place_points.second;
+        unsigned num_base_graph_vertices = ret_place_points.second;
         fout << "base graph |V| = " << num_base_graph_vertices << endl;
 
-        WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
+        WeightedDistanceOracle::constructBaseGraph(mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                    bisector_point_map, point_face_map, point_location_map);
 
         vector<double> A2A_result = {};
 
-        double query_time = 0.0;
-        int percent = 1;
-        for (auto i = 0; i < q_num; i++){
-            if (i > percent * q_num / 10){
+        double inner_query_time = 0.0, inter_query_time = 0.0;
+        unsigned percent = 1;
+        for (auto i = 0; i < q_num * 2; i++){
+            if (i > percent * q_num * 2 / 10){
                 fout << percent++ << "0% queries finished." << endl;
             }
             auto s = A2A_query[i].first;
             auto t = A2A_query[i].second;
-            int fid_s = A2A_fid[i].first;
-            int fid_t = A2A_fid[i].second;
+            unsigned fid_s = A2A_fid[i].first;
+            unsigned fid_t = A2A_fid[i].second;
             auto q_start = chrono::_V2::system_clock::now();
 
             double dijk_distance = kSkip::queryGraphA2A(kSkip::my_base_graph, s, fid_s, t, fid_t, face_point_map, point_location_map);
 
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
-            query_time += static_cast<double>(q_duration.count());
+            if (i < q_num){
+                inner_query_time += static_cast<double>(q_duration.count());
+            }
+            else{
+                inter_query_time += static_cast<double>(q_duration.count());
+            }
 
             A2A_result.push_back(dijk_distance);
         }
-        return make_pair(A2A_result, make_pair(0, query_time));
+        return make_pair(A2A_result, make_tuple(0, inner_query_time, inter_query_time));
     }
 
-    pair<vector<double>, pair<double, double> > KAlgo_A2A(ofstream &fout, string &file_name, int q_num, int K){
+    pair<vector<double>, tuple<double, double, double> > A2A_KAlgo(ofstream &fout, Mesh &mesh, const unsigned &q_num, const unsigned &K,
+                                                          const vector<double> &face_weight){
 
         srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-
-        vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
-
 
         double l_min = 1e60, theta_m = -1.0;
-        for (auto fd: surface_mesh.faces()){
-            for (auto hed: surface_mesh.halfedges_around_face(surface_mesh.halfedge(fd))){
-                auto p0 = surface_mesh.points()[surface_mesh.source(hed)],
-                        p1 = surface_mesh.points()[surface_mesh.target(hed)];
+        for (auto fd: mesh.faces()){
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
+                auto p0 = mesh.points()[mesh.source(hed)],
+                        p1 = mesh.points()[mesh.target(hed)];
                 double e_len = sqrt(CGAL::squared_distance(p0, p1));
                 if (doubleCmp(e_len - l_min) < 0){
                     l_min = e_len;
@@ -477,17 +478,17 @@ namespace Methods{
             }
             if (fd != Mesh::null_face()) {
                 vector<int> vids = {};
-                auto hed = surface_mesh.halfedge(fd);
+                auto hed = mesh.halfedge(fd);
                 for (int i = 0; i != 3; i++) {
-                    int uid = surface_mesh.source(hed).idx();
+                    int uid = mesh.source(hed).idx();
                     vids.push_back(uid);
-                    hed = surface_mesh.next(hed);
+                    hed = mesh.next(hed);
                 }
                 for (int i = 0; i != 3; i++) {
                     auto t_u = CGAL::SM_Vertex_index(vids[i]),
                             t_v = CGAL::SM_Vertex_index(vids[(i + 1) % 3]),
                             t_w = CGAL::SM_Vertex_index(vids[(i + 2) % 3]);
-                    double angle = CGAL::approximate_angle(surface_mesh.points()[t_u], surface_mesh.points()[t_v], surface_mesh.points()[t_w]);
+                    double angle = CGAL::approximate_angle(mesh.points()[t_u], mesh.points()[t_v], mesh.points()[t_w]);
 //                cout << "angle = " << angle << endl;
                     if (doubleCmp(theta_m) < 0 || doubleCmp(angle - theta_m) < 0) {
                         theta_m = angle;
@@ -499,79 +500,88 @@ namespace Methods{
 
         vector<double> A2A_result = {};
         kSkip::Graph g;
-        kSkip::constructMeshGraph(surface_mesh, g);
+        kSkip::constructMeshGraph(mesh, g);
 
-        double query_time = 0.0;
-        int percent = 1;
-        for (auto i = 0; i < q_num; i++){
-            if (i > percent * q_num / 10){
+        double inner_query_time = 0.0, inter_query_time = 0.0;
+        unsigned percent = 1;
+        for (auto i = 0; i < q_num * 2; i++){
+            if (i > percent * q_num * 2 / 10){
                 fout << percent++ << "0% queries finished." << endl;
             }
             auto s = A2A_query[i].first;
             auto t = A2A_query[i].second;
-            int fid_s = A2A_fid[i].first;
-            int fid_t = A2A_fid[i].second;
+            unsigned fid_s = A2A_fid[i].first;
+            unsigned fid_t = A2A_fid[i].second;
             auto q_start = chrono::_V2::system_clock::now();
 
 //        double dijk_distance = kSkip::queryGraphA2A(kSkip::my_base_graph, s, fid_s, t, fid_t, face_point_map, point_location_map);
-            double kAlgo_distance = kSkip::computeDistanceBound(surface_mesh, g, K, s, fid_s, t, fid_t, l_min);
+            double kAlgo_distance = kSkip::computeDistanceBound(mesh, g, K, s, fid_s, t, fid_t, l_min);
 
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
-            query_time += static_cast<double>(q_duration.count());
+            if (i < q_num){
+                inner_query_time += static_cast<double>(q_duration.count());
+            }
+            else{
+                inter_query_time += static_cast<double>(q_duration.count());
+            }
 
             A2A_result.push_back(kAlgo_distance);
         }
-        return make_pair(A2A_result, make_pair(0, query_time));
+        return make_pair(A2A_result, make_tuple(0, inner_query_time, inter_query_time));
     }
 
-    int findProperQuadLevel(string &file_name, int point_num){
+//    int findProperQuadLevel(string &file_name, int point_num){
+//
+//        srand((int)time(0));
+//        Mesh surface_mesh;
+//        ifstream fin(file_name);
+//        fin >> surface_mesh;
+//        vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
+//
+//        int num_leaf_nodes = 0;
+//        int level = 0;
+//        while (num_leaf_nodes < floor(0.2 * surface_mesh.num_vertices() )){
+//            level++;
+//
+//            map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
+//            map<int, int> point_face_map;
+//            map<int, Point> point_location_map;
+//
+//            auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
+//                                                                                    bisector_point_map, point_face_map,
+//                                                                                    point_location_map, face_point_map);
+//
+//            Quad::quadTree quad_tree(surface_mesh, face_point_map);
+//            double rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
+//            for (auto i = 0; i < level; i++){
+//                quad_tree.buildLevel(surface_mesh, face_point_map);
+//            }
+//            set<int> pids;
+//            auto node = quad_tree.level_nodes[quad_tree.level][0];
+//            for (auto node: quad_tree.level_nodes[quad_tree.level]){
+//                for (auto pid: node->boundary_points_id){
+//                    pids.insert(pid);
+//                }
+//            }
+//            num_leaf_nodes = pids.size();
+//        }
+//        if (num_leaf_nodes >= floor(0.3 * surface_mesh.num_vertices())) level--;
+//        cout << "proper level = " << level << endl;
+//        return level;
+//    }
 
-        srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-        vector<double> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
-
-        int num_leaf_nodes = 0;
-        int level = 0;
-        while (num_leaf_nodes < floor(0.2 * surface_mesh.num_vertices() )){
-            level++;
-
-            map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
-            map<int, int> point_face_map;
-            map<int, Point> point_location_map;
-
-            auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
-                                                                                    bisector_point_map, point_face_map,
-                                                                                    point_location_map, face_point_map);
-
-            Quad::quadTree quad_tree(surface_mesh, face_point_map);
-            double rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
-            for (auto i = 0; i < level; i++){
-                quad_tree.buildLevel(surface_mesh, face_point_map);
-            }
-            set<int> pids;
-            auto node = quad_tree.level_nodes[quad_tree.level][0];
-            for (auto node: quad_tree.level_nodes[quad_tree.level]){
-                for (auto pid: node->boundary_points_id){
-                    pids.insert(pid);
-                }
-            }
-            num_leaf_nodes = pids.size();
-        }
-        if (num_leaf_nodes >= floor(0.3 * surface_mesh.num_vertices())) level--;
-        cout << "proper level = " << level << endl;
-        return level;
-    }
-
-    //TODO: Design new experiment running scheme
     void run_new(int argc, char* argv[]){
         bool generate_flag = getarg(0, "--generate");
         string input = getarg("", "--input"),
             output = getarg("", "--output");
         unsigned grid_num = getarg(4, "--grid-num");
         unsigned q_num = getarg(1000, "--query-num");
+        bool weighted_flag = getarg(0, "--weighted");
+        string method_type = getarg("", "--method");
+        double err = getarg(0.2, "--eps");
+        unsigned sp_num = getarg(5, "--sp-num");
+
 
         Mesh mesh;
         ifstream fin(input);
@@ -581,8 +591,6 @@ namespace Methods{
         vector<double> mesh_boundary = retrieveMeshBoundary(mesh);
 
         if (generate_flag){
-            bool weighted_flag = getarg(0, "--weighted");
-
             generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
             generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
             ofstream fout("A2A.query");
@@ -600,34 +608,95 @@ namespace Methods{
             cout << "face weight generate finished." << endl;
         }
         else{
-            //TODO: Optimize the method function calls and code quality: Fixed-S, Unfixed-S, K-Algo, SE, LQT, MMP
             ofstream fout(output);
-            string method_type = getarg("", "--method");
             loadQueriesA2A(A2A_query, A2A_fid);
             fout << "Load A2A queries finished." << endl;
             vector<double> face_weight = {};
             loadFaceWeight(face_weight);
             fout << "Load face weight finished." << endl;
-            unsigned sp_num = getarg(5, "--sp-num");
             if (method_type == "FixedS"){
                 fout << "Run Algorithm 0: Bisector-Fixed-Scheme" << endl;
-                auto res_bisector_fixed_S = A2A_FixedS(fout, mesh, aabb_tree, q_num, sp_num, weighted_flag, face_weight);
+                auto res_bisector_fixed_S = A2A_FixedS(fout, mesh, aabb_tree, q_num, sp_num, face_weight);
                 fout << "Query results begin: " << endl;
                 for (auto dis: res_bisector_fixed_S.first){
                     fout << fixed << setprecision(3) << dis << endl;
                 }
                 fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Running Time] Bisector-Fixed-Scheme: " << res_bisector_fixed_S.second.second << " ms" << endl;
+                auto res_time = res_bisector_fixed_S.second;
+                fout << fixed << setprecision(3) << "[Inner Query Running Time] Bisector-Fixed-Scheme: " << get<1>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inter Query Running Time] Bisector-Fixed-Scheme: " << get<2>(res_time) << " ms" << endl;
             }
             else if (method_type == "UnfixedS"){
                 fout << "Run Algorithm 1: Bisector-Unfixed-Scheme" << endl;
-                auto res_bisector_unfixed_S = A2A_UnfixedS(fout, mesh_file, eps, q_num, weight_flag, face_weight);
+                auto res_bisector_unfixed_S = A2A_UnfixedS(fout, mesh, aabb_tree, err, q_num, face_weight);
                 fout << "Query results begin: " << endl;
                 for (auto dis: res_bisector_unfixed_S.first){
                     fout << fixed << setprecision(3) << dis << endl;
                 }
                 fout << "Query results end..." << endl;
-                fout << fixed << setprecision(3) << "[Running Time] Bisector-Unfixed-Scheme: " << res_bisector_unfixed_S.second.second << " ms" << endl;
+                auto res_time = res_bisector_unfixed_S.second;
+                fout << fixed << setprecision(3) << "[Inner Query Running Time] Bisector-Unfixed-Scheme: " << get<1>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inter Query Running Time] Bisector-Unfixed-Scheme: " << get<2>(res_time) << " ms" << endl;
+
+            }
+            else if (method_type == "KAlgo"){
+                fout << "Run Algorithm 2: K-Algo" << endl;
+                unsigned K = floor(1 / err + 1);
+                auto res_KAlgo = A2A_KAlgo(fout, mesh, q_num, K, face_weight);
+                fout << "Query results begin: " << endl;
+                for (auto dis: res_KAlgo.first){
+                    fout << fixed << setprecision(3) << dis << endl;
+                }
+                fout << "Query results end..." << endl;
+                auto res_time = res_KAlgo.second;
+                fout << fixed << setprecision(3) << "[Inner Query Running Time] K-Algo: " << get<1>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inter Query Running Time] K-Algo: " << get<2>(res_time) << " ms" << endl;
+
+            }
+            else if (method_type == "SE"){
+                fout << "Run Algorithm 3: SE-Oracle" << endl;
+                auto res_SE = A2A_SE(fout, mesh, err, sp_num, q_num, face_weight);
+                fout << "Query results begin: " << endl;
+                for (auto dis: res_SE.first){
+                    fout << fixed << setprecision(3) << dis << endl;
+                }
+                fout << "Query results end..." << endl;
+                auto res_time = res_SE.second;
+                fout << fixed << setprecision(3) << "[Index Time] SE-oracle: " << get<0>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inner Query Running Time] SE-oracle: " << get<1>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inter Query Running Time] SE-oracle: " << get<2>(res_time) << " ms" << endl;
+            }
+            else if (method_type == "LQT"){
+                fout << "Run Algorithm 4: LQT-oracle" << endl;
+                unsigned level = floor(log2(1.0 * grid_num) * 0.5 + eps);
+                auto res_LQT = A2A_LQT(fout, mesh, err, sp_num, level, q_num, face_weight);
+                fout << "Query results begin: " << endl;
+                for (auto dis: res_LQT.first){
+                    fout << fixed << setprecision(3) << dis << endl;
+                }
+                fout << "Query results end..." << endl;
+                auto res_time = res_LQT.second;
+                fout << fixed << setprecision(3) << "[Index Time] LQT-oracle: " << get<0>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inner Query Running Time] LQT-oracle: " << get<1>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inter Query Running Time] LQT-oracle: " << get<2>(res_time) << " ms" << endl;
+
+            }
+            else if (method_type == "MMP"){
+                fout << "Run Algorithm 5: MMP-Algorithm" << endl;
+                auto res_MMP = A2A_MMP(fout, mesh, aabb_tree, q_num);
+
+                fout << "Query results begin: " << endl;
+                for (auto dis: res_MMP.first){
+                    fout << fixed << setprecision(3) << dis << endl;
+                }
+                fout << "Query results end..." << endl;
+                auto res_time = res_MMP.second;
+                fout << fixed << setprecision(3) << "[Inner Query Running Time] MMP-Algo: " << get<1>(res_time) << " ms" << endl;
+                fout << fixed << setprecision(3) << "[Inter Query Running Time] MMP-Algo: " << get<2>(res_time) << " ms" << endl;
+
+            }
+            else{
+                cout << "Method should between 0 and 5." << endl;
             }
 
         }
@@ -741,7 +810,7 @@ namespace Methods{
 //            else if (algo_type == 2){
 //                fout << ": K-Algo on the fly" << endl;
 //                int K = floor(1 / eps + 1);
-//                auto res_KAlgo = KAlgo_A2A(fout, mesh_file, q_num, K);
+//                auto res_KAlgo = A2A_KAlgo(fout, mesh_file, q_num, K);
 //                fout << "Query results begin: " << endl;
 //                for (auto dis: res_KAlgo.first){
 //                    fout << fixed << setprecision(3) << dis << endl;
@@ -751,7 +820,7 @@ namespace Methods{
 //            }
 //            else if (algo_type == 3){
 //                fout << ": SE-oracle" << endl;
-//                auto res_SE = SE_A2A(fout, mesh_file, eps, sp_num, q_num, weight_flag);
+//                auto res_SE = A2A_SE(fout, mesh_file, eps, sp_num, q_num, weight_flag);
 //                fout << "Query results begin: " << endl;
 //                for (auto dis: res_SE.first){
 //                    fout << fixed << setprecision(3) << dis << endl;
@@ -762,7 +831,7 @@ namespace Methods{
 //            }
 //            else if (algo_type == 4){
 //                fout << ": LQT-oracle" << endl;
-//                auto res_LQT = LQT_A2A(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
+//                auto res_LQT = A2A_LQT(fout, mesh_file, eps, sp_num, lqt_lev, q_num, weight_flag, face_weight);
 //                fout << "Query results begin: " << endl;
 //                for (auto dis: res_LQT.first){
 //                    fout << fixed << setprecision(3) << dis << endl;
@@ -773,7 +842,7 @@ namespace Methods{
 //            }
 //            else if (algo_type == 5){
 //                fout << ": MMP-Algorithm" << endl;
-//                auto res_MMP = MMP_A2A(fout, mesh_file, q_num);
+//                auto res_MMP = A2A_MMP(fout, mesh_file, q_num);
 //                fout << "Query results begin: " << endl;
 //
 //                for (auto dis: res_MMP.first){
