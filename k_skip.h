@@ -28,14 +28,14 @@ namespace kSkip{
     };
 
     struct Graph {
-        int num_V;
-        int num_E;
-        int corner_vertex_flag;
+        unsigned num_V;
+        unsigned num_E;
+        unsigned corner_vertex_flag;
 
-        vector<int> head;
+        vector<unsigned> head;
         vector<Edge> edges;
 
-        void init(int v) {
+        void init(unsigned v) {
             num_V = v;
             corner_vertex_flag = v;
             head.resize(v, 0);
@@ -44,7 +44,7 @@ namespace kSkip{
             edges.emplace_back(-1, -1, -1.0, -1, -1); // stop edge.
         }
 
-        void addEdge(int u, int v, double w) {
+        void addEdge(unsigned u, unsigned v, double w) {
             if (edges.size() == num_E){
                 edges.emplace_back(u, v, w, head[u], 0);
             }
@@ -56,7 +56,7 @@ namespace kSkip{
             num_E++;
         }
 
-        void removeEdge(int eid){
+        void removeEdge(unsigned eid){
             int prev = edges[eid].prev, next = edges[eid].next;
             if (!prev){
                 head[edges[eid].from] = next;
@@ -80,12 +80,12 @@ namespace kSkip{
             return num_V++;
         }
 
-        void removeVertex(int vid){
+        void removeVertex(unsigned vid){
             head[vid] = 0;
             num_V--;
         }
 
-        bool isCorner(int vid) {
+        bool isCorner(unsigned vid) {
             return vid < corner_vertex_flag;
         }
     };
@@ -93,7 +93,7 @@ namespace kSkip{
     Graph my_base_graph;
 
     // s,t dijkstra query
-    pair<double, double> dijkstra(Graph &g, int s, int t){
+    pair<double, double> dijkstra(const Graph &g, const unsigned &s, const unsigned &t){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         vector<bool> vis(g.num_V, false);
@@ -106,8 +106,8 @@ namespace kSkip{
             QNode f = q.top(); q.pop();
             if (f.p == t) break;
             if (vis[f.p]) continue;
-            for (int eid = g.head[f.p]; eid; eid = g.edges[eid].next){
-                int v = g.edges[eid].to;
+            for (auto eid = g.head[f.p]; eid; eid = g.edges[eid].next){
+                auto v = g.edges[eid].to;
                 double w = g.edges[eid].w;
 //                if (Base::doubleCmp(w) < 0){
 //                    cout << "w < 0: " << f.p << " " << v << " " << w << endl;
@@ -221,18 +221,18 @@ namespace kSkip{
         return static_cast<double>(duration.count());
     }
 
-    double queryGraphA2A(Graph &g, Base::Point s, int fid_s, Base::Point t, int fid_t,
-                         map<int, vector<int> > &face_point_map, map<int, Base::Point> &point_location_map){
-        int V_flag = g.num_V, E_flag = g.num_E;
+    double queryGraphA2A(Graph &g, const Base::Point &s, const unsigned &fid_s, const Base::Point &t, const unsigned &fid_t,
+                         const map<unsigned, vector<unsigned> > &face_point_map, const map<unsigned, Base::Point> &point_location_map){
+        unsigned V_flag = g.num_V, E_flag = g.num_E;
         //  add edges from s to its neighbor Steiner points
-        int sid = g.addVertex();
+        unsigned sid = g.addVertex();
         for (auto pid: face_point_map[fid_s]){
             auto pt = point_location_map[pid];
             double dis = sqrt(CGAL::squared_distance(s, pt));
             g.addEdge(sid, pid, dis);
         }
         //  add edges from t's neighbor Steiner points to t
-        int tid = g.addVertex();
+        unsigned tid = g.addVertex();
         for (auto pid: face_point_map[fid_t]){
             auto pt = point_location_map[pid];
             double dis = sqrt(CGAL::squared_distance(t, pt));

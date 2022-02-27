@@ -15,27 +15,28 @@ namespace WeightedDistanceOracle {
     Base::Graph base_graph;
     map<int, vector<double> > distance_map, bound_map;
 
+    //get the value of Gamme for each vertex of the terrain. Ref. JACM'2005 bisector
     vector<double> getVertexGamma(Base::Mesh &mesh, vector<double> &face_weights){
-        map<int, vector<int> > vertex_face_map = {};
+        map<unsigned, vector<unsigned> > vertex_face_map = {};
         vector<double> gama(mesh.num_vertices());
         double dis, w_min, w_max;
         for (auto fd: mesh.faces()) {
             for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
-                int source_idx = mesh.source(hed);
+                unsigned source_idx = mesh.source(hed);
                 assert(mesh.face(hed) != mesh.null_face());
                 vertex_face_map[source_idx].push_back(mesh.face(hed).idx());
             }
         }
 
         for (auto vd: mesh.vertices()){
-            int vid = vd.idx();
+            unsigned vid = vd.idx();
             Base::Point v(mesh.points()[vd]);
             dis = 1e100;
             w_max = -1.0;
             w_min = 1e100;
             for (auto fid: vertex_face_map[vid]){
-                if (Base::doubleCmp(face_weights[fid] - w_max) > 0) w_max = face_weights[fid];
-                if (Base::doubleCmp(face_weights[fid] - w_min) < 0) w_min = face_weights[fid];
+                w_max = Base::doubleCmp(face_weights[fid] - w_max) > 0 ? face_weights[fid] : w_max;
+                w_min = Base::doubleCmp(face_weights[fid] - w_min) < 0 ? face_weights[fid] : w_min;
                 double tmp_face_dis = -1.0;
                 for (auto &hed: mesh.halfedges_around_face(mesh.halfedge(*(mesh.faces_begin() + fid)))){
                     auto source = mesh.source(hed), target = mesh.target(hed);
@@ -54,38 +55,33 @@ namespace WeightedDistanceOracle {
         return gama;
     }
 
-    pair<double, int> //    int num_base_graph_vertices = ret_place_points.second;
-//
-//    auto ret_base_graph = WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
-//                                                                     bisector_point_map, point_face_map, point_location_map);
-//
-//    cout << "[TIME] Base graph construction: " << fixed << setprecision(2) << ret_base_graph << " ms" << endl;
-    placeSteinerPointsJACM(Base::Mesh &mesh, const double &eps,
-                           vector<double> &gama,
-                           map<int, vector<int>> &edge_bisector_map,
-                           map<int, vector<int>> &bisector_point_map,
-                           map<int, int> &point_face_map,
-                           map<int, Base::Point> &point_location_map,
-                           map<int, vector<int>> &face_point_map){
+    pair<double, int>
+    placeSteinerPointsJACM(const Base::Mesh &mesh, const double &eps,
+                           const double vector<double> &gama,
+                           map<unsigned, vector<unsigned>> &edge_bisector_map,
+                           map<unsigned, vector<unsigned>> &bisector_point_map,
+                           map<unsigned, unsigned> &point_face_map,
+                           map<unsigned, Base::Point> &point_location_map,
+                           map<unsigned, vector<unsigned>> &face_point_map){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
-        int num_vertices = static_cast<int>(mesh.num_vertices());
-        int bisector_num = 0;
+        unsigned num_vertices = mesh.num_vertices();
+        unsigned bisector_num = 0;
         for (auto  fd: mesh.faces()){
             for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
-                int eid = static_cast<int>(mesh.edge(hed).idx()),
-                    eid2 = static_cast<int>(mesh.edge(mesh.prev(hed)).idx());
+                unsigned eid = mesh.edge(hed).idx(),
+                    eid2 = mesh.edge(mesh.prev(hed)).idx();
                 vector<Base::Point> p(3);
-                vector<int> pid(3);
+                vector<unsigned> pid(3);
                 for (auto i = 0; i != 3; hed = mesh.next(hed), i++){
                     p[i] = mesh.points()[mesh.source(hed)];
-                    pid[i] = static_cast<int>(mesh.source(hed).idx());
+                    pid[i] = mesh.source(hed).idx();
                     if (point_location_map.find(pid[i]) == point_location_map.end()){
                         point_location_map[pid[i]] = p[i];
                     }
-                    face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
+                    face_point_map[fd.idx()].push_back(pid[i]);
                 }
-                vector<int> cur_bisector = {};
+                vector<unsigned> cur_bisector = {};
                 cur_bisector.push_back(pid[0]);
 
                 double len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
@@ -103,8 +99,8 @@ namespace WeightedDistanceOracle {
                 while (Base::doubleCmp(cur_distance - limit_distance) < 0) {
                     Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
                     point_location_map[num_vertices] = bisector_p;
-                    point_face_map[num_vertices] = static_cast<int>(fd.idx());
-                    face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
+                    point_face_map[num_vertices] = fd.idx();
+                    face_point_map[fd.idx()].push_back(num_vertices);
                     cur_bisector.push_back(num_vertices++);
                     double distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
                     cur_distance += distance_delta;
@@ -120,33 +116,33 @@ namespace WeightedDistanceOracle {
         return make_pair(static_cast<double>(duration.count()), num_vertices);
     }
 
-    pair<double, int> placeSteinerPointsFixed(Base::Mesh &mesh, const int &point_num,
-                                              map<int, vector<int>> &edge_bisector_map,
-                                              map<int, vector<int>> &bisector_point_map,
-                                              map<int, int> &point_face_map,
-                                              map<int, Base::Point> &point_location_map,
-                                              map<int, vector<int>> &face_point_map) {
+    pair<double, unsigned> placeSteinerPointsFixed(const Base::Mesh &mesh, const int &sp_num,
+                                              map<unsigned, vector<unsigned>> &edge_bisector_map,
+                                              map<unsigned, vector<unsigned>> &bisector_point_map,
+                                              map<unsigned, unsigned> &point_face_map,
+                                              map<unsigned, Base::Point> &point_location_map,
+                                              map<unsigned, vector<unsigned>> &face_point_map) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
-        int num_vertices = static_cast<int>(mesh.num_vertices());
-        int bisector_num = 0;
+        unsigned num_vertices = mesh.num_vertices();
+        unsigned bisector_num = 0;
         for (auto fd: mesh.faces()) {
             for (auto hed:mesh.halfedges_around_face(mesh.halfedge(fd))) {
-                int eid = static_cast<int>(mesh.edge(hed).idx()),
-                    eid2 = static_cast<int>(mesh.edge(mesh.prev(hed)).idx());
+                unsigned eid = mesh.edge(hed).idx(),
+                    eid2 = mesh.edge(mesh.prev(hed)).idx();
                 vector<Base::Point> p(3);
-                vector<int> pid(3);
+                vector<unsigned> pid(3);
                 for (auto i = 0; i != 3; hed = mesh.next(hed), i++) {
                     p[i] = mesh.points()[mesh.source(hed)];
-                    pid[i] = static_cast<int>(mesh.source(hed).idx());
+                    pid[i] = mesh.source(hed).idx();
                     if (point_location_map.find(pid[i]) == point_location_map.end()) {
                         point_location_map[pid[i]] = p[i];
                     }
-                    face_point_map[static_cast<int>(fd.idx())].push_back(pid[i]);
+                    face_point_map[fd.idx()].push_back(pid[i]);
                 }
 
-                vector<int> cur_bisector = {};
-                cur_bisector.push_back(pid[0]);
+                vector<unsigned> cur_bisector_points = {};
+                cur_bisector_points.push_back(pid[0]);
 
                 double len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
                         len2 = sqrt(CGAL::squared_distance(p[2], p[0]));
@@ -154,17 +150,17 @@ namespace WeightedDistanceOracle {
                 Base::Vector vec_bisector(p_end - p[0]);
                 double limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
                 double cur_distance = 0;
-                int k = 0;
+                unsigned k = 0;
 
-                while (Base::doubleCmp(cur_distance - limit_distance) < 0 && Base::doubleCmp(limit_distance / point_num) > 0) {
-                    Base::Point bisector_p = p[0] + static_cast<double>(++k) / point_num * vec_bisector;
+                while (Base::doubleCmp(cur_distance - limit_distance) < 0 && Base::doubleCmp(limit_distance / sp_num) > 0) {
+                    Base::Point bisector_p = p[0] + static_cast<double>(++k) / sp_num * vec_bisector;
                     point_location_map[num_vertices] = bisector_p;
-                    point_face_map[num_vertices] = static_cast<int>(fd.idx());
-                    face_point_map[static_cast<int>(fd.idx())].push_back(num_vertices);
-                    cur_bisector.push_back(num_vertices++);
-                    cur_distance += limit_distance / point_num;
+                    point_face_map[num_vertices] = fd.idx();
+                    face_point_map[fd.idx()].push_back(num_vertices);
+                    cur_bisector_points.push_back(num_vertices++);
+                    cur_distance += limit_distance / sp_num;
                 }
-                bisector_point_map[bisector_num] = cur_bisector;
+                bisector_point_map[bisector_num] = cur_bisector_points;
                 edge_bisector_map[eid].push_back(bisector_num);
                 edge_bisector_map[eid2].push_back(bisector_num++);
             }
@@ -175,13 +171,13 @@ namespace WeightedDistanceOracle {
         return make_pair(static_cast<double>(duration.count()), num_vertices);
     }
 
-    double constructBaseGraph(Base::Mesh &mesh,
-                              vector<double> &face_weight,
-                              int num_vertices,
-                              map<int, vector<int>> &edge_bisector_map,
-                              map<int, vector<int>> &bisector_point_map,
-                              map<int, int> &point_face_map,
-                              map<int, Base::Point> &point_location_map) {
+    double constructBaseGraph(const Base::Mesh &mesh,
+                              const vector<double> &face_weight,
+                              const unsigned &num_vertices,
+                              map<unsigned, vector<unsigned>> &edge_bisector_map,
+                              map<unsigned, vector<unsigned>> &bisector_point_map,
+                              map<unsigned, unsigned> &point_face_map,
+                              map<unsigned, Base::Point> &point_location_map) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         bool g_flag = true;
@@ -189,7 +185,7 @@ namespace WeightedDistanceOracle {
             g_flag = false;
             kSkip::my_base_graph.init(num_vertices);
         }
-        vector<pair<int, int> > base_graph_edges = {};
+        vector<pair<unsigned, unsigned> > base_graph_edges = {};
         vector<double> base_graph_weights = {};
         for (auto it = edge_bisector_map.begin(); it != edge_bisector_map.end(); it++) {
             auto neighbor_bisectors = it->second;
@@ -222,6 +218,7 @@ namespace WeightedDistanceOracle {
                 }
             }
         }
+        //boost graph.
         base_graph = Base::Graph(begin(base_graph_edges), end(base_graph_edges), begin(base_graph_weights),
                                  num_vertices);
 

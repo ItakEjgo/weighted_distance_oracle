@@ -362,28 +362,25 @@ namespace Methods{
         return make_pair(A2A_result, make_pair(0.0, query_time));
     }
 
-    pair<vector<double>, pair<double, double> > bisectorFixedScheme(ofstream &fout, string &file_name, int q_num, int point_num, int weight_flag, vector<double> &face_weight){
+    pair<vector<double>, pair<double, double> > A2A_FixedS(ofstream &fout, const Mesh &mesh,
+                                                           const AABB_tree &aabb_tree,
+                                                           const unsigned &q_num, const unsigned &sp_num,
+                                                           const vector<double> &face_weight){
 
         srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-        AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-//    vector<double> face_weight = generateFaceWeight(surface_mesh.num_faces());
+        map<unsigned, vector<unsigned> > edge_bisector_map = {}, bisector_point_map = {},  face_point_map = {};
+        map<unsigned, unsigned> point_face_map = {};
+        map<unsigned, Point> point_location_map = {};
 
-        map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
-        map<int, int> point_face_map;
-        map<int, Point> point_location_map;
-
-        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
+        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(mesh, sp_num, edge_bisector_map,
                                                                                 bisector_point_map, point_face_map,
                                                                                 point_location_map, face_point_map);
-        int num_base_graph_vertices = ret_place_points.second;
+        unsigned num_base_graph_vertices = ret_place_points.second;
+
         fout << "base graph |V| = " << num_base_graph_vertices << endl;
 
-        WeightedDistanceOracle::constructBaseGraph(surface_mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
+        WeightedDistanceOracle::constructBaseGraph(mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                    bisector_point_map, point_face_map, point_location_map);
 
         vector<double> A2A_result = {};
@@ -396,8 +393,8 @@ namespace Methods{
             }
             auto s = A2A_query[i].first;
             auto t = A2A_query[i].second;
-            int fid_s = A2A_fid[i].first;
-            int fid_t = A2A_fid[i].second;
+            unsigned fid_s = A2A_fid[i].first;
+            unsigned fid_t = A2A_fid[i].second;
             auto q_start = chrono::_V2::system_clock::now();
 
             double dijk_distance = kSkip::queryGraphA2A(kSkip::my_base_graph, s, fid_s, t, fid_t, face_point_map, point_location_map);
@@ -411,23 +408,19 @@ namespace Methods{
         return make_pair(A2A_result, make_pair(0, query_time));
     }
 
-    pair<vector<double>, pair<double, double> > bisectorUnfixedScheme(ofstream &fout, string &file_name, double eps, int q_num, int weight_flag, vector<double> &face_weight){
+    pair<vector<double>, pair<double, double> > A2A_UnfixedS(ofstream &fout, const Mesh &mesh, const AABB_tree &aabb_tree,
+                                                             const double &eps, const unsigned &q_num,
+                                                             const vector<double> &face_weight){
 
         srand((int)time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-        AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 
-//    vector<double> face_weight = generateFaceWeight(surface_mesh.num_vertices());
 
-        map<int, vector<int> > edge_bisector_map, bisector_point_map,  face_point_map;
-        map<int, int> point_face_map;
-        map<int, Point> point_location_map;
+        map<unsigned, vector<unsigned> > edge_bisector_map = {}, bisector_point_map = {},  face_point_map = {};
+        map<unsigned, unsigned> point_face_map = {};
+        map<unsigned, Point> point_location_map = {};
 
-        vector<double> gama = WeightedDistanceOracle::getVertexGamma(surface_mesh, face_weight);
-        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(surface_mesh, eps, gama, edge_bisector_map,
+        vector<double> gama = WeightedDistanceOracle::getVertexGamma(mesh, face_weight);
+        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsJACM(mesh, eps, gama, edge_bisector_map,
                                                                                bisector_point_map, point_face_map,
                                                                                point_location_map, face_point_map);
 
@@ -608,6 +601,35 @@ namespace Methods{
         }
         else{
             //TODO: Optimize the method function calls and code quality: Fixed-S, Unfixed-S, K-Algo, SE, LQT, MMP
+            ofstream fout(output);
+            string method_type = getarg("", "--method");
+            loadQueriesA2A(A2A_query, A2A_fid);
+            fout << "Load A2A queries finished." << endl;
+            vector<double> face_weight = {};
+            loadFaceWeight(face_weight);
+            fout << "Load face weight finished." << endl;
+            unsigned sp_num = getarg(5, "--sp-num");
+            if (method_type == "FixedS"){
+                fout << "Run Algorithm 0: Bisector-Fixed-Scheme" << endl;
+                auto res_bisector_fixed_S = A2A_FixedS(fout, mesh, aabb_tree, q_num, sp_num, weighted_flag, face_weight);
+                fout << "Query results begin: " << endl;
+                for (auto dis: res_bisector_fixed_S.first){
+                    fout << fixed << setprecision(3) << dis << endl;
+                }
+                fout << "Query results end..." << endl;
+                fout << fixed << setprecision(3) << "[Running Time] Bisector-Fixed-Scheme: " << res_bisector_fixed_S.second.second << " ms" << endl;
+            }
+            else if (method_type == "UnfixedS"){
+                fout << "Run Algorithm 1: Bisector-Unfixed-Scheme" << endl;
+                auto res_bisector_unfixed_S = A2A_UnfixedS(fout, mesh_file, eps, q_num, weight_flag, face_weight);
+                fout << "Query results begin: " << endl;
+                for (auto dis: res_bisector_unfixed_S.first){
+                    fout << fixed << setprecision(3) << dis << endl;
+                }
+                fout << "Query results end..." << endl;
+                fout << fixed << setprecision(3) << "[Running Time] Bisector-Unfixed-Scheme: " << res_bisector_unfixed_S.second.second << " ms" << endl;
+            }
+
         }
     }
 
@@ -698,7 +720,7 @@ namespace Methods{
 //            // Algo 6: greedy-Algo # generate spanner by the greedy algorithm
 //            if (algo_type == 0){
 //                fout << ": Bisector-Fixed-Scheme" << endl;
-//                auto res_bisector_fixed_S = bisectorFixedScheme(fout, mesh_file, q_num, sp_num, weight_flag, face_weight);
+//                auto res_bisector_fixed_S = A2A_FixedS(fout, mesh_file, q_num, sp_num, weight_flag, face_weight);
 //                fout << "Query results begin: " << endl;
 //                for (auto dis: res_bisector_fixed_S.first){
 //                    fout << fixed << setprecision(3) << dis << endl;
@@ -708,7 +730,7 @@ namespace Methods{
 //            }
 //            else if (algo_type == 1){
 //                fout << ": Bisector-Unfixed-Scheme" << endl;
-//                auto res_bisector_unfixed_S = bisectorUnfixedScheme(fout, mesh_file, eps, q_num, weight_flag, face_weight);
+//                auto res_bisector_unfixed_S = A2A_UnfixedS(fout, mesh_file, eps, q_num, weight_flag, face_weight);
 //                fout << "Query results begin: " << endl;
 //                for (auto dis: res_bisector_unfixed_S.first){
 //                    fout << fixed << setprecision(3) << dis << endl;

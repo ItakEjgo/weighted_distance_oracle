@@ -108,7 +108,8 @@ namespace Base {
     // Return the point rotate around a vector with given angle.
     Point pointRotationAroundVector(Point p, Point vec_source, Point vec_target, double theta);
 
-    double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid);
+    double distanceSnell(const Mesh &mesh, const vector<double> &face_weight, const Point &p1, const unsigned &fid1,
+                         const Point &p2, const unsigned &fid2, const unsigned &eid);
 
     //get the boundary of a given grid. The order of the returned values are x_min, x_max, y_min, y_max;
     vector<double> fastRetrieveGridBoundary(const int &grid_id, const int &grid_num, const double &mesh_xmin, const double &mesh_xmax,
@@ -194,7 +195,9 @@ namespace Base {
 //        }
     }
 
-    double distanceSnell(Mesh &mesh, vector<double> &face_weight, Point p1, int fid1, Point p2, int fid2, int eid) {
+    // Return the Snell distance for two points on adjacent faces.
+    double distanceSnell(const Mesh &mesh, const vector<double> &face_weight, const Point &p1, const unsigned &fid1,
+                         const Point &p2, const unsigned &fid2, const unsigned &eid) {
         //  same face
         if (!(fid1 - fid2)) {
             return face_weight[fid1] * sqrt(CGAL::squared_distance(p1, p2));
@@ -257,6 +260,7 @@ namespace Base {
         const double ratio = n2 / n1;
         Point point_mid;
 
+        // perform binary search for 50 iterations.
         for (auto i = 0; i != 50; i++) {
             Vector t_vec(point_r - point_l);
             point_mid = point_l + t_vec * 0.5;
@@ -463,12 +467,11 @@ namespace Base {
         return A2A_query;
     }
 
-    void loadQueriesA2A(vector<pair<Point, Point> > &A2A_query, vector<pair<int, int> > &A2A_fid) {
+    void loadQueriesA2A(vector<pair<Point, Point> > &A2A_query, vector<pair<unsigned, unsigned> > &A2A_fid) {
         ifstream fin("A2A.query");
         Point p1, p2;
         int fid1, fid2;
-        A2A_query.clear();
-        A2A_fid.clear();
+        A2A_query.clear(); A2A_fid.clear();
         while (fin >> p1 >> fid1 >> p2 >> fid2) {
             A2A_query.emplace_back(p1, p2);
             A2A_fid.emplace_back(fid1, fid2);
