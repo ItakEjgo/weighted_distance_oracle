@@ -13,13 +13,13 @@ namespace WeightedDistanceOracle {
     using namespace std;
 
     Base::Graph base_graph;
-    map<int, vector<double> > distance_map, bound_map;
+    map<int, vector<float> > distance_map, bound_map;
 
     //get the value of Gamme for each vertex of the terrain. Ref. JACM'2005 bisector
-    vector<double> getVertexGamma(const Base::Mesh &mesh, const vector<double> &face_weights){
+    vector<float> getVertexGamma(const Base::Mesh &mesh, const vector<float> &face_weights){
         map<unsigned, vector<unsigned> > vertex_face_map = {};
-        vector<double> gama(mesh.num_vertices());
-        double dis, w_min, w_max;
+        vector<float> gama(mesh.num_vertices());
+        float dis, w_min, w_max;
         for (auto fd: mesh.faces()) {
             for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))) {
                 unsigned source_idx = mesh.source(hed);
@@ -35,18 +35,18 @@ namespace WeightedDistanceOracle {
             w_max = -1.0;
             w_min = 1e100;
             for (auto fid: vertex_face_map[vid]){
-                w_max = Base::doubleCmp(face_weights[fid] - w_max) > 0 ? face_weights[fid] : w_max;
-                w_min = Base::doubleCmp(face_weights[fid] - w_min) < 0 ? face_weights[fid] : w_min;
-                double tmp_face_dis = -1.0;
+                w_max = Base::floatCmp(face_weights[fid] - w_max) > 0 ? face_weights[fid] : w_max;
+                w_min = Base::floatCmp(face_weights[fid] - w_min) < 0 ? face_weights[fid] : w_min;
+                float tmp_face_dis = -1.0;
                 for (auto &hed: mesh.halfedges_around_face(mesh.halfedge(*(mesh.faces_begin() + fid)))){
                     auto source = mesh.source(hed), target = mesh.target(hed);
                     Base::Point p(mesh.points()[source]), q(mesh.points()[target]);
-                    double t = CGAL::squared_distance(v, Base::Segment(p, q));
-                    if (Base::doubleCmp(t - tmp_face_dis) > 0){
+                    float t = CGAL::squared_distance(v, Base::Segment(p, q));
+                    if (Base::floatCmp(t - tmp_face_dis) > 0){
                         tmp_face_dis = t;
                     }
                 }
-                if (Base::doubleCmp(tmp_face_dis - dis) < 0){
+                if (Base::floatCmp(tmp_face_dis - dis) < 0){
                     dis = tmp_face_dis;
                 }
             }
@@ -55,9 +55,9 @@ namespace WeightedDistanceOracle {
         return gama;
     }
 
-    pair<double, int>
-    placeSteinerPointsJACM(const Base::Mesh &mesh, const double &eps,
-                           const vector<double> &gama,
+    pair<float, int>
+    placeSteinerPointsJACM(const Base::Mesh &mesh, const float &eps,
+                           const vector<float> &gama,
                            map<unsigned, vector<unsigned> > &edge_bisector_map,
                            map<unsigned, vector<unsigned> > &bisector_point_map,
                            map<unsigned, unsigned> &point_face_map,
@@ -84,25 +84,25 @@ namespace WeightedDistanceOracle {
                 vector<unsigned> cur_bisector = {};
                 cur_bisector.push_back(pid[0]);
 
-                double len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
+                float len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
                         len2 = sqrt(CGAL::squared_distance(p[2], p[0]));
                 Base::Point p_end(p[1] + Base::Vector(p[2] - p[1]) * len1 / (len1 + len2));
                 Base::Vector vec_bisector(p_end - p[0]);
                 Base::Point aux1 = p[0] + Base::Vector(p[1] - p[0]) * gama[pid[0]] / len1;
                 Base::Point aux2 = p[0] + Base::Vector(p[2] - p[0]) * gama[pid[0]] / len2;
                 Base::Point bisector_p0 = aux1 + 0.5 * Base::Vector(aux2 - aux1);
-                double angle = Base::PI * CGAL::approximate_angle(p[1], p[0], p[2]) / 180;
-                double sin_val = sin(angle * 0.5);
-                double limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
-                double cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
+                float angle = Base::PI * CGAL::approximate_angle(p[1], p[0], p[2]) / 180;
+                float sin_val = sin(angle * 0.5);
+                float limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
+                float cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
 
-                while (Base::doubleCmp(cur_distance - limit_distance) < 0) {
+                while (Base::floatCmp(cur_distance - limit_distance) < 0) {
                     Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = fd.idx();
                     face_point_map[fd.idx()].push_back(num_vertices);
                     cur_bisector.push_back(num_vertices++);
-                    double distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
+                    float distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
                     cur_distance += distance_delta;
                 }
                 bisector_point_map[bisector_num] = cur_bisector;
@@ -113,10 +113,10 @@ namespace WeightedDistanceOracle {
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return make_pair(static_cast<double>(duration.count()), num_vertices);
+        return make_pair(static_cast<float>(duration.count()), num_vertices);
     }
 
-    pair<double, unsigned> placeSteinerPointsFixed(const Base::Mesh &mesh, const int &sp_num,
+    pair<float, unsigned> placeSteinerPointsFixed(const Base::Mesh &mesh, const int &sp_num,
                                               map<unsigned, vector<unsigned>> &edge_bisector_map,
                                               map<unsigned, vector<unsigned>> &bisector_point_map,
                                               map<unsigned, unsigned> &point_face_map,
@@ -144,16 +144,16 @@ namespace WeightedDistanceOracle {
                 vector<unsigned> cur_bisector_points = {};
                 cur_bisector_points.push_back(pid[0]);
 
-                double len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
+                float len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
                         len2 = sqrt(CGAL::squared_distance(p[2], p[0]));
                 Base::Point p_end(p[1] + Base::Vector(p[2] - p[1]) * len1 / (len1 + len2));
                 Base::Vector vec_bisector(p_end - p[0]);
-                double limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
-                double cur_distance = 0;
+                float limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
+                float cur_distance = 0;
                 unsigned k = 0;
 
-                while (Base::doubleCmp(cur_distance - limit_distance) < 0 && Base::doubleCmp(limit_distance / sp_num) > 0) {
-                    Base::Point bisector_p = p[0] + static_cast<double>(++k) / sp_num * vec_bisector;
+                while (Base::floatCmp(cur_distance - limit_distance) < 0 && Base::floatCmp(limit_distance / sp_num) > 0) {
+                    Base::Point bisector_p = p[0] + static_cast<float>(++k) / sp_num * vec_bisector;
                     point_location_map[num_vertices] = bisector_p;
                     point_face_map[num_vertices] = fd.idx();
                     face_point_map[fd.idx()].push_back(num_vertices);
@@ -168,11 +168,11 @@ namespace WeightedDistanceOracle {
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return make_pair(static_cast<double>(duration.count()), num_vertices);
+        return make_pair(static_cast<float>(duration.count()), num_vertices);
     }
 
-    double constructBaseGraph(const Base::Mesh &mesh,
-                              const vector<double> &face_weight,
+    float constructBaseGraph(const Base::Mesh &mesh,
+                              const vector<float> &face_weight,
                               const unsigned &num_vertices,
                               map<unsigned, vector<unsigned>> &edge_bisector_map,
                               map<unsigned, vector<unsigned>> &bisector_point_map,
@@ -186,7 +186,7 @@ namespace WeightedDistanceOracle {
             kSkip::my_base_graph.init(num_vertices);
         }
         vector<pair<unsigned, unsigned> > base_graph_edges = {};
-        vector<double> base_graph_weights = {};
+        vector<float> base_graph_weights = {};
         for (auto it = edge_bisector_map.begin(); it != edge_bisector_map.end(); it++) {
             auto neighbor_bisectors = it->second;
             auto common_eid = it->first;
@@ -203,13 +203,10 @@ namespace WeightedDistanceOracle {
                             fid_2 = point_face_map[fid_2];
 //                            auto point_1 = point_location_map[pid_1];
 //                            auto point_2 = point_location_map[pid_2];
-                            double dis = Base::distanceSnell(mesh, face_weight,
+                            float dis = Base::distanceSnell(mesh, face_weight,
                                                              point_location_map[pid_1], fid_1,
                                                              point_location_map[pid_2], fid_2,
                                                              common_eid);
-//                            if (pid_1 == 7) {
-//                                cout << "dbg: " << pid_1 << " " << pid_2 << " " << dis << endl;
-//                            }
                             base_graph_edges.emplace_back(pid_1, pid_2);
                             base_graph_weights.push_back(dis);
                             if (!g_flag) kSkip::my_base_graph.addEdge(pid_1, pid_2, dis);
@@ -225,14 +222,14 @@ namespace WeightedDistanceOracle {
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<double>(duration.count());
+        return static_cast<float>(duration.count());
     }
 
     class PartitionTreeNode {
     public:
         int node_id{};
         int center_idx;
-        double radius;
+        float radius;
         int level;
         PartitionTreeNode *parent;
         map<int, PartitionTreeNode *> children;
@@ -244,7 +241,7 @@ namespace WeightedDistanceOracle {
 
         PartitionTreeNode();
 
-        PartitionTreeNode(int center_idx_value, double radius_value, int node_id_value);
+        PartitionTreeNode(int center_idx_value, float radius_value, int node_id_value);
 
         ~PartitionTreeNode();
 
@@ -259,7 +256,7 @@ namespace WeightedDistanceOracle {
         radius = -1.0;
     }
 
-    inline PartitionTreeNode::PartitionTreeNode(int center_idx_value, double radius_value, int node_id_value) {
+    inline PartitionTreeNode::PartitionTreeNode(int center_idx_value, float radius_value, int node_id_value) {
         parent = nullptr;
         children.clear();
         center_idx = center_idx_value;
@@ -270,9 +267,9 @@ namespace WeightedDistanceOracle {
     inline PartitionTreeNode::~PartitionTreeNode() {
     }
 
-    typedef pair<double, pair<PartitionTreeNode *, PartitionTreeNode *> > nodePairWithValue;
+    typedef pair<float, pair<PartitionTreeNode *, PartitionTreeNode *> > nodePairWithValue;
     typedef pair<PartitionTreeNode*, PartitionTreeNode*> nodePair;
-    map<pair<int, int>, double> enhanced_edges; // store the enhanced edges
+    map<pair<int, int>, float> enhanced_edges; // store the enhanced edges
 
     class PartitionTree {
     public:
@@ -285,17 +282,17 @@ namespace WeightedDistanceOracle {
         PartitionTree();
         ~PartitionTree();
 
-        double constructTree(int num_vertices);
+        float constructTree(int num_vertices);
 
-        double generateNodePairSet(const double &eps, const int &type, const unsigned &sp_num, set<nodePair> &node_pair_set);
+        float generateNodePairSet(const float &eps, const int &type, const unsigned &sp_num, set<nodePair> &node_pair_set);
 
         static void getPathToRoot(PartitionTreeNode* node, vector<PartitionTreeNode*> &path);
 
         void rootNodeSelect(const vector<unsigned> &pid_list);
 
-        int buildLevel(const vector<unsigned> &pid_list, const double &l);
+        int buildLevel(const vector<unsigned> &pid_list, const float &l);
 
-        double constructTree(ofstream &fout, const vector<unsigned> &pid_list, const double &l);
+        float constructTree(ofstream &fout, const vector<unsigned> &pid_list, const float &l);
 
     };
 
@@ -316,35 +313,35 @@ namespace WeightedDistanceOracle {
         }
     }
 
-    inline double wellSeparatedValue(double center_distance, double eps, int type,
+    inline float wellSeparatedValue(float center_distance, float eps, int type,
                                      PartitionTreeNode* node1, PartitionTreeNode* node2){
-        if (!Base::doubleCmp(node1->radius) && !Base::doubleCmp(node2->radius)) return 0;
-        assert(Base::doubleCmp(eps));
-        double rhs = (2 / eps + 2) * max(node1->radius, node2->radius);
+        if (!Base::floatCmp(node1->radius) && !Base::floatCmp(node2->radius)) return 0;
+        assert(Base::floatCmp(eps));
+        float rhs = (2 / eps + 2) * max(node1->radius, node2->radius);
         if (!type){
             rhs = (8 / eps + 4) * max(node1->radius, node2->radius);
         }
         return rhs;
     }
 
-    double PartitionTree::generateNodePairSet(const double &eps, const int &type, const unsigned &sp_num, set<nodePair> &node_pair_set) {
+    float PartitionTree::generateNodePairSet(const float &eps, const int &type, const unsigned &sp_num, set<nodePair> &node_pair_set) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         priority_queue<nodePairWithValue , vector<nodePairWithValue>, greater<nodePairWithValue> > q;
-        double center_distance = 0.0;
-        double ws_value = -1.0;
+        float center_distance = 0.0;
+        float ws_value = -1.0;
 
         ws_value = wellSeparatedValue(center_distance, eps, type, root, root);
 
         q.push(make_pair(0 - ws_value, make_pair(root, root)));
-        while (Base::doubleCmp(q.top().first) < 0){
+        while (Base::floatCmp(q.top().first) < 0){
             nodePairWithValue cur_node_pair;
             cur_node_pair = q.top(); q.pop();
             auto l_node = cur_node_pair.second.first;
             auto r_node = cur_node_pair.second.second;
             //  Split the left node
-            if (Base::doubleCmp(l_node->radius - r_node->radius) > 0 ||
-                !Base::doubleCmp(l_node->radius - r_node->radius)
+            if (Base::floatCmp(l_node->radius - r_node->radius) > 0 ||
+                !Base::floatCmp(l_node->radius - r_node->radius)
                 && l_node->center_idx <= r_node->center_idx){
                 for (auto &child: l_node->children){
                     auto child_idx = child.first;
@@ -378,11 +375,11 @@ namespace WeightedDistanceOracle {
 
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
-        return static_cast<double>(duration.count());
+        return static_cast<float>(duration.count());
     }
 
     // Construct partition tree.
-    double PartitionTree::constructTree(ofstream &fout, const vector<unsigned> &pid_list, const double &l) {
+    float PartitionTree::constructTree(ofstream &fout, const vector<unsigned> &pid_list, const float &l) {
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
         auto num_vertices = pid_list.size();
@@ -402,22 +399,38 @@ namespace WeightedDistanceOracle {
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
 
-        return static_cast<double>(duration.count());
+        return static_cast<float>(duration.count());
     }
 
     void PartitionTree::rootNodeSelect(const vector<unsigned> &pid_list) {
         auto num_vertices = pid_list.size();
         int root_index = pid_list[rand() % num_vertices];   // random select one point
-//        vector<double> d(distance_map[root_index]);
-        vector<double> d; kSkip::bounded_dijkstra(kSkip::my_base_graph, root_index, Base::unreachable, d);
-        double radius = -1.0;
+//        vector<float> d(distance_map[root_index]);
+        vector<float> d;
+        kSkip::bounded_dijkstra(kSkip::my_base_graph, root_index, Base::unreachable, d);
+        float radius = -1.0;
+//        for (auto &dis: d){
+//            if (Base::floatCmp(radius - distance) < 0){
+//                radius = distance;
+//            }
+//            if (!Base::floatCmp(radius - Base::unreachable)){
+//                cout << "ERROR: Unconnected Steiner Points found!" << endl;
+//            }
+//        }
+        cout << "num vertices = " << num_vertices << " d.size() = " << d.size() << endl;
         for (auto i = 0; i < num_vertices; i++){
             if (pid_list[i] == root_index) continue;
-            double distance = d[pid_list[i]];
-            if (Base::doubleCmp(radius - distance) < 0){
+            float distance = d[pid_list[i]];
+            if (Base::floatCmp(radius - distance) < 0){
                 radius = distance;
             }
+            if (!Base::floatCmp(radius - Base::unreachable)){
+                int x; cin >> x;
+                cout << "ERROR: Unconnected Steiner Points found!" << endl;
+                cout << "ERROR Steiner Point ID = " << i << endl;
+            }
         }
+
         root = new PartitionTreeNode(root_index, radius, num_tree_nodes++);
         max_level = 0;
         root->level = max_level;
@@ -429,7 +442,7 @@ namespace WeightedDistanceOracle {
 //        cout << "[Partition Tree] Root = (" << root_index << "," << radius << ")" << endl;
     }
 
-    int PartitionTree::buildLevel(const vector<unsigned> &pid_list, const double &l){
+    int PartitionTree::buildLevel(const vector<unsigned> &pid_list, const float &l){
         auto num_vertices = pid_list.size();
         if (stop_flag){
             cout << "[Partition Tree] Already finish the building of partition tree." << endl;
@@ -442,17 +455,17 @@ namespace WeightedDistanceOracle {
         for (auto i = 0; i < num_vertices; i++){
             vertex_to_be_covered.insert(pid_list[i]);
         }
-        double cur_level_radius = level_nodes[max_level][0]->radius * 0.5;
-//        cout << "[Partition Tree] Current level radius is: " << cur_level_radius << endl;
+        float cur_level_radius = level_nodes[max_level][0]->radius * 0.5;
+        cout << "[Partition Tree] Current level radius is: " << cur_level_radius << endl;
         for (auto &last_level_node: level_nodes[max_level]){
             int vertex_idx = last_level_node->center_idx;
             PartitionTreeNode* cur_node = new PartitionTreeNode(vertex_idx, cur_level_radius, num_tree_nodes++);
-//            vector<double> d = distance_map[vertex_idx];
-            vector<double> d; kSkip::bounded_dijkstra(kSkip::my_base_graph, vertex_idx, l * cur_level_radius, d);
+//            vector<float> d = distance_map[vertex_idx];
+            vector<float> d; kSkip::bounded_dijkstra(kSkip::my_base_graph, vertex_idx, l * cur_level_radius, d);
             for (auto it = vertex_to_be_covered.begin(); it != vertex_to_be_covered.end(); ){
                 int id = *it;
-                assert(Base::doubleCmp(d[id]) >= 0);
-                if (Base::doubleCmp(d[id] - cur_level_radius) <= 0){
+                assert(Base::floatCmp(d[id]) >= 0);
+                if (Base::floatCmp(d[id] - cur_level_radius) <= 0){
 //                    cout << "s = " << vertex_idx << " id = " << id << " dis = " << d[id] << endl;
                     cur_node->cover_set[id] = true;
                     it = vertex_to_be_covered.erase(it);
@@ -464,7 +477,7 @@ namespace WeightedDistanceOracle {
             //            for (auto i = 0; i < d.size(); i++){
             for (auto i = 0; i < pid_list.size(); i++){
                     int id = pid_list[i];
-                    if (Base::doubleCmp(d[id] - l * cur_level_radius) < 0){
+                    if (Base::floatCmp(d[id] - l * cur_level_radius) < 0){
                     if (!(enhanced_edges.find(make_pair(vertex_idx, id)) == enhanced_edges.end()))continue;
                     enhanced_edges[make_pair(vertex_idx, id)] = d[id];
                 }
@@ -487,11 +500,11 @@ namespace WeightedDistanceOracle {
                 //  Vertex already covered by some other vertex.
                 if (vertex_to_be_covered.find(vertex_idx) == vertex_to_be_covered.end()) continue;
                 PartitionTreeNode* cur_node = new PartitionTreeNode(vertex_idx, cur_level_radius, num_tree_nodes++);
-//                vector<double> d = distance_map[vertex_idx];
-                vector<double> d; kSkip::bounded_dijkstra(kSkip::my_base_graph, vertex_idx, l * cur_level_radius, d);
+//                vector<float> d = distance_map[vertex_idx];
+                vector<float> d; kSkip::bounded_dijkstra(kSkip::my_base_graph, vertex_idx, l * cur_level_radius, d);
                 for (auto it = vertex_to_be_covered.begin(); it != vertex_to_be_covered.end(); ){
                     int id = *it;
-                    if (Base::doubleCmp(d[id] - cur_level_radius) <= 0){
+                    if (Base::floatCmp(d[id] - cur_level_radius) <= 0){
                         cur_node->cover_set[id] = true;
                         it = vertex_to_be_covered.erase(it);
                     }
@@ -502,7 +515,7 @@ namespace WeightedDistanceOracle {
 //                for (auto i = 0; i < d.size(); i++){
                 for (auto i = 0; i < pid_list.size(); i++){
                     int id = pid_list[i];
-                    if (Base::doubleCmp(d[id] - l * cur_level_radius) < 0){
+                    if (Base::floatCmp(d[id] - l * cur_level_radius) < 0){
                         if (!(enhanced_edges.find(make_pair(vertex_idx, id)) == enhanced_edges.end()))continue;
                         enhanced_edges[make_pair(vertex_idx, id)] = d[id];
                     }
@@ -512,14 +525,14 @@ namespace WeightedDistanceOracle {
                 PartitionTreeNode* father;
                 for (auto &last_level_node: level_nodes[max_level]){
                     int fa_id = last_level_node->center_idx;
-                    assert(Base::doubleCmp(d[father_idx]) >= 0);
-                    assert(Base::doubleCmp(d[fa_id]) >= 0);
-                    if (father_idx < 0 || Base::doubleCmp(d[fa_id] - d[father_idx]) < 0){
+                    assert(Base::floatCmp(d[father_idx]) >= 0);
+                    assert(Base::floatCmp(d[fa_id]) >= 0);
+                    if (father_idx < 0 || Base::floatCmp(d[fa_id] - d[father_idx]) < 0){
                         father_idx = fa_id;
                         father = last_level_node;
                     }
                 }
-                assert(Base::doubleCmp(d[father_idx] - cur_level_radius * 2.0) <= 0);
+                assert(Base::floatCmp(d[father_idx] - cur_level_radius * 2.0) <= 0);
                 cur_node->parent = father;
                 father->children[vertex_idx] = cur_node;
                 cur_node->level = max_level + 1;
@@ -539,10 +552,10 @@ namespace WeightedDistanceOracle {
         return static_cast<int>(cur_level_nodes.size());
     }
 
-    double distanceQueryEfficient(set<nodePair> &node_pairs,
+    float distanceQueryEfficient(set<nodePair> &node_pairs,
                                   vector<PartitionTreeNode*> &As,
                                   vector<PartitionTreeNode*> &At){
-        double approximate_distance = 0.0;
+        float approximate_distance = 0.0;
         int cnt = 0;
         // same-layer
         for (auto i = 0; i < As.size(); i++){
@@ -577,27 +590,27 @@ namespace WeightedDistanceOracle {
         return approximate_distance;
     }
 
-    double distanceQueryA2A(const Base::Point &query_source, const unsigned &fid_s,
+    float distanceQueryA2A(const Base::Point &query_source, const unsigned &fid_s,
                           const Base::Point &query_target, const unsigned &fid_t,
                           const PartitionTree &tree,
                           map<unsigned, vector<unsigned> > &face_point_map,
                           map<unsigned, Base::Point> &point_location_map,
                           set<nodePair> &node_pairs
                           ){
-        double ret_dis = Base::unreachable;
+        float ret_dis = Base::unreachable;
         auto leaf_nodes = tree.level_nodes[tree.max_level];
         for (auto pid1: face_point_map[fid_s]){
             for (auto pid2: face_point_map[fid_t]){
                 vector<PartitionTreeNode*> As, At;
                 tree.getPathToRoot(leaf_nodes[pid1], As);
                 tree.getPathToRoot(leaf_nodes[pid2], At);
-                double t_dis = sqrt(CGAL::squared_distance(query_source, point_location_map[pid1])) +
+                float t_dis = sqrt(CGAL::squared_distance(query_source, point_location_map[pid1])) +
                         distanceQueryEfficient(node_pairs, As, At) +
                         sqrt(CGAL::squared_distance(point_location_map[pid2], query_target));
-                if (Base::doubleCmp(t_dis - ret_dis) < 0) ret_dis = t_dis;
+                if (Base::floatCmp(t_dis - ret_dis) < 0) ret_dis = t_dis;
             }
         }
-        if (!Base::doubleCmp(ret_dis - Base::unreachable)){
+        if (!Base::floatCmp(ret_dis - Base::unreachable)){
             cout << "ERROR: A2A distance not found!" << endl;
         }
         return ret_dis;

@@ -15,11 +15,11 @@ namespace Quad{
 
     int WSPD_hit = 0;
     kSkip::Graph my_base_graph;
-    map<pair<int, int>, double> LQT_distance_map;
+    map<pair<int, int>, float> LQT_distance_map;
 
     struct my_point{
-        double x, y;
-        my_point(double a, double b):x(a), y(b){}
+        float x, y;
+        my_point(float a, float b):x(a), y(b){}
         my_point(){}
         my_point operator - (const my_point& b) const{
             return my_point(x - b.x, y - b.y);
@@ -27,18 +27,18 @@ namespace Quad{
     };
 
     int cross_product(my_point p1, my_point p2){
-        return Base::doubleCmp(p1.x * p2.y - p2.x * p1.y);
+        return Base::floatCmp(p1.x * p2.y - p2.x * p1.y);
     }
 
     bool segment_intersection(my_point a, my_point b, my_point c, my_point d){
-        if (Base::doubleCmp(std::max(a.x, b.x) - std::min(c.x, d.x)) < 0 || Base::doubleCmp(std::max(a.y, b.y) - std::min(c.y, d.y)) < 0 ||
-            Base::doubleCmp(std::max(c.x, d.x) - std::min(a.x, b.x)) < 0 || Base::doubleCmp(std::max(c.y, d.y) - std::min(a.y, b.y)) < 0)
+        if (Base::floatCmp(std::max(a.x, b.x) - std::min(c.x, d.x)) < 0 || Base::floatCmp(std::max(a.y, b.y) - std::min(c.y, d.y)) < 0 ||
+            Base::floatCmp(std::max(c.x, d.x) - std::min(a.x, b.x)) < 0 || Base::floatCmp(std::max(c.y, d.y) - std::min(a.y, b.y)) < 0)
             return false;
-        double dir1 = (c.x - a.x) * (b.y - a.y) - (b.x - a.x) * (c.y - a.y);
-        double dir2 = (d.x - a.x) * (b.y - a.y) - (b.x - a.x) * (d.y - a.y);
-        double dir3 = (a.x - c.x) * (d.y - c.y) - (d.x - c.x) * (a.y - c.y);
-        double dir4 = (b.x - c.x) * (d.y - c.y) - (d.x - c.x) * (b.y - c.y);
-        return Base::doubleCmp(dir1 * dir2) <= 0 && Base::doubleCmp(dir3 * dir4) <= 0;
+        float dir1 = (c.x - a.x) * (b.y - a.y) - (b.x - a.x) * (c.y - a.y);
+        float dir2 = (d.x - a.x) * (b.y - a.y) - (b.x - a.x) * (d.y - a.y);
+        float dir3 = (a.x - c.x) * (d.y - c.y) - (d.x - c.x) * (a.y - c.y);
+        float dir4 = (b.x - c.x) * (d.y - c.y) - (d.x - c.x) * (b.y - c.y);
+        return Base::floatCmp(dir1 * dir2) <= 0 && Base::floatCmp(dir3 * dir4) <= 0;
     }
 
     //  triangle:ABC, segment:PQ
@@ -58,7 +58,7 @@ namespace Quad{
 
     class treeNode{
     public:
-        double x_min, y_min, x_max, y_max;
+        float x_min, y_min, x_max, y_max;
         int node_id;
         set<unsigned> boundary_points_id;
         set<unsigned> covered_faces_id;
@@ -104,14 +104,14 @@ namespace Quad{
 
     set<unsigned> extractIntersectFaces(const Base::Mesh &mesh, treeNode* tree_node, treeNode* fa_node = nullptr){
         set<unsigned> intersect_face_id = {};
-        double x_min = tree_node->x_min, x_max = tree_node->x_max, y_min = tree_node->y_min, y_max = tree_node->y_max;
+        float x_min = tree_node->x_min, x_max = tree_node->x_max, y_min = tree_node->y_min, y_max = tree_node->y_max;
         if (fa_node == nullptr){
             for (auto &f: mesh.faces()){
                 bool in_flag = false;
                 vector<my_point> p;
                 for (auto v: mesh.vertices_around_face(mesh.halfedge(f))){
-                    double x = mesh.points()[v].x();
-                    double y = mesh.points()[v].y();
+                    float x = mesh.points()[v].x();
+                    float y = mesh.points()[v].y();
                     p.emplace_back(x, y);
                 }
                 if (triangle_segment_intersection(p[0], p[1], p[2], my_point(x_min, y_min), my_point(x_max, y_min)) ||
@@ -124,8 +124,8 @@ namespace Quad{
                 }
                 if (!in_flag){
                     for (auto i = 0; i < 3; i++){
-                        if (Base::doubleCmp(p[i].x - x_min) >= 0 && Base::doubleCmp(p[i].x - x_max) <= 0 &&
-                            Base::doubleCmp(p[i].y - y_min) >= 0 && Base::doubleCmp(p[i].y - y_max) <= 0){
+                        if (Base::floatCmp(p[i].x - x_min) >= 0 && Base::floatCmp(p[i].x - x_max) <= 0 &&
+                            Base::floatCmp(p[i].y - y_min) >= 0 && Base::floatCmp(p[i].y - y_max) <= 0){
                             in_flag = true;
                             break;
                         }
@@ -142,8 +142,8 @@ namespace Quad{
                 bool in_flag = false;
                 vector<my_point> p;
                 for (auto v: mesh.vertices_around_face(mesh.halfedge(f))){
-                    double x = mesh.points()[v].x();
-                    double y = mesh.points()[v].y();
+                    float x = mesh.points()[v].x();
+                    float y = mesh.points()[v].y();
                     p.emplace_back(x, y);
                 }
                 if (triangle_segment_intersection(p[0], p[1], p[2], my_point(x_min, y_min), my_point(x_max, y_min)) ||
@@ -156,8 +156,8 @@ namespace Quad{
                 }
                 if (!in_flag){
                     for (auto i = 0; i < 3; i++){
-                        if (Base::doubleCmp(p[i].x - x_min) >= 0 && Base::doubleCmp(p[i].x - x_max) <= 0 &&
-                            Base::doubleCmp(p[i].y - y_min) >= 0 && Base::doubleCmp(p[i].y - y_max) <= 0){
+                        if (Base::floatCmp(p[i].x - x_min) >= 0 && Base::floatCmp(p[i].x - x_max) <= 0 &&
+                            Base::floatCmp(p[i].y - y_min) >= 0 && Base::floatCmp(p[i].y - y_max) <= 0){
                             in_flag = true;
                             break;
                         }
@@ -178,11 +178,11 @@ namespace Quad{
         root->node_id = node_count++;
         for (auto &v: mesh.vertices()){
 //            cout << mesh.points()[v].x() << " " << mesh.points()[v].y() << " " << mesh.points()[v].z() << endl;
-            double x = mesh.points()[v].x(), y = mesh.points()[v].y();
-            if (Base::doubleCmp(x - root->x_min) < 0) root->x_min = x;
-            if (Base::doubleCmp(x - root->x_max) > 0) root->x_max = x;
-            if (Base::doubleCmp(y - root->y_min) < 0) root->y_min = y;
-            if (Base::doubleCmp(y - root->y_max) > 0) root->y_max = y;
+            float x = mesh.points()[v].x(), y = mesh.points()[v].y();
+            if (Base::floatCmp(x - root->x_min) < 0) root->x_min = x;
+            if (Base::floatCmp(x - root->x_max) > 0) root->x_max = x;
+            if (Base::floatCmp(y - root->y_min) < 0) root->y_min = y;
+            if (Base::floatCmp(y - root->y_max) > 0) root->y_max = y;
         }
         set<unsigned> intersect_faces = extractIntersectFaces(mesh, root);
         for (auto fid: intersect_faces){
@@ -214,7 +214,7 @@ namespace Quad{
         vector<treeNode*> cur_level_nodes;
         level++;
         for (auto &node: last_level_nodes){
-            double pivot_x = 0.5 * (node->x_min + node->x_max),
+            float pivot_x = 0.5 * (node->x_min + node->x_max),
                    pivot_y = 0.5 * (node->y_min + node->y_max);
             // one node will generate four sons:
             // NW(x_min, pivot_y)-(pivot_x, y_max)
@@ -307,7 +307,7 @@ namespace Quad{
             auto v = node_pair.second->center_idx;
             assert(new_id.find(u) != new_id.end());
             assert(new_id.find(v) != new_id.end());
-            double tmp_d = WeightedDistanceOracle::enhanced_edges[make_pair(u, v)];
+            float tmp_d = WeightedDistanceOracle::enhanced_edges[make_pair(u, v)];
             g.addEdge(new_id[u], new_id[v], tmp_d);
             g.addEdge(new_id[v], new_id[u], tmp_d);
         }
@@ -326,7 +326,7 @@ namespace Quad{
 //            cout << "face = " << node->covered_faces_id.size() << endl;
 //            cout << "size = " << covered_point.size() << endl;
             for (auto s: node->boundary_points_id){
-                vector<double> d;
+                vector<float> d;
                 kSkip::covered_dijkstra(base_graph, s, covered_point, d);
                 for (auto pid: covered_point){
                     LQT_distance_map[make_pair(s, pid)] = d[pid];
@@ -337,7 +337,7 @@ namespace Quad{
         }
     }
 
-    pair<double, bool> queryA2A(kSkip::Graph &spanner,
+    pair<float, bool> queryA2A(kSkip::Graph &spanner,
                                 kSkip::Graph &base_graph, map<unsigned, vector<unsigned> > &face_point_map,
                                 WeightedDistanceOracle::PartitionTree &tree, set<WeightedDistanceOracle::nodePair> &node_pairs,
                                 map<unsigned, Base::Point> &point_location_map,
@@ -350,8 +350,8 @@ namespace Quad{
 
         while (box_s->sons.size() > 0){
             for (auto son: box_s->sons){
-                if (Base::doubleCmp(s.x() - son->x_min) >= 0 && Base::doubleCmp(s.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(s.y() - son->y_min) >= 0 && Base::doubleCmp(s.y() - son->y_max) <= 0){
+                if (Base::floatCmp(s.x() - son->x_min) >= 0 && Base::floatCmp(s.x() - son->x_max) <= 0 &&
+                    Base::floatCmp(s.y() - son->y_min) >= 0 && Base::floatCmp(s.y() - son->y_max) <= 0){
                     box_s = son;
                     break;
                 }
@@ -359,8 +359,8 @@ namespace Quad{
         }
         while (box_t->sons.size() > 0){
             for (auto son: box_t->sons){
-                if (Base::doubleCmp(t.x() - son->x_min) >= 0 && Base::doubleCmp(t.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(t.y() - son->y_min) >= 0 && Base::doubleCmp(t.y() - son->y_max) <= 0){
+                if (Base::floatCmp(t.x() - son->x_min) >= 0 && Base::floatCmp(t.x() - son->x_max) <= 0 &&
+                    Base::floatCmp(t.y() - son->y_min) >= 0 && Base::floatCmp(t.y() - son->y_max) <= 0){
                     box_t = son;
                     break;
                 }
@@ -375,25 +375,25 @@ namespace Quad{
             auto final_s = spanner.addVertex();
 
             for (auto bpid: box_s->boundary_points_id){
-                double d = Base::unreachable;
+                float d = Base::unreachable;
                 for (auto pid: face_point_map[fid_s]){
-//                    double t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(closest_pid, bpid)];
-                    double t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
-                    if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
+//                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(closest_pid, bpid)];
+                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                 }
                 spanner.addEdge(final_s, new_id[bpid], d);
             }
             auto final_t = spanner.addVertex();
 
             for (auto bpid: box_t->boundary_points_id){
-                double d = Base::unreachable;
+                float d = Base::unreachable;
                 for (auto pid: face_point_map[fid_t]){
-                    double t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
-                    if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
+                    float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                 }
                 spanner.addEdge(new_id[bpid], final_t, d);
             }
-            double res = kSkip::dijkstra(spanner, final_s, final_t).first;
+            float res = kSkip::dijkstra(spanner, final_s, final_t).first;
 
             while (spanner.num_E > E_flag){
                 auto eid = spanner.num_E - 1;
@@ -410,15 +410,15 @@ namespace Quad{
             auto V_flag = base_graph.num_V, E_flag = base_graph.num_E;
             auto sid = base_graph.addVertex();
             for (auto pid: face_point_map[fid_s]){
-                double dis = CGAL::squared_distance(s, point_location_map[pid]);
+                float dis = CGAL::squared_distance(s, point_location_map[pid]);
                 base_graph.addEdge(sid, pid, sqrt(dis));
             }
             auto tid = base_graph.addVertex();
             for (auto pid: face_point_map[fid_t]){
-                double dis = CGAL::squared_distance(t, point_location_map[pid]);
+                float dis = CGAL::squared_distance(t, point_location_map[pid]);
                 base_graph.addEdge(pid, tid, sqrt(dis));
             }
-            double res = kSkip::dijkstra(base_graph, sid, tid).first;
+            float res = kSkip::dijkstra(base_graph, sid, tid).first;
 
             while (base_graph.num_E > E_flag){
                 auto eid = base_graph.num_E - 1;
@@ -433,7 +433,7 @@ namespace Quad{
         }
     }
 
-    pair<double, bool> queryA2A(Base::Mesh &m, kSkip::Graph &spanner,
+    pair<float, bool> queryA2A(Base::Mesh &m, kSkip::Graph &spanner,
                                 kSkip::Graph &base_graph, map<int, vector<int> > &face_point_map,
                                 map<int, Base::Point> &point_location_map,
                                 Base::Point s, int fid_s,
@@ -445,8 +445,8 @@ namespace Quad{
 
         while (box_s->sons.size() > 0){
             for (auto son: box_s->sons){
-                if (Base::doubleCmp(s.x() - son->x_min) >= 0 && Base::doubleCmp(s.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(s.y() - son->y_min) >= 0 && Base::doubleCmp(s.y() - son->y_max) <= 0){
+                if (Base::floatCmp(s.x() - son->x_min) >= 0 && Base::floatCmp(s.x() - son->x_max) <= 0 &&
+                    Base::floatCmp(s.y() - son->y_min) >= 0 && Base::floatCmp(s.y() - son->y_max) <= 0){
                     box_s = son;
                     break;
                 }
@@ -454,8 +454,8 @@ namespace Quad{
         }
         while (box_t->sons.size() > 0){
             for (auto son: box_t->sons){
-                if (Base::doubleCmp(t.x() - son->x_min) >= 0 && Base::doubleCmp(t.x() - son->x_max) <= 0 &&
-                    Base::doubleCmp(t.y() - son->y_min) >= 0 && Base::doubleCmp(t.y() - son->y_max) <= 0){
+                if (Base::floatCmp(t.x() - son->x_min) >= 0 && Base::floatCmp(t.x() - son->x_max) <= 0 &&
+                    Base::floatCmp(t.y() - son->y_min) >= 0 && Base::floatCmp(t.y() - son->y_max) <= 0){
                     box_t = son;
                     break;
                 }
@@ -470,24 +470,24 @@ namespace Quad{
             auto final_s = spanner.addVertex();
 
             for (auto bpid: box_s->boundary_points_id){
-                double d = Base::unreachable;
+                float d = Base::unreachable;
                 for (auto pid: face_point_map[fid_s]){
-                    double t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
-                    if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
+                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                 }
                 spanner.addEdge(final_s, new_id[bpid], d);
             }
             auto final_t = spanner.addVertex();
 
             for (auto bpid: box_t->boundary_points_id){
-                double d = Base::unreachable;
+                float d = Base::unreachable;
                 for (auto pid: face_point_map[fid_t]){
-                    double t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
-                    if (Base::doubleCmp(t_dis - d) < 0) d = t_dis;
+                    float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                 }
                 spanner.addEdge(new_id[bpid], final_t, d);
             }
-            double res = kSkip::dijkstra(spanner, final_s, final_t).first;
+            float res = kSkip::dijkstra(spanner, final_s, final_t).first;
 
             while (spanner.num_E > E_flag){
                 int eid = spanner.num_E - 1;
@@ -504,15 +504,15 @@ namespace Quad{
             int V_flag = base_graph.num_V, E_flag = base_graph.num_E;
             auto sid = base_graph.addVertex();
             for (auto pid: face_point_map[fid_s]){
-                double dis = CGAL::squared_distance(s, point_location_map[pid]);
+                float dis = CGAL::squared_distance(s, point_location_map[pid]);
                 base_graph.addEdge(sid, pid, sqrt(dis));
             }
             auto tid = base_graph.addVertex();
             for (auto pid: face_point_map[fid_t]){
-                double dis = CGAL::squared_distance(t, point_location_map[pid]);
+                float dis = CGAL::squared_distance(t, point_location_map[pid]);
                 base_graph.addEdge(pid, tid, sqrt(dis));
             }
-            double res = kSkip::dijkstra(base_graph, sid, tid).first;
+            float res = kSkip::dijkstra(base_graph, sid, tid).first;
 
             while (base_graph.num_E > E_flag){
                 int eid = base_graph.num_E - 1;

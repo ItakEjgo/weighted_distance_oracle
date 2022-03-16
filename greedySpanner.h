@@ -12,10 +12,10 @@
 namespace GreedySpanner{
     using namespace std;
 
-    double s_value = -1.0;
+    float s_value = -1.0;
     int boundary_vertex_flag = -1;
 
-    void setSeparationValue(const double &s){
+    void setSeparationValue(const float &s){
         s_value = s;
     }
 
@@ -54,9 +54,9 @@ namespace GreedySpanner{
                 continue;
             }
             auto dijk_ret = kSkip::dijkstra(kSkip::my_base_graph, current_pair.first, current_pair.second);
-            double dis = dijk_ret.first;
+            float dis = dijk_ret.first;
 //            cout << "dis = " << dis << endl;
-            double r = dis / (2 + 2 * s_value);
+            float r = dis / (2 + 2 * s_value);
 //            cout << "Radius = " << r << endl;
             kSkip::collect_covered_vertices(kSkip::my_base_graph, current_pair.first, r, covered_s, boundary_vertex_flag);
             kSkip::collect_covered_vertices(kSkip::my_base_graph, current_pair.second, r, covered_t, boundary_vertex_flag);

@@ -13,7 +13,7 @@
 #include <CGAL/tuple.h>
 #include <boost/lexical_cast.hpp>
 
-typedef CGAL::Simple_cartesian<double> K;
+typedef CGAL::Simple_cartesian<float> K;
 typedef K::Point_3  Point_3;
 typedef std::array<std::size_t,3> Facet;
 namespace std {
@@ -25,12 +25,12 @@ namespace std {
     }
 }
 struct Perimeter {
-    double bound;
-    Perimeter(double bound)
+    float bound;
+    Perimeter(float bound)
             : bound(bound)
     {}
     template <typename AdvancingFront, typename Cell_handle>
-    double operator() (const AdvancingFront& adv, Cell_handle& c,
+    float operator() (const AdvancingFront& adv, Cell_handle& c,
                        const int& index) const
     {
         // bound == 0 is better than bound < infinity
@@ -39,7 +39,7 @@ struct Perimeter {
             return adv.smallest_radius_delaunay_sphere (c, index);
         }
         // If perimeter > bound, return infinity so that facet is not used
-        double d  = 0;
+        float d  = 0;
         d = sqrt(squared_distance(c->vertex((index+1)%4)->point(),
                                   c->vertex((index+2)%4)->point()));
         if(d>bound) return adv.infinity();
@@ -57,8 +57,8 @@ struct Perimeter {
 int construct(int argc, char* argv[])
 {
     std::ifstream in((argc>1)?argv[1]:CGAL::data_file_path("points_3/half.xyz"));
-    double per = (argc>2)?boost::lexical_cast<double>(argv[2]):0;
-    double radius_ratio_bound = (argc>3)?boost::lexical_cast<double>(argv[3]):5.0;
+    float per = (argc>2)?boost::lexical_cast<float>(argv[2]):0;
+    float radius_ratio_bound = (argc>3)?boost::lexical_cast<float>(argv[3]):5.0;
     std::vector<Point_3> points;
     std::vector<Facet> facets;
     std::copy(std::istream_iterator<Point_3>(in),
