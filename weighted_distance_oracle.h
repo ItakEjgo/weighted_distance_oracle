@@ -96,6 +96,14 @@ namespace WeightedDistanceOracle {
                 float limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
                 float cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
 
+                double num_Steiner_points = 1.61 / sin(angle) * log(2 * limit_distance / gama[pid[0]]);
+                num_Steiner_points *= 1 / sqrt(eps) * log(2 / eps);
+                bool upper_flag = 0;
+                if (Base::floatCmp(num_Steiner_points) <= 0 || Base::floatCmp(num_Steiner_points - 25) > 0){
+                    cur_distance = limit_distance / 25;
+                    upper_flag = 1;
+                }
+
                 while (Base::floatCmp(cur_distance - limit_distance) < 0) {
                     Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
                     point_location_map[num_vertices] = bisector_p;
@@ -103,6 +111,9 @@ namespace WeightedDistanceOracle {
                     face_point_map[fd.idx()].push_back(num_vertices);
                     cur_bisector.push_back(num_vertices++);
                     float distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
+                    if (upper_flag){
+                        distance_delta = limit_distance / 50;
+                    }
                     cur_distance += distance_delta;
                 }
                 bisector_point_map[bisector_num] = cur_bisector;
@@ -417,7 +428,7 @@ namespace WeightedDistanceOracle {
 //                cout << "ERROR: Unconnected Steiner Points found!" << endl;
 //            }
 //        }
-        cout << "num vertices = " << num_vertices << " d.size() = " << d.size() << endl;
+//        cout << "num vertices = " << num_vertices << " d.size() = " << d.size() << endl;
         for (auto i = 0; i < num_vertices; i++){
             if (pid_list[i] == root_index) continue;
             float distance = d[pid_list[i]];

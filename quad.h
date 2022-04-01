@@ -343,7 +343,7 @@ namespace Quad{
                                 map<unsigned, Base::Point> &point_location_map,
                                 const Base::Point &s, const unsigned &fid_s,
                                 const Base::Point &t, const unsigned &fid_t,
-                                quadTree &quad_tree, map<unsigned, unsigned> &new_id){
+                                quadTree &quad_tree, map<unsigned, unsigned> &new_id, const unsigned &kappa){
 
         auto box_s = quad_tree.root, box_t = quad_tree.root;
         //find the leaf contains s and t
@@ -367,10 +367,23 @@ namespace Quad{
             }
         }
 
+        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
+        auto sid = base_graph.addVertex();
+        for (auto pid: face_point_map[fid_s]){
+            float dis = CGAL::squared_distance(s, point_location_map[pid]);
+            base_graph.addEdge(sid, pid, sqrt(dis));
+        }
+        auto tid = base_graph.addVertex();
+        for (auto pid: face_point_map[fid_t]){
+            float dis = CGAL::squared_distance(t, point_location_map[pid]);
+            base_graph.addEdge(pid, tid, sqrt(dis));
+        }
+
+        float res = -1.0;
 
         if (box_s->node_id != box_t->node_id){
 
-            auto V_flag = spanner.num_V, E_flag = spanner.num_E; //  backup
+            auto spanner_vflag = spanner.num_V, spanner_eflag = spanner.num_E; //  backup
 
             auto final_s = spanner.addVertex();
 
@@ -393,44 +406,52 @@ namespace Quad{
                 }
                 spanner.addEdge(new_id[bpid], final_t, d);
             }
-            float res = kSkip::dijkstra(spanner, final_s, final_t).first;
 
-            while (spanner.num_E > E_flag){
+            vector<float> d_Gs;
+            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
+            for (auto &sp_id: vertices_Gs){
+                auto cur_id = spanner.addVertex();
+                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
+            }
+            d_Gs.clear();
+            vertices_Gs.clear();
+
+            vector<float> d_Gt;
+            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
+            for (auto &sp_id: vertices_Gt){
+                auto cur_id = spanner.addVertex();
+                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
+            }
+            d_Gt.clear();
+            vertices_Gt.clear();
+
+            res = kSkip::dijkstra(spanner, final_s, final_t).first;
+
+            while (spanner.num_E > spanner_eflag){
                 auto eid = spanner.num_E - 1;
                 spanner.removeEdge(eid);
             }
-            while (spanner.num_V > V_flag){
+            while (spanner.num_V > spanner_vflag){
                 auto vid = spanner.num_V - 1;
                 spanner.removeVertex(vid);
             }
 
             return make_pair(res, box_s->node_id == box_t->node_id);
         }
-        else{
-            auto V_flag = base_graph.num_V, E_flag = base_graph.num_E;
-            auto sid = base_graph.addVertex();
-            for (auto pid: face_point_map[fid_s]){
-                float dis = CGAL::squared_distance(s, point_location_map[pid]);
-                base_graph.addEdge(sid, pid, sqrt(dis));
-            }
-            auto tid = base_graph.addVertex();
-            for (auto pid: face_point_map[fid_t]){
-                float dis = CGAL::squared_distance(t, point_location_map[pid]);
-                base_graph.addEdge(pid, tid, sqrt(dis));
-            }
-            float res = kSkip::dijkstra(base_graph, sid, tid).first;
-
-            while (base_graph.num_E > E_flag){
-                auto eid = base_graph.num_E - 1;
-                base_graph.removeEdge(eid);
-            }
-            while (base_graph.num_V > V_flag){
-                auto vid = base_graph.num_V - 1;
-                base_graph.removeVertex(vid);
-            }
-
-            return make_pair(res, box_s->node_id == box_t->node_id);
+        else {
+            res = kSkip::dijkstra(base_graph, sid, tid).first;
         }
+
+        while (base_graph.num_E > basegraph_eflag) {
+            auto eid = base_graph.num_E - 1;
+            base_graph.removeEdge(eid);
+        }
+        while (base_graph.num_V > basegraph_vflag) {
+            auto vid = base_graph.num_V - 1;
+            base_graph.removeVertex(vid);
+        }
+
+        return make_pair(res, box_s->node_id == box_t->node_id);
     }
 
     pair<float, bool> queryA2A(Base::Mesh &m, kSkip::Graph &spanner,

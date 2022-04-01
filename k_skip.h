@@ -104,7 +104,11 @@ namespace kSkip{
         q.push(QNode(s, d[s]));
         while (!q.empty()){
             QNode f = q.top(); q.pop();
-            if (f.p == t) break;
+//            cout << fixed << setprecision(6) << "f.dis = " << f.dis << endl;
+            if (f.p == t) {
+//                int xx; cin >> xx;
+                break;
+            }
             if (vis[f.p]) continue;
             for (auto eid = g.head[f.p]; eid; eid = g.edges[eid].next){
                 auto v = g.edges[eid].to;
@@ -125,6 +129,37 @@ namespace kSkip{
         auto end_time = chrono::_V2::system_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
         return make_pair(d[t], static_cast<float>(duration.count()));
+    }
+
+    vector<int> hop_dijkstra(Graph &g, int s, const unsigned &kappa, vector<float> &d){
+
+        vector<bool> vis(g.num_V, false);
+        d.resize(g.num_V, Base::unreachable);
+        vector<int> fa(g.num_V, -1);
+        vector<int> hop(g.num_V, -1);
+        d[s] = 0;
+        hop[s] = 0;
+        priority_queue<QNode> q = {};
+        q.push(QNode(s, d[s]));
+        vector<int> discovered_point = {};
+        while (!q.empty()){
+            QNode f = q.top(); q.pop();
+            if (vis[f.p]) continue;
+            for (int eid = g.head[f.p]; eid; eid = g.edges[eid].next){
+                int v = g.edges[eid].to;
+                float w = g.edges[eid].w;
+                if (hop[f.p] + 1 < kappa && Base::floatCmp(d[f.p] + w - d[v]) < 0){
+                    d[v] = d[f.p] + w;
+                    fa[v] = f.p;
+                    hop[v] = hop[f.p] + 1;
+                    q.push(QNode(v, d[v]));
+                }
+            }
+            vis[f.p] = true;
+            discovered_point.emplace_back(f.p);
+        }
+
+        return discovered_point;
     }
 
     float bounded_dijkstra(Graph &g, int s, float bound, vector<float> &d){
@@ -284,6 +319,247 @@ namespace kSkip{
 
     }
 
+    unsigned initialBisectors(const Base::Mesh &mesh,
+                              map<unsigned, vector<unsigned> > &edge_bisector_map,
+                              map<unsigned, set<unsigned> > &bisector_edge_map,
+                              vector<pair<unsigned, vector<Base::Point> > > &bisector_info,
+                              map<unsigned, unsigned> &bisector_face_map,
+                              map<unsigned, vector<unsigned> > &face_bisector_map){
+        unsigned bisector_id = 0;
+        for (auto fd: mesh.faces()){
+            auto fid = fd.idx();
+            vector<Base::Point> p(3);
+            vector<unsigned> pid(3);
+            for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
+                unsigned eid = mesh.edge(hed).idx(), eid2 = mesh.edge(mesh.prev(hed)).idx();
+                for (auto i = 0; i != 3; hed = mesh.next(hed), i++){
+                    p[i] = mesh.points()[mesh.source(hed)];
+                    pid[i] = mesh.source(hed).idx();
+                }
+                bisector_info.emplace_back(pid[0], p);
+                bisector_edge_map[bisector_id].insert(eid);
+                bisector_edge_map[bisector_id].insert(eid2);
+                bisector_face_map[bisector_id] = fid;
+                face_bisector_map[fid].push_back(bisector_id);
+                edge_bisector_map[eid].push_back(bisector_id);
+                edge_bisector_map[eid2].push_back(bisector_id++);
+            }
+        }
+        return bisector_id;
+    }
+
+    bool placeSteinerPointOnBisector(
+            const unsigned &bisector_id,
+            const unsigned &bisector_source_point,
+            Graph &g,
+            const float &gama,
+            const float &eps,
+            map<unsigned, vector<unsigned> > &bisector_point_map,
+            map<unsigned, Base::Point> &point_location_map,
+            map<unsigned, unsigned> &point_bisector_map,
+            vector<Base::Point> &p){
+        if (bisector_point_map[bisector_id].size() > 0) return 0;
+//        unsigned vertex_id = g.addVertex();
+        unsigned vertex_id_bk = g.num_V;
+        vector<Base::Point> cur_bisector_p = {};
+        vector<unsigned> cur_bisector_p_id = {};
+
+//        point_bisector_map[vertex_id] = bisector_id;
+        cur_bisector_p.emplace_back(p[0]);
+        cur_bisector_p_id.emplace_back(vertex_id_bk++);
+//        point_location_map[vertex_id] = p[0];
+//        bisector_point_map[bisector_id].emplace_back(vertex_id);
+
+
+
+        float len1 = sqrt(CGAL::squared_distance(p[1], p[0])),
+                len2 = sqrt(CGAL::squared_distance(p[2], p[0]));
+        Base::Point p_end(p[1] + Base::Vector(p[2] - p[1]) * len1 / (len1 + len2));
+        Base::Vector vec_bisector(p_end - p[0]);
+        Base::Point aux1 = p[0] + Base::Vector(p[1] - p[0]) * gama / len1;
+        Base::Point aux2 = p[0] + Base::Vector(p[2] - p[0]) * gama / len2;
+        Base::Point bisector_p0 = aux1 + 0.5 * Base::Vector(aux2 - aux1);
+        float angle = Base::PI * CGAL::approximate_angle(p[1], p[0], p[2]) / 180;
+        float sin_val = sin(angle * 0.5);
+        float limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
+        float cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
+
+        double num_Steiner_points = 1.61 / sin(angle) * log(2 * limit_distance / gama);
+        num_Steiner_points *= 1 / sqrt(eps) * log(2 / eps);
+
+
+        bool uniform_flag = 0;
+        while (Base::floatCmp(cur_distance - limit_distance) < 0) {
+            if (cur_bisector_p.size() > 25) {
+                uniform_flag = 1;
+                break;
+            }
+            Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
+//            vertex_id = g.addVertex();
+            cur_bisector_p_id.emplace_back(vertex_id_bk++);
+            cur_bisector_p.emplace_back(bisector_p);
+            float distance_delta = sin_val * sqrt(0.5 * eps) * cur_distance;
+            cur_distance += distance_delta;
+        }
+
+        if (uniform_flag){
+            float distance_delta = limit_distance / 25;
+            cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
+            vertex_id_bk = g.num_V;
+
+            cur_bisector_p_id.clear();
+            cur_bisector_p.clear();
+            cur_bisector_p.emplace_back(p[0]);
+            cur_bisector_p_id.emplace_back(vertex_id_bk++);
+
+            while (Base::floatCmp(cur_distance - limit_distance) < 0) {
+                Base::Point bisector_p = p[0] + cur_distance / limit_distance * vec_bisector;
+//                vertex_id = g.addVertex();
+                cur_bisector_p_id.emplace_back(vertex_id_bk++);
+                cur_bisector_p.emplace_back(bisector_p);
+                cur_distance += distance_delta;
+            }
+        }
+
+        bisector_point_map[bisector_id] = cur_bisector_p_id;
+        for (auto i = 0; i < cur_bisector_p_id.size(); i++){
+            g.addVertex();
+            auto bp_id = cur_bisector_p_id[i];
+            point_location_map[bp_id] = cur_bisector_p[i];
+            point_bisector_map[bp_id] = bisector_id;
+        }
+
+        return 1;
+    }
+
+    //Unfixed on-the-fly implementation
+    float unfixedOnTheFly(
+            Base::Mesh mesh, Graph g,
+            const float &eps,
+            vector<float> &gama,
+            const vector<float> &face_weight,
+            const Base::Point &point_s, const unsigned &fid_s,
+            const Base::Point &point_t, const unsigned &fid_t) {
+
+        map<unsigned, vector<unsigned> > bisector_point_map;
+        map<unsigned, Base::Point> point_location_map;
+        map<unsigned, set<unsigned> > bisector_edge_map;
+        map<unsigned, unsigned> point_bisector_map;
+        map<unsigned, unsigned> bisector_face_map;
+        map<unsigned, vector<unsigned> > edge_bisector_map;
+        map<unsigned, vector<unsigned> > face_bisector_map;
+        vector<pair<unsigned, vector<Base::Point> > > bisector_info;
+        map<pair<unsigned, unsigned>, bool> edge_map = {};
+
+        initialBisectors(mesh, edge_bisector_map, bisector_edge_map, bisector_info, bisector_face_map, face_bisector_map);
+
+        unsigned s = g.addVertex();
+
+        auto fds = *(mesh.faces_begin() + fid_s);
+
+        for (auto bisector_id: face_bisector_map[fds.idx()]){
+            unsigned bisector_source_point = bisector_info[bisector_id].first;
+            placeSteinerPointOnBisector(bisector_id, bisector_source_point, g, gama[bisector_source_point],
+                                        eps, bisector_point_map, point_location_map, point_bisector_map, bisector_info[bisector_id].second);
+            for (auto sp_id: bisector_point_map[bisector_id]){
+                Base::Point sp_p = point_location_map[sp_id];
+                float dis = sqrt(CGAL::squared_distance(point_s, sp_p));
+                edge_map[make_pair(s, sp_id)] = 1;
+                g.addEdge(s, sp_id, dis);
+            }
+        }
+
+        unsigned t = g.addVertex();
+
+        auto fdt = *(mesh.faces_begin() + fid_t);
+        for (auto bisector_id: face_bisector_map[fdt.idx()]){
+            unsigned bisector_source_point = bisector_info[bisector_id].first;
+            placeSteinerPointOnBisector(bisector_id, bisector_source_point, g, gama[bisector_source_point],
+                                        eps, bisector_point_map, point_location_map, point_bisector_map , bisector_info[bisector_id].second);
+            for (auto sp_id: bisector_point_map[bisector_id]){
+                Base::Point sp_p = point_location_map[sp_id];
+                float dis = sqrt(CGAL::squared_distance(point_t, sp_p));
+                edge_map[make_pair(t, sp_id)] = 1;
+                g.addEdge(sp_id, t, dis);
+            }
+        }
+
+        unsigned vertices_num = g.num_V;
+        vector<float> D;
+        D.resize(vertices_num, -1);
+        D[s] = 0.0;
+        vector<bool> vis;
+        vis.resize(vertices_num, 0);
+        vis[s] = 1;
+        priority_queue<QNode> q = {};
+//        q.push(QNode(s, D[s]));
+
+
+        for (auto eid = g.head[s]; eid > 0; eid = g.edges[eid].next){
+            int v = g.edges[eid].to;
+            float w = g.edges[eid].w;
+            if (Base::floatCmp(D[v]) < 0 || Base::floatCmp(D[v] - D[s] - w) > 0){
+                D[v] = D[s] + w;
+                q.push(QNode(v, D[v]));
+            }
+        }
+
+
+        while (!q.empty()){
+            auto f = q.top(); q.pop();
+//            cout << fixed << setprecision(6) << "f.dis = " << f.dis << endl;
+//            cout << "cur f: " << f.p << " target: " << t << endl;
+            auto cur_p = point_location_map[f.p];
+//            cout << "cur p = " << cur_p << endl;
+            if (f.p == t){
+//                int xx; cin >> xx;
+                return f.dis;
+            }
+            if (vis[f.p]) continue;
+            auto cur_bisector_id = point_bisector_map[f.p];
+//            cout << "cur bisector id = " << cur_bisector_id << endl;
+
+            for (auto eid: bisector_edge_map[cur_bisector_id]){
+//                cout << "edge bisector size = " << edge_bisector_map[eid].size() << endl;
+                for (auto bisector_id: edge_bisector_map[eid]){
+                    if (bisector_point_map[bisector_id].size() == 0){
+                        unsigned bisector_source_point = bisector_info[bisector_id].first;
+                        placeSteinerPointOnBisector(bisector_id, bisector_source_point, g, gama[bisector_source_point],
+                                                    eps, bisector_point_map, point_location_map, point_bisector_map , bisector_info[bisector_id].second);
+                        for (auto x = 0; x < bisector_point_map[bisector_id].size(); x++){
+                            D.emplace_back(-1);
+                            vis.push_back(0);
+                        }
+
+                    }
+                    for (auto sp_id: bisector_point_map[bisector_id]){
+                        Base::Point sp_p = point_location_map[sp_id];
+                        float dis = Base::distanceSnell(mesh, face_weight,
+                                                        cur_p, bisector_face_map[point_bisector_map[f.p]],
+                                                        sp_p, bisector_face_map[bisector_id],
+                                                        eid);
+//                         cout << "edge len = " << dis << endl;
+                        auto cur_edge = make_pair(f.p, sp_id);
+                        if (edge_map.find(cur_edge) == edge_map.end()){
+                            g.addEdge(f.p, sp_id, dis);
+                            edge_map[cur_edge] = 1;
+                        }
+                    }
+                }
+            }
+            for (auto eid = g.head[f.p]; eid > 0; eid = g.edges[eid].next){
+                int v = g.edges[eid].to;
+                float w = g.edges[eid].w;
+                if (Base::floatCmp(D[v]) < 0 || Base::floatCmp(D[v] - D[f.p] - w) > 0){
+                    D[v] = D[f.p] + w;
+                    q.push(QNode(v, D[v]));
+                }
+            }
+            vis[f.p] = 1;
+        }
+
+    }
+
     // VLDB'2015 implementation
     float computeDistanceBound(
             Base::Mesh mesh, Graph g,
@@ -292,6 +568,7 @@ namespace kSkip{
             float l_min
     ){
 //        cout << "s = " << point_s << " t = " << point_t << endl;
+        map<pair<unsigned, unsigned>, bool> edge_map = {};
         auto vds = mesh.add_vertex(point_s);
         int s = vds.idx();
         g.addVertex();
@@ -299,6 +576,7 @@ namespace kSkip{
         for (auto vd: mesh.vertices_around_face(mesh.halfedge(fds))){
             mesh.add_edge(vds, vd);
             float dis = sqrt(CGAL::squared_distance(point_s, mesh.points()[vd]));
+            edge_map[make_pair(s, vd.idx())] = 1;
             g.addEdge(s, vd.idx(), dis);
         }
         auto vdt = mesh.add_vertex(point_t);
@@ -308,6 +586,7 @@ namespace kSkip{
         for (auto vd: mesh.vertices_around_face(mesh.halfedge(fdt))){
             mesh.add_edge(vdt, vd);
             float dis = sqrt(CGAL::squared_distance(point_t, mesh.points()[vd]));
+            edge_map[make_pair(vd.idx(), t)] = 1;
             g.addEdge(vd.idx(), t, dis);
         }
 
@@ -395,7 +674,10 @@ namespace kSkip{
                             int j = 1;
                             float e_len = sqrt(CGAL::squared_distance(v_a, v_b));
 //                             cout << "num cut vertices = " << floor(e_len / delta_I) << endl;
-                            float t_delta_I = max(delta_I, e_len / 12);
+                            float t_delta_I = delta_I;
+                            if (Base::floatCmp(t_delta_I) <= 0 || e_len / t_delta_I > 25){
+                                t_delta_I = e_len / 25;
+                            }
                             while (j <= floor(e_len / t_delta_I)){
                                 int v_c_id = -1;
                                 decltype(v_a) v_c;
@@ -420,7 +702,10 @@ namespace kSkip{
                                 }
                                 float d_u_vc = sqrt(CGAL::squared_distance(mesh.points()[u], v_c));
                                 if (Base::floatCmp(d_u_vc - delta_I) >= 0){
-                                    g.addEdge(f.p, v_c_id, d_u_vc);
+                                    auto cur_edge = make_pair(f.p, v_c_id);
+                                    if (edge_map.find(cur_edge) == edge_map.end()){
+                                        g.addEdge(f.p, v_c_id, d_u_vc);
+                                    }
                                 }
                                 // D[v_c_id] = D[f.u] + d_u_vc;
                                 // q.insert(Qnode(v_c_id, D[v_c_id]));
@@ -432,7 +717,10 @@ namespace kSkip{
                         for (auto id: vids){
                             auto v = CGAL::SM_Vertex_index(id);
                             float w = sqrt(CGAL::squared_distance(mesh.points()[u], mesh.points()[v]));
-                            g.addEdge(f.p, v.idx(), w);
+                            auto cur_edge = make_pair(f.p, v.idx());
+                            if (edge_map.find(cur_edge) == edge_map.end()){
+                                g.addEdge(f.p, v.idx(), w);
+                            }
                         }
                     }
                 }
