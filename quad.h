@@ -1,7 +1,3 @@
-//
-// Created by huang on 2021/8/23.
-//
-
 #ifndef WEIGHTED_DISTANCE_ORACLE_QUAD_H
 #define WEIGHTED_DISTANCE_ORACLE_QUAD_H
 
@@ -367,66 +363,87 @@ namespace Quad{
             }
         }
 
-        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
-        auto sid = base_graph.addVertex();
-        for (auto pid: face_point_map[fid_s]){
-            float dis = CGAL::squared_distance(s, point_location_map[pid]);
-            base_graph.addEdge(sid, pid, sqrt(dis));
-        }
-        auto tid = base_graph.addVertex();
-        for (auto pid: face_point_map[fid_t]){
-            float dis = CGAL::squared_distance(t, point_location_map[pid]);
-            base_graph.addEdge(pid, tid, sqrt(dis));
-        }
+//        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
+//        auto sid = base_graph.addVertex();
+//        for (auto pid: face_point_map[fid_s]){
+//            float dis = CGAL::squared_distance(s, point_location_map[pid]);
+//            base_graph.addEdge(sid, pid, sqrt(dis));
+//        }
+//        auto tid = base_graph.addVertex();
+//        for (auto pid: face_point_map[fid_t]){
+//            float dis = CGAL::squared_distance(t, point_location_map[pid]);
+//            base_graph.addEdge(pid, tid, sqrt(dis));
+//        }
 
         float res = -1.0;
+        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
 
         if (box_s->node_id != box_t->node_id){
 
             auto spanner_vflag = spanner.num_V, spanner_eflag = spanner.num_E; //  backup
 
             auto final_s = spanner.addVertex();
-
-            for (auto bpid: box_s->boundary_points_id){
-                float d = Base::unreachable;
-                for (auto pid: face_point_map[fid_s]){
-//                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(closest_pid, bpid)];
-                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
-                    if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
-                }
-                spanner.addEdge(final_s, new_id[bpid], d);
-            }
             auto final_t = spanner.addVertex();
 
-            for (auto bpid: box_t->boundary_points_id){
-                float d = Base::unreachable;
-                for (auto pid: face_point_map[fid_t]){
-                    float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
-                    if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
+
+
+            // Gs and Gt
+//            vector<float> d_Gs;
+//            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
+//            for (auto &sp_id: vertices_Gs){
+//                auto cur_id = spanner.addVertex();
+//                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
+//            }
+//
+//            vector<float> d_Gt;
+//            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
+//            for (auto &sp_id: vertices_Gt){
+//                auto cur_id = spanner.addVertex();
+//                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
+//            }
+//
+//            for (auto vid: vertices_Gs){
+//                if (Base::floatCmp(d_Gt[vid] - Base::unreachable) < 0){
+//                    float t_dis = d_Gs[vid] + d_Gt[vid];
+//                    if (Base::floatCmp(res) < 0 || Base::floatCmp(t_dis - res) < 0){
+//                        res = t_dis;
+//                    }
+//                }
+//            }
+//
+//            d_Gs.clear();
+//            vertices_Gs.clear();
+//            d_Gt.clear();
+//            vertices_Gt.clear();
+
+            // result not found, find a spanner use path
+            if (Base::floatCmp(res) < 0) {
+
+                for (auto bpid: box_s->boundary_points_id) {
+                    float d = Base::unreachable;
+                    for (auto pid: face_point_map[fid_s]) {
+                        //                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(closest_pid, bpid)];
+                        float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) +
+                                      LQT_distance_map[make_pair(pid, bpid)];
+                        if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
+                    }
+                    spanner.addEdge(final_s, new_id[bpid], d);
                 }
-                spanner.addEdge(new_id[bpid], final_t, d);
+
+                for (auto bpid: box_t->boundary_points_id) {
+                    float d = Base::unreachable;
+                    for (auto pid: face_point_map[fid_t]) {
+                        float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) +
+                                      LQT_distance_map[make_pair(pid, bpid)];
+                        if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
+                    }
+                    spanner.addEdge(new_id[bpid], final_t, d);
+                }
+
+                res = kSkip::dijkstra(spanner, final_s, final_t).first;
             }
 
-            vector<float> d_Gs;
-            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
-            for (auto &sp_id: vertices_Gs){
-                auto cur_id = spanner.addVertex();
-                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
-            }
-            d_Gs.clear();
-            vertices_Gs.clear();
-
-            vector<float> d_Gt;
-            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
-            for (auto &sp_id: vertices_Gt){
-                auto cur_id = spanner.addVertex();
-                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
-            }
-            d_Gt.clear();
-            vertices_Gt.clear();
-
-            res = kSkip::dijkstra(spanner, final_s, final_t).first;
-
+            // recover spanner
             while (spanner.num_E > spanner_eflag){
                 auto eid = spanner.num_E - 1;
                 spanner.removeEdge(eid);
@@ -435,13 +452,25 @@ namespace Quad{
                 auto vid = spanner.num_V - 1;
                 spanner.removeVertex(vid);
             }
-
-            return make_pair(res, box_s->node_id == box_t->node_id);
+//            return make_pair(res, box_s->node_id == box_t->node_id);
         }
         else {
+
+            auto sid = base_graph.addVertex();
+            for (auto pid: face_point_map[fid_s]){
+                float dis = CGAL::squared_distance(s, point_location_map[pid]);
+                base_graph.addEdge(sid, pid, sqrt(dis));
+            }
+            auto tid = base_graph.addVertex();
+            for (auto pid: face_point_map[fid_t]){
+                float dis = CGAL::squared_distance(t, point_location_map[pid]);
+                base_graph.addEdge(pid, tid, sqrt(dis));
+            }
+
             res = kSkip::dijkstra(base_graph, sid, tid).first;
         }
 
+        // recover basegraph
         while (base_graph.num_E > basegraph_eflag) {
             auto eid = base_graph.num_E - 1;
             base_graph.removeEdge(eid);

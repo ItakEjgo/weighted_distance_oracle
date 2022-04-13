@@ -1,6 +1,3 @@
-//
-// Created by huang on 2021/7/6.
-//
 //#pragma once
 #ifndef CODE_BASE_H
 #define CODE_BASE_H
@@ -67,7 +64,7 @@ namespace Base {
     typedef boost::optional<AABB_tree::Intersection_and_primitive_id<Ray>::Type> Ray_intersection;
 
 
-    const float eps = 1e-7;
+    const float eps = 1e-5;
     const float PI = acos(-1.0);
     const float unreachable = numeric_limits<float>::max();
 
@@ -397,7 +394,7 @@ namespace Base {
         default_random_engine e(seed);
         uniform_int_distribution<unsigned> gen_grid_id(0, grid_num - 1);
         for (auto i = 0; i != q_num; i++){
-//            cout << "i = " << i << " qnum = " << q_num << endl;
+            cout << "i = " << i << " qnum = " << q_num << endl;
             unsigned grid_id1 = gen_grid_id(e);
             unsigned grid_id2 = grid_id1;
             do{
@@ -458,36 +455,32 @@ namespace Base {
         return make_pair(ret_point, fid);
     }
 
-    vector<pair<Point, Point> > generateQueriesA2A(string &file_name, int q_num, vector<pair<int, int> > &A2A_fid) {
-        vector<pair<Point, Point> > A2A_query = {};
+    vector<pair<Point, Point> > generateQueriesA2A(Base::Mesh &surface_mesh, const unsigned &q_num) {
+        A2A_query.clear();
         A2A_fid.clear();
-        srand((int) time(0));
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        cout << "mesh file = " << file_name << endl;
-        fin >> surface_mesh;
+
         cout << "V= " << surface_mesh.num_vertices() << " E= " << surface_mesh.num_edges() << " F= " << surface_mesh.num_faces() << endl;
         AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
-        float x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
-        for (auto vd: surface_mesh.vertices()){
-            float x = surface_mesh.points()[vd].x(),
-                y = surface_mesh.points()[vd].y();
-            if (floatCmp(x - x_min) < 0){
-                x_min = x;
-            }
-            if (floatCmp(x - x_max) > 0){
-                x_max = x;
-            }
-            if (floatCmp(y - y_min) < 0){
-                y_min = y;
-            }
-            if (floatCmp(y - y_max) > 0){
-                y_max = y;
-            }
-        }
+//        float x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
+//        for (auto vd: surface_mesh.vertices()){
+//            float x = surface_mesh.points()[vd].x(),
+//                y = surface_mesh.points()[vd].y();
+//            if (floatCmp(x - x_min) < 0){
+//                x_min = x;
+//            }
+//            if (floatCmp(x - x_max) > 0){
+//                x_max = x;
+//            }
+//            if (floatCmp(y - y_min) < 0){
+//                y_min = y;
+//            }
+//            if (floatCmp(y - y_max) > 0){
+//                y_max = y;
+//            }
+//        }
         int cnt = 0;
-        for (auto i = 0; i < q_num; i++) {
+        for (auto i = 0; i < 3 * q_num; i++) {
             auto p1_pair = generateArbitrarySurfacePoint(surface_mesh);
             auto p2_pair = generateArbitrarySurfacePoint(surface_mesh);
             A2A_query.emplace_back(p1_pair.first, p2_pair.first);

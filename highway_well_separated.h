@@ -1,7 +1,3 @@
-//
-// Created by huang on 2021/7/26.
-//
-
 #ifndef WEIGHTED_DISTANCE_ORACLE_HIGHWAY_WELL_SEPARATED_H
 #define WEIGHTED_DISTANCE_ORACLE_HIGHWAY_WELL_SEPARATED_H
 #include "base.h"

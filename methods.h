@@ -1,7 +1,3 @@
-//
-// Created by huang on 2022/2/7.
-//
-
 #ifndef WEIGHTED_DISTANCE_ORACLE_METHODS_H
 #define WEIGHTED_DISTANCE_ORACLE_METHODS_H
 
@@ -74,17 +70,13 @@ namespace Methods{
         }
 
         Surface_mesh_shortest_path shortest_paths(mesh);
-        vector<float> V2V_results = {}, res_time = {index_time};
-        float cur_query_time = 0.0;
-
-        unsigned percent = 1;
-        fout << "Query results begin: " << endl;
+        vector<float> V2V_results = {}, res_time = {};
+//        fout << "Query results begin: " << endl;
 
         for (auto i = 0; i < A2A_query.size(); i++){
 //            if (i > percent * A2A_query.size() / 10){
 //                fout << percent++ << "0% queries finished." << endl;
 //            }
-
             auto s = A2A_query[i].first;
             auto t = A2A_query[i].second;
             auto fid_s = A2A_fid[i].first;
@@ -96,18 +88,11 @@ namespace Methods{
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
-            V2V_results.push_back(oracle_distance);
-            cur_query_time += static_cast<float>(q_duration.count());
-            fout << fixed << setprecision(6) << oracle_distance << " " << static_cast<float>(q_duration.count()) << endl;
-
-
-            if ((i + 1) % q_num == 0){
-                res_time.emplace_back(cur_query_time);
-                cur_query_time = 0.0;
-            }
-
+            V2V_results.emplace_back(oracle_distance);
+            res_time.emplace_back(static_cast<float>(q_duration.count()));
+//            fout << fixed << setprecision(6) << oracle_distance << " " << static_cast<float>(q_duration.count()) << endl;
         }
-        fout << "Query results end. " << endl;
+//        fout << "Query results end. " << endl;
         return make_pair(V2V_results, res_time);
     }
 
@@ -181,12 +166,12 @@ namespace Methods{
         fout << fixed << setprecision(6) << "[Index Time] LQT-oracle: " << index_time << " ms" << endl;
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
-        vector<float> A2A_result = {}, res_time = {index_time};
+        vector<float> A2A_result = {}, res_time = {};
         float cur_query_time = 0.0;
         unsigned percent = 1;
         unsigned  kappa = floor(2.309 * (sp_num + 1));
 
-        fout << "Query results begin: " << endl;
+//        fout << "Query results begin: " << endl;
         for (auto i = 0; i < A2A_query.size(); i++){
 
 //            if (i > percent * A2A_query.size() / 10){
@@ -208,17 +193,12 @@ namespace Methods{
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
-            A2A_result.push_back(spanner_distance);
-            cur_query_time += static_cast<float>(q_duration.count());
-            fout << fixed << setprecision(6) << spanner_distance << " " << static_cast<float>(q_duration.count()) << endl;
+            A2A_result.emplace_back(spanner_distance);
+            res_time.emplace_back(static_cast<float>(q_duration.count()));
+//            fout << fixed << setprecision(6) << spanner_distance << " " << static_cast<float>(q_duration.count()) << endl;
 
-
-            if ((i + 1) % q_num == 0){
-                res_time.emplace_back(cur_query_time);
-                cur_query_time = 0.0;
-            }
         }
-        fout << "Query results end. " << endl;
+//        fout << "Query results end. " << endl;
 
         return make_pair(A2A_result, res_time);
     }
@@ -228,9 +208,9 @@ namespace Methods{
         srand((int)time(0));
 
         Surface_mesh_shortest_path shortest_paths(mesh);
-        vector<float> A2A_result = {}, res_time = {0.0};
+        vector<float> A2A_result = {}, res_time = {};
 
-        fout << "Query results begin: " << endl;
+//        fout << "Query results begin: " << endl;
         for (auto x = 0; x < 3; x++) {
             unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
             for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
@@ -249,12 +229,13 @@ namespace Methods{
                 auto q_end = chrono::_V2::system_clock::now();
                 auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
-                A2A_result.push_back(mmp_distance);
-                fout << fixed << setprecision(6) << mmp_distance << " " << static_cast<float>(q_duration.count())
-                     << endl;
+                A2A_result.emplace_back(mmp_distance);
+                res_time.emplace_back(static_cast<float>(q_duration.count()));
+//                fout << fixed << setprecision(6) << mmp_distance << " " << static_cast<float>(q_duration.count())
+//                     << endl;
             }
         }
-        fout << "Query results end. " << endl;
+//        fout << "Query results end. " << endl;
 
 
         return make_pair(A2A_result, res_time);
@@ -283,9 +264,9 @@ namespace Methods{
         WeightedDistanceOracle::constructBaseGraph(mesh, face_weight, num_base_graph_vertices, edge_bisector_map,
                                                    bisector_point_map, point_face_map, point_location_map);
 
-        vector<float> A2A_result(A2A_query.size()), res_time(A2A_query.size());
+        vector<float> A2A_result = {}, res_time = {};
 
-        fout << "Query results begin: " << endl;
+//        fout << "Query results begin: " << endl;
         for (auto x = 0; x < 3; x++){
             unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
             for (auto i = start_id; i < start_id + q_num / parallel_num; i++){
@@ -300,12 +281,12 @@ namespace Methods{
                 auto q_end = chrono::_V2::system_clock::now();
                 auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
-                A2A_result[i] = dijk_distance;
-                res_time[i] = static_cast<float>(q_duration.count());
-                fout << fixed << setprecision(6) << A2A_result[i] << " " << res_time[i] << endl;
+                A2A_result.emplace_back(dijk_distance);
+                res_time.emplace_back(static_cast<float>(q_duration.count()));
+//                fout << fixed << setprecision(6) << A2A_result[i] << " " << res_time[i] << endl;
             }
         }
-        fout << "Query results end. " << endl;
+//        fout << "Query results end. " << endl;
 
         return make_pair(A2A_result, res_time);
     }
@@ -323,9 +304,9 @@ namespace Methods{
         kSkip::Graph g;
         kSkip::constructMeshGraph(mesh, g);
 
-        vector<float> A2A_result = {}, res_time = {0.0};
+        vector<float> A2A_result = {}, res_time = {};
 
-        fout << "Query results begin: " << endl;
+//        fout << "Query results begin: " << endl;
         for (auto x = 0; x < 3; x++) {
             unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
             for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
@@ -343,12 +324,12 @@ namespace Methods{
                 auto q_end = chrono::_V2::system_clock::now();
                 auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
-                A2A_result.push_back(dijk_distance);
-                fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count())
-                     << endl;
+                A2A_result.emplace_back(dijk_distance);
+                res_time.emplace_back(static_cast<float>(q_duration.count()));
+//                fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count()) << endl;
             }
         }
-        fout << "Query results end. " << endl;
+//        fout << "Query results end. " << endl;
 
         return make_pair(A2A_result, res_time);
     }
@@ -446,11 +427,11 @@ namespace Methods{
         }
         fout << "theta_m = " << theta_m << endl;
 
-        vector<float> A2A_result = {}, res_time = {0.0};
+        vector<float> A2A_result = {}, res_time = {};
         kSkip::Graph g;
         kSkip::constructMeshGraph(mesh, g);
 
-        fout << "Query results begin: " << endl;
+//        fout << "Query results begin: " << endl;
 
         for (auto x = 0; x < 3; x++) {
             unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
@@ -466,12 +447,13 @@ namespace Methods{
                 auto q_end = chrono::_V2::system_clock::now();
                 auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
-                A2A_result.push_back(kAlgo_distance);
-                fout << fixed << setprecision(6) << kAlgo_distance << " " << static_cast<float>(q_duration.count())
-                     << endl;
+                A2A_result.emplace_back(kAlgo_distance);
+                res_time.emplace_back(static_cast<float>(q_duration.count()));
+//                fout << fixed << setprecision(6) << kAlgo_distance << " " << static_cast<float>(q_duration.count())
+//                     << endl;
             }
         }
-        fout << "Query results end. " << endl;
+//        fout << "Query results end. " << endl;
 
         return make_pair(A2A_result, res_time);
     }
@@ -532,14 +514,16 @@ namespace Methods{
         Mesh mesh;
         ifstream fin(input);
         fin >> mesh;
+//        cout << mesh.num_vertices() << " " << mesh.num_edges() << " " << mesh.num_faces() << endl;
         AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
         vector<float> mesh_boundary = retrieveMeshBoundary(mesh);
 
         if (generate_flag){
-            generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
-            generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
-            float inner_ratio = generateQueriesA2ANoFlag(mesh, mesh_boundary, aabb_tree, q_num, grid_num); // The last q_num queries are random generated.
+//            generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
+//            generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
+//            float inner_ratio = generateQueriesA2ANoFlag(mesh, mesh_boundary, aabb_tree, q_num, grid_num); // The last q_num queries are random generated.
+            Base::generateQueriesA2A(mesh, q_num);
             ofstream fout("A2A.query");
             for (auto i = 0; i < A2A_query.size(); i++){
                 fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
@@ -553,7 +537,7 @@ namespace Methods{
                 fout2 << fixed << setprecision(6) << face_weight[i] << endl;
             }
             cout << "face weight generate finished." << endl;
-            cout <<  fixed << setprecision(3) << q_num << " random queries, inner ratio = " << inner_ratio << ", inter ratio = " << 1 - inner_ratio << endl;
+//            cout <<  fixed << setprecision(3) << q_num << " random queries, inner ratio = " << inner_ratio << ", inter ratio = " << 1 - inner_ratio << endl;
         }
         else{
             ofstream fout(output);
@@ -580,7 +564,8 @@ namespace Methods{
             }
             else if (method_type == "KAlgo"){
                 fout << "Run Algorithm 2: K-Algo" << endl;
-                unsigned K = floor(1 / err + 1);
+                unsigned K = ceil(1.0 / err + 1);
+                cout << fixed << setprecision(2) << "eps = " << err << ", K = " << K << endl;
                 res = A2A_KAlgo(fout, mesh, q_num, K, face_weight, parallel_num, parallel_id);
             }
             else if (method_type == "SE"){
@@ -599,6 +584,11 @@ namespace Methods{
             else{
                 cout << "Method should between 0 and 5." << endl;
             }
+            fout << "Query results begin: " << endl;
+            for (auto i = 0; i != res.first.size(); i++){
+                fout << fixed << setprecision(6) << res.first[i] << " " << res.second[i] << endl;
+            }
+            fout << "Query results end." << endl;
         }
     }
 }

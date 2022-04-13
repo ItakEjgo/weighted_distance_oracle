@@ -1,7 +1,3 @@
-//
-// Created by huang on 2021/8/3.
-//
-
 #ifndef WEIGHTED_DISTANCE_ORACLE_K_SKIP_H
 #define WEIGHTED_DISTANCE_ORACLE_K_SKIP_H
 #include "base.h"
@@ -428,6 +424,7 @@ namespace kSkip{
             point_location_map[bp_id] = cur_bisector_p[i];
             point_bisector_map[bp_id] = bisector_id;
         }
+//        cout << "placed points = " << cur_bisector_p_id.size() << endl;
 
         return 1;
     }
@@ -657,7 +654,7 @@ namespace kSkip{
                     float OO_min = 0.5 * l_min * sqrt(2 * (1 - cos(theta_m / 180 * Base::PI)));
                     float delta_I = OO_min / K;
                     // cout << "O_min = " << OO_min << endl;
-                    // cout << "delta_I = " << delta_I << endl;
+//                     cout << "delta_I = " << delta_I << endl;
 
                     for (auto x = 0; x != L.size(); x++){
                         auto e = L[x];
@@ -675,8 +672,9 @@ namespace kSkip{
                             float e_len = sqrt(CGAL::squared_distance(v_a, v_b));
 //                             cout << "num cut vertices = " << floor(e_len / delta_I) << endl;
                             float t_delta_I = delta_I;
-                            if (Base::floatCmp(t_delta_I) <= 0 || e_len / t_delta_I > 25){
-                                t_delta_I = e_len / 25;
+//                            cout << "placed points = " << e_len / t_delta_I << endl;
+                            if (Base::floatCmp(t_delta_I) <= 0 || e_len / t_delta_I > 55){
+                                t_delta_I = e_len / 55;
                             }
                             while (j <= floor(e_len / t_delta_I)){
                                 int v_c_id = -1;
@@ -711,6 +709,7 @@ namespace kSkip{
                                 // q.insert(Qnode(v_c_id, D[v_c_id]));
                                 j++;
                             }
+//                            cout << "placed points = " << j << endl;
                         }
                     }
                     if (!g.isCorner(f.p)){
