@@ -100,18 +100,13 @@ namespace kSkip{
         q.push(QNode(s, d[s]));
         while (!q.empty()){
             QNode f = q.top(); q.pop();
-//            cout << fixed << setprecision(6) << "f.dis = " << f.dis << endl;
             if (f.p == t) {
-//                int xx; cin >> xx;
                 break;
             }
             if (vis[f.p]) continue;
             for (auto eid = g.head[f.p]; eid; eid = g.edges[eid].next){
                 auto v = g.edges[eid].to;
                 float w = g.edges[eid].w;
-//                if (Base::floatCmp(w) < 0){
-//                    cout << "w < 0: " << f.p << " " << v << " " << w << endl;
-//                }
                 if (Base::floatCmp(d[f.p] + w - d[v]) < 0){
                     d[v] = d[f.p] + w;
                     fa[v] = f.p;
@@ -234,9 +229,6 @@ namespace kSkip{
             for (int eid = g.head[f.p]; eid; eid = g.edges[eid].next){
                 int v = g.edges[eid].to;
                 float w = g.edges[eid].w;
-//                if (Base::floatCmp(w) < 0){
-//                    cout << "w < 0: " << f.p << " " << v << " " << w << endl;
-//                }
                 if (Base::floatCmp(d[f.p] + w - d[v]) < 0){
                     d[v] = d[f.p] + w;
                     fa[v] = f.p;
