@@ -13,7 +13,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 **--output: The path of the output file.** The output is a text file containing building time, space consumption, query time and approximate geodesic distances of the given queries.  
 
 [comment]: <> (unsigned grid_num = getarg&#40;4, "--grid-num"&#41;;)
-**--grid-num: The number of boxes of EAR-Oracle.** EAR-Oracle will generate $$\zeta^2$$ boxes for exacting highway nodes and establishing highway edges.
+**--grid-num: The number of boxes of EAR-Oracle.** EAR-Oracle will generate $\zeta^2$ boxes for exacting highway nodes and establishing highway edges.
 
 
 unsigned q_num = getarg(100, "--query-num");
