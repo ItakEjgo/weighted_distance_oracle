@@ -333,6 +333,7 @@ namespace Quad{
         }
     }
 
+    // new version of distance query processing
     pair<float, bool> queryA2A(kSkip::Graph &spanner,
                                 kSkip::Graph &base_graph, map<unsigned, vector<unsigned> > &face_point_map,
                                 WeightedDistanceOracle::PartitionTree &tree, set<WeightedDistanceOracle::nodePair> &node_pairs,
@@ -363,60 +364,57 @@ namespace Quad{
             }
         }
 
-//        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
-//        auto sid = base_graph.addVertex();
-//        for (auto pid: face_point_map[fid_s]){
-//            float dis = CGAL::squared_distance(s, point_location_map[pid]);
-//            base_graph.addEdge(sid, pid, sqrt(dis));
-//        }
-//        auto tid = base_graph.addVertex();
-//        for (auto pid: face_point_map[fid_t]){
-//            float dis = CGAL::squared_distance(t, point_location_map[pid]);
-//            base_graph.addEdge(pid, tid, sqrt(dis));
-//        }
+        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
+        auto sid = base_graph.addVertex();
+        for (auto pid: face_point_map[fid_s]){
+            float dis = CGAL::squared_distance(s, point_location_map[pid]);
+            base_graph.addEdge(sid, pid, sqrt(dis));
+        }
+        auto tid = base_graph.addVertex();
+        for (auto pid: face_point_map[fid_t]){
+            float dis = CGAL::squared_distance(t, point_location_map[pid]);
+            base_graph.addEdge(pid, tid, sqrt(dis));
+        }
 
         float res = -1.0;
-        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
+//        auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
 
         if (box_s->node_id != box_t->node_id){
 
             auto spanner_vflag = spanner.num_V, spanner_eflag = spanner.num_E; //  backup
-
             auto final_s = spanner.addVertex();
             auto final_t = spanner.addVertex();
 
+//             Gs and Gt
+            vector<float> d_Gs;
+            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
+            for (auto &sp_id: vertices_Gs){
+                auto cur_id = spanner.addVertex();
+                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
+            }
 
+            vector<float> d_Gt;
+            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
+            for (auto &sp_id: vertices_Gt){
+                auto cur_id = spanner.addVertex();
+                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
+            }
 
-            // Gs and Gt
-//            vector<float> d_Gs;
-//            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
-//            for (auto &sp_id: vertices_Gs){
-//                auto cur_id = spanner.addVertex();
-//                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
-//            }
-//
-//            vector<float> d_Gt;
-//            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
-//            for (auto &sp_id: vertices_Gt){
-//                auto cur_id = spanner.addVertex();
-//                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
-//            }
-//
-//            for (auto vid: vertices_Gs){
-//                if (Base::floatCmp(d_Gt[vid] - Base::unreachable) < 0){
-//                    float t_dis = d_Gs[vid] + d_Gt[vid];
-//                    if (Base::floatCmp(res) < 0 || Base::floatCmp(t_dis - res) < 0){
-//                        res = t_dis;
-//                    }
-//                }
-//            }
-//
-//            d_Gs.clear();
-//            vertices_Gs.clear();
-//            d_Gt.clear();
-//            vertices_Gt.clear();
+            for (auto vid: vertices_Gs){
+                if (Base::floatCmp(d_Gt[vid] - Base::unreachable) < 0){
+                    float t_dis = d_Gs[vid] + d_Gt[vid];
+                    if (Base::floatCmp(res) < 0 || Base::floatCmp(t_dis - res) < 0){
+                        res = t_dis;
+                    }
+                }
+            }
 
-            // result not found, find a spanner use path
+            d_Gs.clear();
+            vertices_Gs.clear();
+            d_Gt.clear();
+            vertices_Gt.clear();
+
+            // result not found, find a highway-network path
             if (Base::floatCmp(res) < 0) {
 
                 for (auto bpid: box_s->boundary_points_id) {
@@ -483,6 +481,7 @@ namespace Quad{
         return make_pair(res, box_s->node_id == box_t->node_id);
     }
 
+    // old version
     pair<float, bool> queryA2A(Base::Mesh &m, kSkip::Graph &spanner,
                                 kSkip::Graph &base_graph, map<int, vector<int> > &face_point_map,
                                 map<int, Base::Point> &point_location_map,
