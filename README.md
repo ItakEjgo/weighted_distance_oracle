@@ -36,7 +36,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 **--eps={float}: The value of multiplicative error bound.** 
 
 [comment]: <> (unsigned sp_num = getarg&#40;5, "--sp-num"&#41;;)
-**--sp-num={int}: The number of Steiner points placed on each bisector. ** This parameter will be used for the bisector-fixed scheme base graph construction. 
+**--sp-num={int}: The number of Steiner points placed on each bisector.** This parameter will be used for the bisector-fixed scheme base graph construction. 
 
 [comment]: <> (unsigned parallel_num = getarg&#40;1, "--parallel-num"&#41;;)
 **--parallel-num={int}: The number of processes to used.** Please note that this parameter only works for on-the-fly algorithms (*Fixed Scheme, Unfixed Scheme, K-Algo and MMP*). Besides, the query-num should be a multiple of parallel-num.  
