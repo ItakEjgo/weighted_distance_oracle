@@ -138,7 +138,7 @@ namespace Base {
     }
 
     void getOpt2(int argc, char **argv, int &generate_queries, string &file_name, int &weight, int &q_num,
-                 float &eps, int &sp_num, int &algo_type, int &lqt_lev, string &output_file) {
+                 float &eps, int &sp_num, int &algo_type, int &EAR_lev, string &output_file) {
 //        struct option long_options[] = {
 //                {"generate",  required_argument, 0, 'g'},
 //                {"mesh",      required_argument, 0, 'm'},
@@ -147,7 +147,7 @@ namespace Base {
 //                {"algo",      required_argument, 0, 'a'},
 //                {"eps",       required_argument, 0, 'e'},
 //                {"sp_num",    required_argument, 0, 's'},
-//                {"lqt_lev",   required_argument, 0, 'l'},
+//                {"EAR_lev",   required_argument, 0, 'l'},
 //                {"output",    required_argument, 0, 'o'},
 //                {0, 0,                           0, 0}
 //        };
@@ -155,7 +155,7 @@ namespace Base {
 //        const char *opt_string = "g:m:w:q:a:e:s:l:o:";
 //        int option_index = 0;
 //        generate_queries = 0;
-//        lqt_lev = 0;
+//        EAR_lev = 0;
 //        while ((opt = getopt_long(argc, argv, opt_string, long_options, &option_index)) != -1) {
 //            char ch = (char) opt;
 //            switch (ch) {
@@ -181,7 +181,7 @@ namespace Base {
 //                    sp_num = atoi(optarg);
 //                    break;
 //                case 'l':
-//                    lqt_lev = atoi(optarg);
+//                    EAR_lev = atoi(optarg);
 //                    break;
 //                case 'o':
 //                    output_file = optarg;

@@ -96,7 +96,7 @@ namespace Methods{
         return make_pair(V2V_results, res_time);
     }
 
-    pair<vector<float>, vector<float> > A2A_LQT(ofstream &fout, const Mesh &mesh, const float &err,
+    pair<vector<float>, vector<float> > A2A_EAR(ofstream &fout, const Mesh &mesh, const float &err,
                                                         const unsigned &sp_num, const unsigned &level, const unsigned &q_num,
                                                         const vector<float> &face_weight) {
         srand((int)time(0));
@@ -133,7 +133,7 @@ namespace Methods{
             }
         }
         fout << "V = " << mesh.num_vertices() << " | ";
-        fout << "LQT-Leaf = " << pids.size() << endl;
+        fout << "EAR-Leaf = " << pids.size() << endl;
         fout << "maximum leaf node boundary vertices = " << leaf_boundary_vertices << endl;
         vector<unsigned> pid_list(pids.begin(), pids.end());
 
@@ -163,7 +163,7 @@ namespace Methods{
         float index_time = index_duration.count();
         auto memory_end = physical_memory_used_by_process();
 
-        fout << fixed << setprecision(6) << "[Index Time] LQT-oracle: " << index_time << " ms" << endl;
+        fout << fixed << setprecision(6) << "[Index Time] EAR-oracle: " << index_time << " ms" << endl;
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
         vector<float> A2A_result = {}, res_time = {};
@@ -572,10 +572,10 @@ namespace Methods{
                 fout << "Run Algorithm 3: SE-Oracle" << endl;
                 res = A2A_SE(fout, mesh, err, sp_num, q_num, face_weight);
             }
-            else if (method_type == "LQT"){
-                fout << "Run Algorithm 4: LQT-oracle" << endl;
+            else if (method_type == "EAR"){
+                fout << "Run Algorithm 4: EAR-oracle" << endl;
                 unsigned level = floor(log2(1.0 * grid_num) * 0.5 + eps);
-                res = A2A_LQT(fout, mesh, err, sp_num, level, q_num, face_weight);
+                res = A2A_EAR(fout, mesh, err, sp_num, level, q_num, face_weight);
             }
             else if (method_type == "MMP"){
                 fout << "Run Algorithm 5: MMP-Algorithm" << endl;

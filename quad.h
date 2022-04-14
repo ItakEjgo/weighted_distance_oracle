@@ -11,7 +11,7 @@ namespace Quad{
 
     int WSPD_hit = 0;
     kSkip::Graph my_base_graph;
-    map<pair<int, int>, float> LQT_distance_map;
+    map<pair<int, int>, float> EAR_distance_map;
 
     struct my_point{
         float x, y;
@@ -325,8 +325,8 @@ namespace Quad{
                 vector<float> d;
                 kSkip::covered_dijkstra(base_graph, s, covered_point, d);
                 for (auto pid: covered_point){
-                    LQT_distance_map[make_pair(s, pid)] = d[pid];
-                    LQT_distance_map[make_pair(pid, s)] = d[pid];
+                    EAR_distance_map[make_pair(s, pid)] = d[pid];
+                    EAR_distance_map[make_pair(pid, s)] = d[pid];
                 }
             }
 
@@ -422,9 +422,9 @@ namespace Quad{
                 for (auto bpid: box_s->boundary_points_id) {
                     float d = Base::unreachable;
                     for (auto pid: face_point_map[fid_s]) {
-                        //                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(closest_pid, bpid)];
+                        //                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + EAR_distance_map[make_pair(closest_pid, bpid)];
                         float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) +
-                                      LQT_distance_map[make_pair(pid, bpid)];
+                                      EAR_distance_map[make_pair(pid, bpid)];
                         if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                     }
                     spanner.addEdge(final_s, new_id[bpid], d);
@@ -434,7 +434,7 @@ namespace Quad{
                     float d = Base::unreachable;
                     for (auto pid: face_point_map[fid_t]) {
                         float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) +
-                                      LQT_distance_map[make_pair(pid, bpid)];
+                                      EAR_distance_map[make_pair(pid, bpid)];
                         if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                     }
                     spanner.addEdge(new_id[bpid], final_t, d);
@@ -522,7 +522,7 @@ namespace Quad{
             for (auto bpid: box_s->boundary_points_id){
                 float d = Base::unreachable;
                 for (auto pid: face_point_map[fid_s]){
-                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    float t_dis = sqrt(CGAL::squared_distance(s, point_location_map[pid])) + EAR_distance_map[make_pair(pid, bpid)];
                     if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                 }
                 spanner.addEdge(final_s, new_id[bpid], d);
@@ -532,7 +532,7 @@ namespace Quad{
             for (auto bpid: box_t->boundary_points_id){
                 float d = Base::unreachable;
                 for (auto pid: face_point_map[fid_t]){
-                    float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + LQT_distance_map[make_pair(pid, bpid)];
+                    float t_dis = sqrt(CGAL::squared_distance(t, point_location_map[pid])) + EAR_distance_map[make_pair(pid, bpid)];
                     if (Base::floatCmp(t_dis - d) < 0) d = t_dis;
                 }
                 spanner.addEdge(new_id[bpid], final_t, d);
