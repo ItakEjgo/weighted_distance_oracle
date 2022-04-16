@@ -39,7 +39,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 **--sp-num={int}: The number of Steiner points placed on each bisector.** This parameter will be used for the bisector-fixed scheme base graph construction. 
 
 [comment]: <> (unsigned parallel_num = getarg&#40;1, "--parallel-num"&#41;;)
-**--parallel-num={int}: The number of processes to used.** Please note that this parameter only works for on-the-fly algorithms (*Fixed Scheme, Unfixed Scheme, K-Algo and MMP*). Besides, the query-num should be a multiple of query-num.  
+**--parallel-num={int}: The number of processes to used.** Please note that this parameter only works for on-the-fly algorithms (*Fixed Scheme, Unfixed Scheme, K-Algo and MMP*). Besides, the query-num should be a multiple of parallel-num.  
 
 [comment]: <> (unsigned parallel_id = getarg&#40;0, "--parallel-id"&#41;;)
 **--parallel-id={int}: Which partition of queries this process is going to deal.** Please note that the parallel-id should be less than the parallel-num.
