@@ -27,7 +27,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 **--query-num={int}: The number of queries.** If the --generate flag set to be 1, the program will generate 3 * query-num queries (1/3 of them are inner-box queries, 1/3 of them are inter-box queries, and the rest are inner-inter mixed queries). 
 
 [comment]: <> (bool weighted_flag = getarg&#40;0, "--weighted"&#41;;)
-**--weighted={0, 1}: The flag whether the terrain surface is weighted or not.** If this parameter set to be 1, the terrain surface (input file) is a weighted terrain surface thus the face weights are generated and be used for distance computation. Please note that only *Fixed Scheme*, *Unfixed Scheme* and *EAR-Oracle* support weighted terrain surfaces queries.  
+**--weighted={0, 1}: The flag whether the terrain surface is weighted or not.** If this parameter set to be 1, the terrain surface (input file) is a weighted terrain surface and thus, the face weights will be generated and be used for distance computation. Please note that only *Fixed Scheme*, *Unfixed Scheme* and *EAR-Oracle* support weighted terrain surfaces queries.  
 
 [comment]: <> (string method_type = getarg&#40;"", "--method"&#41;;)
 **--method={'FixedS', 'UnfixedS', 'KAlgo', 'SE', 'EAR', 'MMP'}: Which algorithm is going to be used.** *Fixed Scheme*, *Unfixed Scheme* and *K-Algo* are state-of-the-art on-the-fly algorithms. *SE-Oracle* is state-of-the-art index-based algorithm. *EAR-Oracle* is the proposed *highway network-based indexing algorithm*. *MMP* is the exact geodesic distance algorithm and it is implemented by the CGAL(v5.3) library. 
@@ -39,7 +39,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 **--sp-num={int}: The number of Steiner points placed on each bisector.** This parameter will be used for the bisector-fixed scheme base graph construction. 
 
 [comment]: <> (unsigned parallel_num = getarg&#40;1, "--parallel-num"&#41;;)
-**--parallel-num={int}: The number of processes to used.** Please note that this parameter only works for on-the-fly algorithms (*Fixed Scheme, Unfixed Scheme, K-Algo and MMP*). Besides, the query-num should be a multiple of parallel-num.  
+**--parallel-num={int}: The number of processes to used.** Please note that this parameter only works for on-the-fly algorithms (*Fixed Scheme, Unfixed Scheme, K-Algo and MMP*). Besides, the query-num should be a multiple of query-num.  
 
 [comment]: <> (unsigned parallel_id = getarg&#40;0, "--parallel-id"&#41;;)
 **--parallel-id={int}: Which partition of queries this process is going to deal.** Please note that the parallel-id should be less than the parallel-num.
