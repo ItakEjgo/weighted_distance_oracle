@@ -1,6 +1,8 @@
 ## Efficient Arbitrary Point-to-Arbitrary Point Geodesic Distance Oracle
 This repository contains the implementation of *EAR-Oracle*, *SE-Oracle*, *Fixed Scheme*, *Unfixed Scheme*, *K-Algo* and *MMP* algorithms.
 
+The technical report locates in the *technicalreport* directory.
+
 ### Dataset
 We provided the datasets used in the paper in *datasets/* folder. The datasets used in EAR-Oracle should be *2-manifold* terrain surfaces in *.off* format. 
 
