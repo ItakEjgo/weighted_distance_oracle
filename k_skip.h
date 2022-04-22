@@ -2,6 +2,7 @@
 #define WEIGHTED_DISTANCE_ORACLE_K_SKIP_H
 #include "base.h"
 
+// parameter for K-Algo
 extern int K;
 
 namespace kSkip{
@@ -122,8 +123,8 @@ namespace kSkip{
         return make_pair(d[t], static_cast<float>(duration.count()));
     }
 
+    //dijkstra for a given hop, return the discovered vertex id
     vector<int> hop_dijkstra(Graph &g, int s, const unsigned &kappa, vector<float> &d){
-
         vector<bool> vis(g.num_V, false);
         d.resize(g.num_V, Base::unreachable);
         vector<int> fa(g.num_V, -1);
@@ -153,6 +154,7 @@ namespace kSkip{
         return discovered_point;
     }
 
+    //dijkstra for a given distance bound
     float bounded_dijkstra(Graph &g, int s, float bound, vector<float> &d){
         auto start_time = chrono::_V2::system_clock::now();  //  timer
 
@@ -183,6 +185,7 @@ namespace kSkip{
         return static_cast<float>(duration.count());
     }
 
+    // find covered non-corner vertex, return their id
     int collect_covered_vertices(Graph &g, int s, float bound, vector<int> &covered_vertices, int &boundary_vertex_flag){
         vector<bool> vis(g.num_V, false);
         vector<float> d;

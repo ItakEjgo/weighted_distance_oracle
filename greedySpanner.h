@@ -28,6 +28,7 @@ namespace GreedySpanner{
         }
     };
 
+    // greedy spanner generation
     bool generateGreedySpanner(const vector<int> &boundary_vertices, kSkip::Graph &spanner, map<int, int> &new_id){
         vector<pair<int, int> > boundary_vertices_pairs;
         for (auto i = 0; i != boundary_vertices.size(); i++){

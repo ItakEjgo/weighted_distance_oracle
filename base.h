@@ -302,6 +302,7 @@ namespace Base {
         return trans.transform(p);
     }
 
+    // dijkstra algorithm for boost graph
     void dijkstra_SSAD(Graph &g, int source_idx, vector<float> &d, vector<int> &fa) {
         d.resize(num_vertices(g));
         vector<vertex_descriptor> p(num_vertices(g));
@@ -328,20 +329,21 @@ namespace Base {
         return ret;
     }
 
-    vector<float> generateFaceWeight(string &file_name) {
-        Mesh surface_mesh;
-        ifstream fin(file_name);
-        fin >> surface_mesh;
-        auto n = surface_mesh.num_faces();
-        uniform_real_distribution<float> gen(1.000001, 5);
-        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-        default_random_engine e(seed);
-        vector<float> face_weight = {};
-        for (auto i = 0; i < n; i++) {
-            face_weight.emplace_back(gen(e));
-        }
-        return face_weight;
-    }
+    // old version, this function will read file again.
+//    vector<float> generateFaceWeight(string &file_name) {
+//        Mesh surface_mesh;
+//        ifstream fin(file_name);
+//        fin >> surface_mesh;
+//        auto n = surface_mesh.num_faces();
+//        uniform_real_distribution<float> gen(1.000001, 5);
+//        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+//        default_random_engine e(seed);
+//        vector<float> face_weight = {};
+//        for (auto i = 0; i < n; i++) {
+//            face_weight.emplace_back(gen(e));
+//        }
+//        return face_weight;
+//    }
 
     // return an arbitrary surface point and its face location within a given region.
     pair<Point, unsigned> generateArbitrarySurfacePoint(const Mesh &mesh, const AABB_tree &aabb_tree,
@@ -413,7 +415,7 @@ namespace Base {
         }
     }
 
-    // generate A2A queries, if inner_flag is set, the queries will be inner-box queries.
+    // generate A2A queries, these queries are mixed by inner-box and inter-box queries.
     float generateQueriesA2ANoFlag(const Mesh &mesh, const vector<float> &mesh_boundary, const AABB_tree &aabb_tree,
                             const unsigned &q_num, const unsigned &grid_num){
         unsigned seed = system_clock::now().time_since_epoch().count();
@@ -435,7 +437,7 @@ namespace Base {
         return inner / q_num;
     }
 
-
+    // generate surface without calculate intersections, suitable for terrain surfaces with tiny faces.
     pair<Point, int> generateArbitrarySurfacePoint(Mesh &mesh) {
         auto fid = rand() % mesh.num_faces();
 //        cout << "fid = " << fid << endl;
@@ -455,6 +457,7 @@ namespace Base {
         return make_pair(ret_point, fid);
     }
 
+    // generate queries without testing intersections.
     vector<pair<Point, Point> > generateQueriesA2A(Base::Mesh &surface_mesh, const unsigned &q_num) {
         A2A_query.clear();
         A2A_fid.clear();
@@ -489,6 +492,7 @@ namespace Base {
         return A2A_query;
     }
 
+    //load A2A queries from A2A.query file
     void loadQueriesA2A(vector<pair<Point, Point> > &A2A_query, vector<pair<unsigned, unsigned> > &A2A_fid) {
         ifstream fin("A2A.query");
         Point p1, p2;
@@ -500,6 +504,7 @@ namespace Base {
         }
     }
 
+    //load face weight from face_weight.query file
     void loadFaceWeight(vector<float> &face_weight) {
         face_weight.clear();
         ifstream fin("face_weight.query");

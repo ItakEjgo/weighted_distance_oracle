@@ -1,48 +1,3 @@
-// Simple getopt replacement class (C++11).
-// - rlyeh, zlib/libpng licensed.
-
-// Two APIs provided:
-//
-// 1) Simple functional api `getarg(...)`.
-//    - No initialization required: (argc, argv) pair automatically retrieved.
-//    - First argument is default option value, then all option indentifiers follow.
-//
-// int main() {
-//     bool help = getarg( false, "-h", "--help", "-?" );
-//     int version = getarg( 0, "-v", "--version", "--show-version" );
-//     int depth = getarg( 1, "-d", "--depth", "--max-depth");
-//     std::string file = getarg( "", "-f", "--file" );
-//     [...]
-// }
-//
-// 2) Simple OOP map-based api `getopt class`. Initialization (argc, argv) pair required.
-//
-//    This getopt class is a std::map replacement where key/value are std::string types.
-//    Given invokation './app.out --user=me --pass=123 -h' this class delivers not only:
-//    map[0] = "./app.out", map[1] = "--user=me", map[2]="--pass=123", map[3]='-h'
-//    but also, map["--user"]="me", map["--pass"]="123" and also, map["-h"]=true
-//
-//    Additional API:
-//    - .cmdline() for a print app invokation string
-//    - .str() for pretty map printing
-//    - .size() number of arguments (equivalent to argc), rather than std::map.size()
-//
-// int main( int argc, const char **argv ) {
-//     getopt args( argc, argv );
-//     if( args.has("-h") || args.has("--help") || args.has("-?") || args.size() == 1 ) {
-//         std::cout << args["0"] << " [-?|-h|--help] [-v|--version] [--depth=number]" << std::endl;
-//         return 0;
-//     }
-//     if( args.has("-v") || args.has("--version") ) {
-//         std::cout << args["0"] << " sample v1.0.0. Compiled on " << __DATE__ << std::endl;
-//     }
-//     if( args.has("--depth") ) {
-//         int depth = atoi( args["--depth"].c_str() );
-//         std::cout << "depth set to " << depth << std::endl;
-//     }
-//     [...]
-// }
-
 #pragma once
 #include <map>
 #include <string>
@@ -61,8 +16,6 @@
 #include <stdlib.h>
 #include <sstream>
 #endif
-
-#define GETOPT_VERSION "1.0.0" // (2016/04/18) Initial version
 
 namespace getopt_utils
 {
@@ -245,71 +198,3 @@ inline const char * getarg( const char *defaults, const char *arg0, Args... argv
 }
 
 // }
-
-
-#ifdef GETOPT_BUILD_DEMO
-#include <iostream>
-#include <stdlib.h>
-
-int main( int argc, const char **argv ) {
-
-    auto show_help = [&]() {
-        std::cout << argv[0] << " [-h|--help|-?] [-f=path|--file=path] [-v|--version] [-d=number|--depth=number|--max-depth=number]" << std::endl;
-        exit(0);
-    };
-
-    // Simple functional api. No initialization required.
-
-    bool help = getarg( false, "-h", "--help", "-?" );
-    int version = getarg( 0, "-v", "--version", "--show-version" );
-    int depth = getarg( 0, "-d", "--depth", "--max-depth");
-    std::string file = getarg( "", "-f", "--file" );
-
-    if( help || argc <= 1 ) {
-        show_help();
-    }
-
-    if( version ) {
-        std::cout << argv[0] << " demo v1.0.0. Compiled on " << __DATE__ << std::endl;
-    }
-
-    if( depth ) {
-        std::cout << "provided depth: " << depth << std::endl;
-    }
-
-    if( !file.empty() ) {
-        std::cout << "provided file: " << file << std::endl;
-    }
-
-    // OOP map-based api. Explicit (argc, argv) initialization required.
-
-    struct getopt args( argc, argv );
-
-    if( args.has("-h") || args.has("--help") || args.has("-?") || args.size() == 1 ) {
-        show_help();
-    }
-
-    if( args.has("-v") || args.has("--version") ) {
-        std::cout << args["0"] << " demo v1.0.0. Compiled on " << __DATE__ << std::endl;
-    }
-
-    if( args.has("-d") || args.has("--depth") || args.has("--max-depth") ) {
-        std::string arg = args["-d"];
-        if( arg.empty() ) arg = args["--depth"];
-        if( arg.empty() ) arg = args["--max-depth"];
-        int depth = atoi( arg.c_str() );
-        std::cout << "provided depth: " << depth << std::endl;
-    }
-
-    if( args.has("-f") || args.has("--file") ) {
-        std::string arg = args["-f"];
-        if( arg.empty() ) arg = args["--file"];
-        std::string fname = arg;
-        std::cout << "provided file: " << fname << std::endl;
-    }
-
-    std::cout << "---" << std::endl;
-    std::cout << args.cmdline() << std::endl;
-    //std::cout << args.size() << " provided args: " << args.str() << std::endl;
-}
-#endif
