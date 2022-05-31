@@ -458,45 +458,40 @@ namespace Methods{
         return make_pair(A2A_result, res_time);
     }
 
-//    int findProperQuadLevel(string &file_name, int point_num){
-//
-//        srand((int)time(0));
-//        Mesh surface_mesh;
-//        ifstream fin(file_name);
-//        fin >> surface_mesh;
-//        vector<float> face_weight(surface_mesh.num_faces(), 1.0); // face weight for each face.
-//
-//        int num_leaf_nodes = 0;
-//        int level = 0;
-//        while (num_leaf_nodes < floor(0.2 * surface_mesh.num_vertices() )){
-//            level++;
-//
-//            map<int, vector<int> > edge_bisector_map, bisector_point_map, face_point_map;
-//            map<int, int> point_face_map;
-//            map<int, Point> point_location_map;
-//
-//            auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(surface_mesh, point_num, edge_bisector_map,
-//                                                                                    bisector_point_map, point_face_map,
-//                                                                                    point_location_map, face_point_map);
-//
-//            Quad::quadTree quad_tree(surface_mesh, face_point_map);
-//            float rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
-//            for (auto i = 0; i < level; i++){
-//                quad_tree.buildLevel(surface_mesh, face_point_map);
-//            }
-//            set<int> pids;
-//            auto node = quad_tree.level_nodes[quad_tree.level][0];
-//            for (auto node: quad_tree.level_nodes[quad_tree.level]){
-//                for (auto pid: node->boundary_points_id){
-//                    pids.insert(pid);
-//                }
-//            }
-//            num_leaf_nodes = pids.size();
-//        }
-//        if (num_leaf_nodes >= floor(0.3 * surface_mesh.num_vertices())) level--;
-//        cout << "proper level = " << level << endl;
-//        return level;
-//    }
+    unsigned printHighwayNodeInfo(Base::Mesh &mesh, unsigned point_num, unsigned level){
+
+        vector<float> face_weight(mesh.num_faces(), 1.0); // face weight for each face.
+
+        int num_leaf_nodes = 0;
+
+
+        map<unsigned, vector<unsigned> > edge_bisector_map, bisector_point_map, face_point_map;
+        map<unsigned, unsigned> point_face_map;
+        map<unsigned, Point> point_location_map;
+
+//        auto ret_place_points = WeightedDistanceOracle::placeSteinerPointsFixed(mesh, point_num, edge_bisector_map,
+//                                                                                bisector_point_map, point_face_map,
+//                                                                                point_location_map, face_point_map);
+
+        Quad::quadTree quad_tree(mesh, face_point_map);
+//        float rootLen = max(quad_tree.root->x_max - quad_tree.root->x_min, quad_tree.root->y_max - quad_tree.root->y_min);
+        for (auto i = 0; i < level; i++){
+            quad_tree.buildLevel(mesh, face_point_map);
+        }
+        set<int> pids;
+        for (auto node: quad_tree.level_nodes[quad_tree.level]){
+            for (auto pid: node->boundary_points_id){
+                pids.insert(pid);
+            }
+        }
+        num_leaf_nodes = pids.size();
+
+
+        cout << "zeta = " << pow(4, level) << endl;
+        cout << "highway nodes = " << num_leaf_nodes << endl;
+        cout << "ratio = " << 1.0 * num_leaf_nodes / point_num << endl;
+        return level;
+    }
 
     void run_new(int argc, char* argv[]){
         bool generate_flag = getarg(0, "--generate");
@@ -546,6 +541,11 @@ namespace Methods{
             vector<float> face_weight = {};
             loadFaceWeight(face_weight);
             fout << "Load face weight finished." << endl;
+
+            unsigned level = floor(log2(1.0 * grid_num) * 0.5 + eps);
+            printHighwayNodeInfo(mesh, mesh.num_vertices(), level);
+            return;
+
             float inner = 0;
             for (auto i = 2 * q_num; i < A2A_query.size(); i++){
                 inner += (A2A_fid[i].first == A2A_fid[i].second) ? 1.0 : 0.0;
