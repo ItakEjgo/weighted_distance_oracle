@@ -167,6 +167,8 @@ namespace Methods{
         fout << "Index memory usage: " << (memory_end - memory_begin) / 1000 << " MB" << endl;
 
         vector<float> A2A_result = {}, res_time = {};
+        float tot_query_construction_time = 0.0, tot_dijkstra_running_time = 0.0;
+
         float cur_query_time = 0.0;
         unsigned percent = 1;
         unsigned  kappa = floor(2.309 * (sp_num + 1));
@@ -184,6 +186,7 @@ namespace Methods{
             auto fid_t = A2A_fid[i].second;
 
 //        fout << "s = " << s << " t = " << t << endl;
+            Quad::dijkstra_running_time = 0.0;
 
             auto q_start = chrono::_V2::system_clock::now();
             auto ret = Quad::queryA2A(spanner, kSkip::my_base_graph, face_point_map, tree, node_pairs,
@@ -193,13 +196,19 @@ namespace Methods{
             auto q_end = chrono::_V2::system_clock::now();
             auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
 
+            double entire_cur_query_time = static_cast<float>(q_duration.count());
+            if (i >= q_num * 2){
+                tot_dijkstra_running_time += Quad::dijkstra_running_time;
+                tot_query_construction_time += entire_cur_query_time - Quad::dijkstra_running_time;
+            }
             A2A_result.emplace_back(spanner_distance);
-            res_time.emplace_back(static_cast<float>(q_duration.count()));
+            res_time.emplace_back(entire_cur_query_time);
 //            fout << fixed << setprecision(6) << spanner_distance << " " << static_cast<float>(q_duration.count()) << endl;
 
         }
 //        fout << "Query results end. " << endl;
-
+        fout << "Breakdown_construction: " << fixed << setprecision(6) << tot_query_construction_time << " ms" << endl;
+        fout << "Breakdown_dijkstra: " << fixed << setprecision(6) << tot_dijkstra_running_time << " ms" << endl;
         return make_pair(A2A_result, res_time);
     }
 
@@ -543,8 +552,8 @@ namespace Methods{
             fout << "Load face weight finished." << endl;
 
             unsigned level = floor(log2(1.0 * grid_num) * 0.5 + eps);
-            printHighwayNodeInfo(mesh, mesh.num_vertices(), level);
-            return;
+//            printHighwayNodeInfo(mesh, mesh.num_vertices(), level);
+//            return;
 
             float inner = 0;
             for (auto i = 2 * q_num; i < A2A_query.size(); i++){

@@ -12,6 +12,8 @@ namespace Quad{
     int WSPD_hit = 0;
     kSkip::Graph my_base_graph;
     map<pair<int, int>, float> EAR_distance_map;
+    double query_construction_time = 0.0;
+    double dijkstra_running_time = 0.0;
 
     struct my_point{
         float x, y;
@@ -385,36 +387,37 @@ namespace Quad{
             auto final_s = spanner.addVertex();
             auto final_t = spanner.addVertex();
 
-//             Gs and Gt
-            vector<float> d_Gs;
-            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
-            for (auto &sp_id: vertices_Gs){
-                auto cur_id = spanner.addVertex();
-                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
-            }
-
-            vector<float> d_Gt;
-            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
-            for (auto &sp_id: vertices_Gt){
-                auto cur_id = spanner.addVertex();
-                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
-            }
-
-            for (auto vid: vertices_Gs){
-                if (Base::floatCmp(d_Gt[vid] - Base::unreachable) < 0){
-                    float t_dis = d_Gs[vid] + d_Gt[vid];
-                    if (Base::floatCmp(res) < 0 || Base::floatCmp(t_dis - res) < 0){
-                        res = t_dis;
-                    }
-                }
-            }
-
-            d_Gs.clear();
-            vertices_Gs.clear();
-            d_Gt.clear();
-            vertices_Gt.clear();
+//             Gs and Gt local search for error bound guarantee on very small terrain surfaces
+//            vector<float> d_Gs;
+//            auto vertices_Gs = kSkip::hop_dijkstra(base_graph, sid, kappa, d_Gs);
+//            for (auto &sp_id: vertices_Gs){
+//                auto cur_id = spanner.addVertex();
+//                spanner.addEdge(final_s, cur_id, d_Gs[sp_id]);
+//            }
+//
+//            vector<float> d_Gt;
+//            auto vertices_Gt = kSkip::hop_dijkstra(base_graph, tid, kappa, d_Gt);
+//            for (auto &sp_id: vertices_Gt){
+//                auto cur_id = spanner.addVertex();
+//                spanner.addEdge(cur_id, final_t, d_Gt[sp_id]);
+//            }
+//
+//            for (auto vid: vertices_Gs){
+//                if (Base::floatCmp(d_Gt[vid] - Base::unreachable) < 0){
+//                    float t_dis = d_Gs[vid] + d_Gt[vid];
+//                    if (Base::floatCmp(res) < 0 || Base::floatCmp(t_dis - res) < 0){
+//                        res = t_dis;
+//                    }
+//                }
+//            }
+//
+//            d_Gs.clear();
+//            vertices_Gs.clear();
+//            d_Gt.clear();
+//            vertices_Gt.clear();
 
             // result not found, find a highway-network path
+
             if (Base::floatCmp(res) < 0) {
 
                 for (auto bpid: box_s->boundary_points_id) {
@@ -438,7 +441,13 @@ namespace Quad{
                     spanner.addEdge(new_id[bpid], final_t, d);
                 }
 
+                auto q_start = chrono::_V2::system_clock::now();    //  break down time evaluation
+
                 res = kSkip::dijkstra(spanner, final_s, final_t).first;
+
+                auto q_end = chrono::_V2::system_clock::now();
+                auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+                dijkstra_running_time += static_cast<float>(q_duration.count());
             }
 
             // recover spanner
@@ -465,7 +474,13 @@ namespace Quad{
                 base_graph.addEdge(pid, tid, sqrt(dis));
             }
 
+            auto q_start = chrono::_V2::system_clock::now();    //  break down time evaluation
+
             res = kSkip::dijkstra(base_graph, sid, tid).first;
+
+            auto q_end = chrono::_V2::system_clock::now();
+            auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+            dijkstra_running_time += static_cast<float>(q_duration.count());
         }
 
         // recover basegraph
