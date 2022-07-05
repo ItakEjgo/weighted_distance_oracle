@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/weighted_distance_oracle.iml" filepath="$PROJECT_DIR$/.idea/weighted_distance_oracle.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/EAR-Oracle.iml" filepath="$PROJECT_DIR$/.idea/EAR-Oracle.iml" />
     </modules>
   </component>
 </project>

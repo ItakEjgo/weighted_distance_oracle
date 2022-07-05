@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/bohuang/weighted_distance_oracle
+CMAKE_SOURCE_DIR = /tmp/tmp.ViL0yS1oj2
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/bohuang/weighted_distance_oracle/cmake-build-release
+CMAKE_BINARY_DIR = /tmp/tmp.ViL0yS1oj2/cmake-build-release
 
 # Utility rule file for cgal_check_build_system.
 
@@ -67,6 +67,6 @@ CMakeFiles/cgal_check_build_system.dir/clean:
 .PHONY : CMakeFiles/cgal_check_build_system.dir/clean
 
 CMakeFiles/cgal_check_build_system.dir/depend:
-	cd /home/bohuang/weighted_distance_oracle/cmake-build-release && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/bohuang/weighted_distance_oracle /home/bohuang/weighted_distance_oracle /home/bohuang/weighted_distance_oracle/cmake-build-release /home/bohuang/weighted_distance_oracle/cmake-build-release /home/bohuang/weighted_distance_oracle/cmake-build-release/CMakeFiles/cgal_check_build_system.dir/DependInfo.cmake --color=$(COLOR)
+	cd /tmp/tmp.ViL0yS1oj2/cmake-build-release && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /tmp/tmp.ViL0yS1oj2 /tmp/tmp.ViL0yS1oj2 /tmp/tmp.ViL0yS1oj2/cmake-build-release /tmp/tmp.ViL0yS1oj2/cmake-build-release /tmp/tmp.ViL0yS1oj2/cmake-build-release/CMakeFiles/cgal_check_build_system.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/cgal_check_build_system.dir/depend
 

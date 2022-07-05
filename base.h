@@ -4,7 +4,6 @@
 //#define PrintDetails
 
 #include <bits/stdc++.h>
-//#include "getopt.h"
 #include "chrono"
 #include "assert.h"
 #include <random>

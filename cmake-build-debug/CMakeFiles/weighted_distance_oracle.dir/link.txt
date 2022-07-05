@@ -1,1 +1,0 @@
-/usr/bin/c++  -g  -rdynamic CMakeFiles/weighted_distance_oracle.dir/main.cpp.o  -o weighted_distance_oracle 
