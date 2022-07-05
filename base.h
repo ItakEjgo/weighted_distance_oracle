@@ -37,7 +37,7 @@ namespace Base {
     using namespace std;
     using namespace chrono;
 
-    using Kernel = CGAL::Simple_cartesian<double>;
+    using Kernel = CGAL::Simple_cartesian<float>;
 //    using Kernel = CGAL::Exact_predicates_exact_constructions_kernel;
     using Point = Kernel::Point_3;
     using Vector = Kernel::Vector_3;

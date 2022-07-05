@@ -12,8 +12,8 @@ namespace Quad{
     int WSPD_hit = 0;
     kSkip::Graph my_base_graph;
     map<pair<int, int>, float> EAR_distance_map;
-    double query_construction_time = 0.0;
-    double dijkstra_running_time = 0.0;
+    float query_construction_time = 0.0;
+    float dijkstra_running_time = 0.0;
 
     struct my_point{
         float x, y;
@@ -346,7 +346,8 @@ namespace Quad{
 
         auto box_s = quad_tree.root, box_t = quad_tree.root;
         //find the leaf contains s and t
-
+//        cout << fixed << setprecision(6) << "source: " << "x = " << s.x() << ", y=" << s.y() << endl;
+//        cout << fixed << setprecision(6) << "root: " << "xmin = " << box_s->x_min << ", xmax = " << box_s->x_max << ", ymin = " << box_s->y_min << ", ymax = " << box_s->y_max << endl;
         while (box_s->sons.size() > 0){
             for (auto son: box_s->sons){
                 if (Base::floatCmp(s.x() - son->x_min) >= 0 && Base::floatCmp(s.x() - son->x_max) <= 0 &&
@@ -356,6 +357,12 @@ namespace Quad{
                 }
             }
         }
+//        cout << "found box s" << endl;
+//        cout << fixed << setprecision(6) << "target: " << "x = " << t.x() << ", y=" << t.y() << endl;
+//        cout << fixed << setprecision(6) << "root: " << "xmin = " << box_t->x_min << ", xmax = " << box_t->x_max << ", ymin = " << box_t->y_min << ", ymax = " << box_t->y_max << endl;
+//        for (auto son: box_t->sons) {
+//            cout << fixed << setprecision(6) << "son.xmin = " << son->x_min << ", son.xmax = " << son->x_max << ", son.ymin = " << son->y_min << ", son.ymax = " << son->y_max << endl;
+//        }
         while (box_t->sons.size() > 0){
             for (auto son: box_t->sons){
                 if (Base::floatCmp(t.x() - son->x_min) >= 0 && Base::floatCmp(t.x() - son->x_max) <= 0 &&
@@ -365,6 +372,7 @@ namespace Quad{
                 }
             }
         }
+//        cout << "found box t" << endl;
 
         auto basegraph_vflag = base_graph.num_V, basegraph_eflag = base_graph.num_E;
         auto sid = base_graph.addVertex();

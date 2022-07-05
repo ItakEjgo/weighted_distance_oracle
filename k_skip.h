@@ -375,7 +375,7 @@ namespace kSkip{
         float limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
         float cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
 
-        double num_Steiner_points = 1.61 / sin(angle) * log(2 * limit_distance / gama);
+        float num_Steiner_points = 1.61 / sin(angle) * log(2 * limit_distance / gama);
         num_Steiner_points *= 1 / sqrt(eps) * log(2 / eps);
 
 

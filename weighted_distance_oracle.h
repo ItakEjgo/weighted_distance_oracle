@@ -92,7 +92,7 @@ namespace WeightedDistanceOracle {
                 float limit_distance = sqrt(CGAL::squared_distance(p[0], p_end));
                 float cur_distance = sqrt(CGAL::squared_distance(p[0], bisector_p0));
 
-                double num_Steiner_points = 1.61 / sin(angle) * log(2 * limit_distance / gama[pid[0]]);
+                float num_Steiner_points = 1.61 / sin(angle) * log(2 * limit_distance / gama[pid[0]]);
                 num_Steiner_points *= 1 / sqrt(eps) * log(2 / eps);
                 bool upper_flag = 0;
                 if (Base::floatCmp(num_Steiner_points) <= 0 || Base::floatCmp(num_Steiner_points - 25) > 0){
@@ -428,6 +428,7 @@ namespace WeightedDistanceOracle {
         for (auto i = 0; i < num_vertices; i++){
             if (pid_list[i] == root_index) continue;
             float distance = d[pid_list[i]];
+//            cout << "[dis] = " << distance << endl;
             if (Base::floatCmp(radius - distance) < 0){
                 radius = distance;
             }
