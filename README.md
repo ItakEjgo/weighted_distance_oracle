@@ -4,14 +4,18 @@ This repository contains the implementation of *EAR-Oracle*, *SE-Oracle*, *Fixed
 The technical report locates in the *technicalreport* directory.
 
 ### Dataset
-We provided the datasets used in the paper in *datasets/* folder. The datasets used in EAR-Oracle should be *2-manifold* terrain surfaces in *.off* format. 
+We provided the datasets used in the paper in *datasets/* folder. The datasets used in _EAR-Oracle_ should be *2-manifold* terrain surfaces in *.off* format. 
 
-In addition, We also provide a script for collecting real world digital elevation models (DEM) to 2-manifold terrain surfaces in .off format.
-Firstly, choose a DEM from *OpenTopography* (https://portal.opentopography.org/datasets). To choose a DEM, OpenTopography provides convenient interfaces that the DEM from a region could be selected by selecting a rectangle on the terrain.
-Secondly, download the GeoTiff file (in .tif) format and run *dem2off.py* for the .tif file in DEM2OFF folder. The script could be used to simplify the DEM to a off file with given number of faces.
+In addition, We also provide a script *dem2off.py* in *DEM2OFF* folder for processing digital elevation models (DEM) to 2-manifold terrain surfaces in .off format:
+
+(1) Choose a DEM from *OpenTopography* (https://portal.opentopography.org/datasets). To choose a DEM, OpenTopography provides convenient interfaces that the DEM from a region could be selected by selecting a rectangle on the terrain.
+
+(2) Download the GeoTiff file (in .tif format) and run *dem2off.py* for the .tif file. The script could be used to simplify the DEM to a .off file with a certain number of faces.
 
 
-### Prameter
+
+
+### Running Prameter
 [comment]: <> (generate arbitrary point-to-arbitrary point query or not:&#41; bool generate_flag = getarg&#40;0, "--generate")
 **--generate={0, 1}: The flag whether generate A2A queries.** 
 If this parameter set to 1, the program will be run to generate given number of queries. The queries will locate in the current working directory. The file *A2A.query* contains the generated query points and their location (the face they locate). The file *face_weight.query* contains the face weight of each face.  

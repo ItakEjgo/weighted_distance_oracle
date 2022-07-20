@@ -700,6 +700,7 @@ namespace Methods{
         else{
             ofstream fout(output);
             loadQueriesA2A(A2A_query, A2A_fid);
+            cout << "Load A2A queries finished." << endl;
             fout << "Load A2A queries finished." << endl;
             vector<float> face_weight = {};
             loadFaceWeight(face_weight);
