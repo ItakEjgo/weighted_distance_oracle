@@ -78,7 +78,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 [comment]: <> (unsigned parallel_id = getarg&#40;0, "--parallel-id"&#41;;)
 **--parallel-id={int}: Which partition of queries this process is going to deal.** Please note that the parallel-id should be less than the parallel-num.
 
-###Example
+### Example
 ##### Generate 1000 queries for *small_terrain_ori.off* dataset.
 --generate=1 --input=../datasets/small_terrain_ori.off --output=../results/test.log --grid-num=16 --query-num=1000
 
