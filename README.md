@@ -1,18 +1,46 @@
 ## Efficient Arbitrary Point-to-Arbitrary Point Geodesic Distance Oracle
 This repository contains the implementation of *EAR-Oracle*, *SE-Oracle*, *Fixed Scheme*, *Unfixed Scheme*, *K-Algo* and *MMP* algorithms.
 
-The technical report locates in the *technicalreport* directory.
+The technical report locates in the **./technicalreport** directory.
 
 ### Dataset
-We provided the datasets used in the paper in *datasets/* folder. The datasets used in _EAR-Oracle_ should be *2-manifold* terrain surfaces in *.off* format. 
+We provided the datasets used in the paper in **./datasets** folder. The datasets used in _EAR-Oracle_ should be *2-manifold* terrain surfaces in *.off* format.
 
-In addition, We also provide a script *dem2off.py* in *DEM2OFF* folder for processing digital elevation models (DEM) to 2-manifold terrain surfaces in .off format:
+In addition, We also provide a script *dem2off.py* in **./scripts/DEM2OFF** folder for processing digital elevation models (DEM) to 2-manifold terrain surfaces in .off format:
 
 (1) Choose a DEM from *OpenTopography* (https://portal.opentopography.org/datasets). To choose a DEM, OpenTopography provides convenient interfaces that the DEM from a region could be selected by selecting a rectangle on the terrain.
 
 (2) Download the GeoTiff file (in .tif format) and run *dem2off.py* for the .tif file. The script could be used to simplify the DEM to a .off file with a certain number of faces.
 
+### Compilation
+This project is compiled with CMake. The CMakeList file is located in ./src/CMakeList.txt.
 
+We use the Computational Geometry Algorithms Library (libCGAL) and thus, please compile the project in **release** mode.
+
+The output of the binary executable will locate in ./cmake-build-release/main.
+
+### Scripts
+#### Experiments
+The scripts of the experiments are located in **./scripts/exp** folder. 
+
+_default.sh_: Experiments for unweighted terrain surfaces under the default settings. 
+
+_weighted.sh_: Experiments for weighted terrain surfaces under the default settings.
+
+_eps.sh_: Experiments for evaluating the effect of \epsilon.
+
+_spnum.sh_: Experiments for evaluating the effect of _m_.
+
+Please read the scripts for detailed experimental settings.
+
+_deal.py_ will process the raw output to a well-organized format.
+
+#### plots
+The scripts of plotting are located in **./scripts/figures** folder.
+
+We use **gnuplot** to plot the figures in the paper. Please read the scripts for details.
+
+To run the script, you can use the following command: gnuplot -c $PLOT_FILE $DATA.
 
 
 ### Running Prameter
@@ -59,3 +87,4 @@ If this parameter set to 1, the program will be run to generate given number of 
 
 ##### Run *Fixed Scheme* for query processing
 --generate=0 --input=../datasets/small_terrain_ori.off --output=../results/test.log --grid-num=16 --query-num=1000 --method=FixedS
+
