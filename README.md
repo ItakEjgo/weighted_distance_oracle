@@ -2,6 +2,7 @@
 This repository contains the implementation of *EAR-Oracle*, *SE-Oracle*, *Fixed Scheme*, *Unfixed Scheme*, *K-Algo* and *MMP* algorithms.
 
 The technical report locates in the **./technicalreport** directory.
+***
 
 ### Dataset
 We provided the datasets used in the paper in **./datasets** folder. The datasets used in _EAR-Oracle_ should be *2-manifold* terrain surfaces in *.off* format.
@@ -11,6 +12,7 @@ In addition, We also provide a script *dem2off.py* in **./scripts/DEM2OFF** fold
 (1) Choose a DEM from *OpenTopography* (https://portal.opentopography.org/datasets). To choose a DEM, OpenTopography provides convenient interfaces that the DEM from a region could be selected by selecting a rectangle on the terrain.
 
 (2) Download the GeoTiff file (in .tif format) and run *dem2off.py* for the .tif file. The script could be used to simplify the DEM to a .off file with a certain number of faces.
+***
 
 ### Compilation
 This project is compiled with CMake. The CMakeList file is located in ./src/CMakeList.txt.
@@ -18,7 +20,7 @@ This project is compiled with CMake. The CMakeList file is located in ./src/CMak
 We use the Computational Geometry Algorithms Library (libCGAL) and thus, please compile the project in **release** mode.
 
 The output of the binary executable will locate in ./cmake-build-release/main.
-
+***
 ### Scripts
 #### Experiments
 The scripts of the experiments are located in **./scripts/exp** folder. 
@@ -42,7 +44,7 @@ We use **gnuplot** to plot the figures in the paper. Please read the scripts for
 
 To run the script, you can use the following command: gnuplot -c $PLOT_FILE $DATA.
 
-
+***
 ### Running Prameter
 [comment]: <> (generate arbitrary point-to-arbitrary point query or not:&#41; bool generate_flag = getarg&#40;0, "--generate")
 **--generate={0, 1}: The flag whether generate A2A queries.** 
@@ -77,7 +79,7 @@ If this parameter set to 1, the program will be run to generate given number of 
 
 [comment]: <> (unsigned parallel_id = getarg&#40;0, "--parallel-id"&#41;;)
 **--parallel-id={int}: Which partition of queries this process is going to deal.** Please note that the parallel-id should be less than the parallel-num.
-
+***
 ### Example
 ##### Generate 1000 queries for *small_terrain_ori.off* dataset.
 --generate=1 --input=../datasets/small_terrain_ori.off --output=../results/test.log --grid-num=16 --query-num=1000
