@@ -2,27 +2,27 @@
 
 datasets_dir=$1;
 query_dir=$2;
-output_dir=$3;
-gridnum=$4;
-query_num=$5;
-algorithm=$6;
-cleaner=$7;
+gridnum=$3;
+query_num=$4;
+type=$5;
 
 for file in `ls $datasets_dir`; do
     #generate query
-    # ../cmake-build-release/main --generate=1 --input=$dir/$file --grid-num=$gridnum --query-num=$qnum
+    ./main --generate=1 --input=$datasets_dir/$file --grid-num=$gridnum --query-num=$query_num
+    mv A2A.query $query_dir/$file-A2A-$type.query
+    mv face_weight.query $query_dir/$file-face_weight-$type.query
     
     # cp A2A.query query/$file-A2A-$flag.query
     # cp face_weight.query faceweight/$file-face_weight-$flag.query
 
-    cp $query_dir/$file-A2A-default.query A2A.query
-    cp $query_dir/$file-face_weight-default.query face_weight.query 
+    # cp $query_dir/$file-A2A-default.query A2A.query
+    # cp $query_dir/$file-face_weight-default.query face_weight.query 
 
-    ./main --input=$datasets_dir/$file --output=$output_dir/$file-EAR-default.log --grid-num=$gridnum --query-num=$query_num --method=$algorithm
-    python3 $cleaner $output_dir/$file-EAR-default.log $query_num
+    # ./main --input=$datasets_dir/$file --output=$output_dir/$file-EAR-default.log --grid-num=$gridnum --query-num=$query_num --method=$algorithm
+    # python3 $cleaner $output_dir/$file-EAR-default.log $query_num
 
-    rm A2A.query
-    rm face_weight.query
+    # rm A2A.query
+    # rm face_weight.query
 done
   
     # bash parallel_run.sh $dir $file $gridnum 0.2 5 $qnum FixedS 5 $flag

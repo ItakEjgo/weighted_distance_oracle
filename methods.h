@@ -204,7 +204,7 @@ namespace Methods{
 //            }
             A2A_result.emplace_back(spanner_distance);
             res_time.emplace_back(entire_cur_query_time);
-            fout << fixed << setprecision(6) << spanner_distance << " " << static_cast<float>(q_duration.count()) << endl;
+            // fout << fixed << setprecision(6) << spanner_distance << " " << static_cast<float>(q_duration.count()) << endl;
 
         }
 //        fout << "Query results end. " << endl;
@@ -242,7 +242,7 @@ namespace Methods{
 
                 A2A_result.emplace_back(mmp_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
-                fout << fixed << setprecision(6) << mmp_distance << " " << static_cast<float>(q_duration.count()) << endl;
+                // fout << fixed << setprecision(6) << mmp_distance << " " << static_cast<float>(q_duration.count()) << endl;
 //            }
         }
 //        fout << "Query results end. " << endl;
@@ -294,7 +294,7 @@ namespace Methods{
 
                 A2A_result.emplace_back(dijk_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
-                fout << fixed << setprecision(6) << A2A_result[i] << " " << res_time[i] << endl;
+                // fout << fixed << setprecision(6) << A2A_result[i] << " " << res_time[i] << endl;
             }
         }
 //        fout << "Query results end. " << endl;
@@ -337,7 +337,7 @@ namespace Methods{
 
                 A2A_result.emplace_back(dijk_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
-                fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count()) << endl;
+                // fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count()) << endl;
             }
         }
 //        fout << "Query results end. " << endl;
@@ -391,8 +391,7 @@ namespace Methods{
                 auto q_duration = chrono::duration_cast<chrono::microseconds>(q_end - q_start);
 
                 A2A_result.push_back(dijk_distance);
-                fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count())
-                     << endl;
+                // fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count()) << endl;
             }
         }
         fout << "Query results end. " << endl;
@@ -461,7 +460,7 @@ namespace Methods{
 
                 A2A_result.emplace_back(kAlgo_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
-                fout << fixed << setprecision(6) << kAlgo_distance << " " << static_cast<float>(q_duration.count()) << endl;
+                // fout << fixed << setprecision(6) << kAlgo_distance << " " << static_cast<float>(q_duration.count()) << endl;
             }
         }
 //        fout << "Query results end. " << endl;
@@ -650,8 +649,7 @@ namespace Methods{
     void run_new(int argc, char* argv[]){
         bool generate_flag = getarg(0, "--generate");
         string input = getarg("", "--input"),
-            output = getarg("", "--output"),
-            query_file = getarg("", "--query-file");
+            output = getarg("", "--output");
         unsigned grid_num = getarg(4, "--grid-num");
         unsigned q_num = getarg(100, "--query-num");
         bool weighted_flag = getarg(0, "--weighted");
@@ -749,11 +747,11 @@ namespace Methods{
             else{
                 cout << "Method should between 0 and 5." << endl;
             }
-//            fout << "Query results begin: " << endl;
-//            for (auto i = 0; i != res.first.size(); i++){
-//                fout << fixed << setprecision(6) << res.first[i] << " " << res.second[i] << endl;
-//            }
-//            fout << "Query results end." << endl;
+           fout << "Query results begin: " << endl;
+           for (auto i = 0; i != res.first.size(); i++){
+               fout << fixed << setprecision(6) << res.first[i] << " " << res.second[i] << endl;
+           }
+           fout << "Query results end." << endl;
         }
     }
 }

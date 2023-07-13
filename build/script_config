@@ -1,0 +1,5 @@
+work_dir = ./
+query_dir = ../datasets/query/
+datasets_dir = ../datasets/
+output_dir = ../exp/
+scripts_dir = ../scripts/
