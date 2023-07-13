@@ -1,0 +1,5 @@
+/ear-oracle/build/CMakeFiles/edit_cache.dir
+/ear-oracle/build/CMakeFiles/rebuild_cache.dir
+/ear-oracle/build/CMakeFiles/cgal_check_build_system.dir
+/ear-oracle/build/CMakeFiles/ALL_CGAL_TARGETS.dir
+/ear-oracle/build/CMakeFiles/main.dir

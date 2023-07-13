@@ -1,5 +1,0 @@
-/tmp/tmp.ViL0yS1oj2/cmake-build-release/CMakeFiles/cgal_check_build_system.dir
-/tmp/tmp.ViL0yS1oj2/cmake-build-release/CMakeFiles/rebuild_cache.dir
-/tmp/tmp.ViL0yS1oj2/cmake-build-release/CMakeFiles/ALL_CGAL_TARGETS.dir
-/tmp/tmp.ViL0yS1oj2/cmake-build-release/CMakeFiles/edit_cache.dir
-/tmp/tmp.ViL0yS1oj2/cmake-build-release/CMakeFiles/main.dir
