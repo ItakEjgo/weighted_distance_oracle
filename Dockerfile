@@ -6,4 +6,3 @@ RUN requiredpackage='build-essential cmake libcgal-dev tmux' \
 &&  apt-get -y upgrade \
 &&  apt-get install -y $requiredpackage
 ENTRYPOINT sleep infinity
-CMD cd /ear-oracle
