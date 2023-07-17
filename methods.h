@@ -277,10 +277,10 @@ namespace Methods{
         vector<float> A2A_result = {}, res_time = {};
 
 //        fout << "Query results begin: " << endl;
-        for (auto x = 0; x < 1; x++){
-            unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
-            for (auto i = start_id; i < start_id + q_num / parallel_num; i++){
-//        for (auto i = 0; i < A2A_query.size(); i++){
+        // for (auto x = 0; x < 1; x++){
+        //     unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
+        //     for (auto i = start_id; i < start_id + q_num / parallel_num; i++){
+       for (auto i = 0; i < A2A_query.size(); i++){
                 auto s = A2A_query[i].first;
                 auto t = A2A_query[i].second;
                 unsigned fid_s = A2A_fid[i].first;
@@ -295,7 +295,7 @@ namespace Methods{
                 A2A_result.emplace_back(dijk_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
                 // fout << fixed << setprecision(6) << A2A_result[i] << " " << res_time[i] << endl;
-            }
+            // }
         }
 //        fout << "Query results end. " << endl;
 
@@ -318,10 +318,10 @@ namespace Methods{
         vector<float> A2A_result = {}, res_time = {};
 
 //        fout << "Query results begin: " << endl;
-        for (auto x = 0; x < 1; x++) {
-            unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
-            for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
-//        for (auto i = 0; i < A2A_query.size(); i++){
+        // for (auto x = 0; x < 1; x++) {
+        //     unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
+        //     for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
+       for (auto i = 0; i < A2A_query.size(); i++){
                 auto s = A2A_query[i].first;
                 auto t = A2A_query[i].second;
                 unsigned fid_s = A2A_fid[i].first;
@@ -338,7 +338,7 @@ namespace Methods{
                 A2A_result.emplace_back(dijk_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
                 // fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count()) << endl;
-            }
+            // }
         }
 //        fout << "Query results end. " << endl;
 
@@ -373,10 +373,11 @@ namespace Methods{
 
 
 
-        fout << "Query results begin: " << endl;
-        for (auto x = 0; x < 3; x++) {
-            unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
-            for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
+        // fout << "Query results begin: " << endl;
+        // for (auto x = 0; x < 3; x++) {
+        //     unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
+            // for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
+        for (auto i = 0; i < A2A_query.size(); i++){
 
                 auto s = A2A_query[i].first;
                 auto t = A2A_query[i].second;
@@ -392,9 +393,9 @@ namespace Methods{
 
                 A2A_result.push_back(dijk_distance);
                 // fout << fixed << setprecision(6) << dijk_distance << " " << static_cast<float>(q_duration.count()) << endl;
-            }
         }
-        fout << "Query results end. " << endl;
+        // }
+        // fout << "Query results end. " << endl;
 
         return make_pair(A2A_result, res_time);
     }
@@ -443,10 +444,10 @@ namespace Methods{
 
 //        fout << "Query results begin: " << endl;
 
-        for (auto x = 0; x < 1; x++) {
-            unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
-            for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
-//        for (auto i = 0; i < A2A_query.size(); i++){
+        // for (auto x = 0; x < 1; x++) {
+        //     unsigned start_id = x * q_num + q_num / parallel_num * parallel_id;
+            // for (auto i = start_id; i < start_id + q_num / parallel_num; i++) {
+       for (auto i = 0; i < A2A_query.size(); i++){
                 auto s = A2A_query[i].first;
                 auto t = A2A_query[i].second;
                 unsigned fid_s = A2A_fid[i].first;
@@ -461,7 +462,7 @@ namespace Methods{
                 A2A_result.emplace_back(kAlgo_distance);
                 res_time.emplace_back(static_cast<float>(q_duration.count()));
                 // fout << fixed << setprecision(6) << kAlgo_distance << " " << static_cast<float>(q_duration.count()) << endl;
-            }
+            // }
         }
 //        fout << "Query results end. " << endl;
 

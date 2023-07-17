@@ -18,8 +18,8 @@ for file in `ls $datasets_dir`; do
     cp $query_dir/$file-A2A-default.query A2A.query
     cp $query_dir/$file-face_weight-default.query face_weight.query 
 
-    ./main --input=$datasets_dir/$file --output=$output_dir/$file-EAR-default.log --grid-num=$gridnum --query-num=$query_num --method=$algorithm
-    python3 $cleaner $output_dir/$file-EAR-default.log $query_num
+    ./main --input=$datasets_dir/$file --output=$output_dir/$file-$algorithm-default.log --grid-num=$gridnum --query-num=$query_num --method=$algorithm
+    python3 $cleaner $output_dir/$file-$algorithm-default.log $query_num
 
     rm A2A.query
     rm face_weight.query

@@ -46,9 +46,9 @@ if __name__ == '__main__':
         f = open(output_dir, 'w')
         print('index time(ms): ', index_time, file=f)
         print('index size(MB): ', index_size, file=f)
-        print('inner_time(micro-s): ', inner_time, file=f)
-        print('inter_time(micro-s): ', inter_time, file=f)
-        print('mixed_time(micro-s): ', mixed_time, file=f)
+        print('1st_batch_time(micro-s): ', inner_time, file=f)
+        print('2nd_batch_time(micro-s): ', inter_time, file=f)
+        print('3rd_batch_time(micro-s): ', mixed_time, file=f)
         print('query_construction(ms): ', breakdown_construction, file=f)
         print('query_dijkstra(ms): ', breakdown_dijkstra, file=f)
         for i in range(query_num * 3):

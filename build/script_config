@@ -3,3 +3,7 @@ query_dir = ../datasets/query/
 datasets_dir = ../datasets/
 output_dir = ../exp/
 scripts_dir = ../scripts/
+algorithms = FixedS, UnfixedS, KAlgo, SE, EAR, MMP
+tested_dataset = small,
+eps_val = 0.05, 0.10, 0.15, 0.20, 0.25
+sp_val = 3, 4, 5, 6, 7
