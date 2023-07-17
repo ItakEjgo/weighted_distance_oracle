@@ -15,15 +15,18 @@ def deal(config_dir):
     return variable_dict
 
 def generate_query(variable_dict, terrain_type):
-    input_dir = variable_dict['datasets_dir'] + 'median/'
-    query_dir = variable_dict['query_dir']
-    run_script = variable_dict['scripts_dir'] + 'exp/generate_query.sh'
-    if terrain_type == 'default':
-        cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 0 ' + terrain_type
-    else:
-        cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 1 ' + terrain_type
-    # print(cmd)
-    os.system(cmd)
+    tested_dataset = variable_dict['tested_dataset']
+    for dir in tested_dataset:
+        input_dir = variable_dict['datasets_dir'] + dir + '/'
+        query_dir = variable_dict['query_dir']
+        run_script = variable_dict['scripts_dir'] + 'exp/generate_query.sh'
+        gridnum = '16' if dir == 'small' else '256'
+        if terrain_type == 'default':
+            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 0 ' + gridnum + terrain_type
+        else:
+            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 1 ' + gridnum + terrain_type
+        # print(cmd)
+        os.system(cmd)
     print(terrain_type + ' query generate finished')
 
 def run_default(variable_dict):
@@ -139,10 +142,10 @@ if __name__ == '__main__':
     else:
         config_dir = sys.argv[1]
         variable_dict = deal(config_dir)
-        # generate_query(variable_dict, 'default')
-        # generate_query(variable_dict, 'weighted')
-        # run_default(variable_dict)
-        # run_weighted(variable_dict)
-        # run_epsilon(variable_dict)
-        # run_gridnum(variable_dict)
+        generate_query(variable_dict, 'default')
+        generate_query(variable_dict, 'weighted')
+        run_default(variable_dict)
+        run_weighted(variable_dict)
+        run_epsilon(variable_dict)
+        run_gridnum(variable_dict)
         run_spnum(variable_dict)
