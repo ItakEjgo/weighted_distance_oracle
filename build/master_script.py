@@ -22,12 +22,48 @@ def generate_query(variable_dict, terrain_type):
         run_script = variable_dict['scripts_dir'] + 'exp/generate_query.sh'
         gridnum = '16' if dir == 'small' else '256'
         if terrain_type == 'default':
-            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 0 ' + gridnum + terrain_type
+            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 0 ' + gridnum + terrain_type + ' 0'
+        elif terrain_type == 'weighted':
+            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 1 ' + gridnum + terrain_type + ' 0'
         else:
-            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 1 ' + gridnum + terrain_type
+            cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' 0 ' + gridnum + terrain_type + ' 1'
         # print(cmd)
         os.system(cmd)
     print(terrain_type + ' query generate finished')
+
+def read_clean_file(file_path):
+    clean_dict = {}
+    dis = []
+    with open(file_path) as f:
+        for line in f:
+            if line.find('index time') >= 0:
+                clean_dict['index_time'] = line.split(':')[1].strip()
+            elif line.find('index size') >= 0:
+                clean_dict['index_size'] = line.split(':')[1].strip()
+            elif line.find('average_mixed_time') >= 0:
+                clean_dict['query_time'] = line.split(':')[1].strip()
+            elif line.find('query_construction') >= 0:
+                clean_dict['query_construction'] = line.split(':')[1].strip()
+            elif line.find('query_dijkstra') >= 0:
+                clean_dict['query_dijkstra'] = line.split(':')[1].strip()
+                for i in range(100):
+                    cur_line = f.readline()
+                    dis.append(float(cur_line))
+                clean_dict['dis'] = dis
+    return clean_dict
+                    
+
+def plot_default(variable_dict):
+    clean_dir = variable_dict['output_dir'] + 'default/'
+    pos_1 = [3, 10, 17, 24, 31, 38, 45, 51]
+    pos_2 = [5, 15, 25, 35, 45, 55, 65, 75]
+    for algorithm in variable_dict['algorithms']:
+        for dataset in variable_dict['dataset_list']:
+            file_name = dataset + '-' + algorithm + '-' + 'default' + '.cln'
+            file_path = clean_dir + file_name
+            
+
+
 
 def run_default(variable_dict):
     algorithm = variable_dict['algorithms']
@@ -135,6 +171,42 @@ def run_spnum(variable_dict):
             os.system(cmd)
             # print(cmd)
 
+def run_disgap(variable_dict):
+    algorithm = variable_dict['algorithms']
+    tested_dataset = variable_dict['tested_dataset']
+    input_dir = variable_dict['datasets_dir'] + 'disgap/'
+    output_dir = variable_dict['output_dir'] + 'disgap/'
+    os.system('mkdir -p ' + output_dir)
+    query_dir = variable_dict['query_dir']  + ' '
+    run_script = variable_dict['scripts_dir'] + 'exp/exp_disgap.sh'
+    cleaner = variable_dict['scripts_dir'] + 'exp/clean.py'
+    gridnum = '256'
+    # print(run_script_dir)
+    for algo in algorithm:
+        if len(algo) == 0:
+            continue
+        cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + cleaner
+        os.system(cmd)
+        # print(cmd)
+
+def run_scalability(variable_dict):
+    algorithm = variable_dict['algorithms']
+    tested_dataset = variable_dict['tested_dataset']
+    input_dir = variable_dict['datasets_dir'] + 'scalability/'
+    output_dir = variable_dict['output_dir'] + 'scalability/'
+    os.system('mkdir -p ' + output_dir)
+    query_dir = variable_dict['query_dir']  + ' '
+    run_script = variable_dict['scripts_dir'] + 'exp/exp_scalability.sh'
+    cleaner = variable_dict['scripts_dir'] + 'exp/clean.py'
+    gridnum = '16' if dir == 'small' else '256'
+    # print(run_script_dir)
+    for algo in algorithm:
+        if len(algo) == 0:
+            continue
+        cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + cleaner
+        os.system(cmd)
+        # print(cmd)
+
 if __name__ == '__main__':
     argc = len(sys.argv)
     if argc != 2:
@@ -142,10 +214,14 @@ if __name__ == '__main__':
     else:
         config_dir = sys.argv[1]
         variable_dict = deal(config_dir)
-        generate_query(variable_dict, 'default')
-        generate_query(variable_dict, 'weighted')
-        run_default(variable_dict)
-        run_weighted(variable_dict)
-        run_epsilon(variable_dict)
-        run_gridnum(variable_dict)
-        run_spnum(variable_dict)
+        # generate_query(variable_dict, 'default')
+        # generate_query(variable_dict, 'weighted')
+        # generate_query(variable_dict, 'disgap')
+        # run_default(variable_dict)
+        # run_weighted(variable_dict)
+        # run_epsilon(variable_dict)
+        # run_gridnum(variable_dict)
+        # run_spnum(variable_dict)
+        # run_disgap(variable_dict)
+        # run_scalability(variable_dict)
+        plot_default(variable_dict)

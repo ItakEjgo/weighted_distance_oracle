@@ -659,6 +659,7 @@ namespace Methods{
         unsigned sp_num = getarg(5, "--sp-num");
         unsigned parallel_num = getarg(1, "--parallel-num");
         unsigned parallel_id = getarg(0, "--parallel-id");
+        bool distance_gap_flag = getarg(0, "--distance-gap");
 
         Mesh mesh;
         ifstream fin(input);
@@ -667,7 +668,7 @@ namespace Methods{
         AABB_tree aabb_tree;
         CGAL::Polygon_mesh_processing::build_AABB_tree(mesh, aabb_tree);
         vector<float> mesh_boundary = retrieveMeshBoundary(mesh);
-        bool distance_gap_flag = false;
+        // bool distance_gap_flag = false;
         if (generate_flag){
             ofstream fout("A2A.query");
             float inner_ratio;
@@ -680,7 +681,7 @@ namespace Methods{
                 unsigned level = floor(log2(1.0 * grid_num) * 0.5 + eps);
                 vector<float> face_weight(mesh.num_faces(), 1.0);
                 distanceGapQueryGeneration(fout, 10, mesh, aabb_tree, err, sp_num, level, q_num, face_weight);
-                return ;
+                return;
             }
 //            Base::generateQueriesA2A(mesh, q_num);
             for (auto i = 0; i < A2A_query.size(); i++){

@@ -52,8 +52,8 @@ if __name__ == '__main__':
         output_dir = data_dir[:-4] + '.cln'
         print('output file is written as: ' + output_dir)
         f = open(output_dir, 'w')
-        print('index time(ms): ', index_time, file=f)
-        print('index size(MB): ', index_size, file=f)
+        print('index_time(ms): ', index_time, file=f)
+        print('index_size(MB): ', index_size, file=f)
         # print('average_inner_time(micro-s): ', inner_time, file=f)
         # print('average_inter_time(micro-s): ', inter_time, file=f)
         print('average_mixed_time(micro-s): ', mixed_time, file=f)

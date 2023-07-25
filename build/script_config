@@ -1,6 +1,7 @@
 work_dir = ./
 query_dir = ../datasets/query/
 datasets_dir = ../datasets/
+dataset_list = HorseMount.off, BigMount.off, HeadlightMount.off, RobinsonMountain.off
 output_dir = ../exp/
 scripts_dir = ../scripts/
 algorithms = FixedS, UnfixedS, KAlgo, SE, EAR, MMP
