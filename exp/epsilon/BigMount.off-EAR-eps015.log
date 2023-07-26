@@ -3,7 +3,7 @@ Load face weight finished.
 100 random queries, inner ratio = 0.000, inter ratio = 1.000
 Run Algorithm 4: EAR-oracle
 base graph |V| = 43407
-quad tree level = 2
-Leaf maximum side length: 1800.000
-V = 1440 | EAR-Leaf = 455
-maximum leaf node boundary vertices = 100
+quad tree level = 1
+Leaf maximum side length: 3600.000
+V = 1440 | EAR-Leaf = 186
+maximum leaf node boundary vertices = 108

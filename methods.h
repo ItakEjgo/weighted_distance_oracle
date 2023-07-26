@@ -676,6 +676,9 @@ namespace Methods{
                 // generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 1);  // The first q_num queries are inner-box queries
                 // generateQueriesA2A(mesh, mesh_boundary, aabb_tree, q_num, grid_num, 0);  // The second q_num queries are inter-box queries
                 inner_ratio = generateQueriesA2ANoFlag(mesh, mesh_boundary, aabb_tree, q_num, grid_num); // The last q_num queries are random generated.
+
+                // fast-generate queries without calculating intersection
+                // generateQueriesA2A(mesh, q_num);
             }
             else{
                 unsigned level = floor(log2(1.0 * grid_num) * 0.5 + eps);
@@ -683,7 +686,7 @@ namespace Methods{
                 distanceGapQueryGeneration(fout, 10, mesh, aabb_tree, err, sp_num, level, q_num, face_weight);
                 return;
             }
-//            Base::generateQueriesA2A(mesh, q_num);
+
             for (auto i = 0; i < A2A_query.size(); i++){
                 fout << fixed << setprecision(6) << A2A_query[i].first << " " << A2A_fid[i].first << " " << A2A_query[i].second << " " << A2A_fid[i].second << endl;
             }
