@@ -208,8 +208,8 @@ namespace Methods{
 
         }
 //        fout << "Query results end. " << endl;
-        fout << "Breakdown_construction: " << fixed << setprecision(6) << tot_query_construction_time << " ms" << endl;
-        fout << "Breakdown_dijkstra: " << fixed << setprecision(6) << tot_dijkstra_running_time << " ms" << endl;
+        fout << "Breakdown_construction: " << fixed << setprecision(6) << tot_query_construction_time << " micro-s" << endl;
+        fout << "Breakdown_dijkstra: " << fixed << setprecision(6) << tot_dijkstra_running_time << " micro-s" << endl;
         return make_pair(A2A_result, res_time);
     }
 

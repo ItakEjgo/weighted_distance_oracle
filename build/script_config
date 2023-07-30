@@ -1,7 +1,7 @@
 work_dir = ./
 query_dir = ../datasets/query/
 datasets_dir = ../datasets/
-dataset_list = HorseMount.off, BigMount.off, HeadlightMount.off
+dataset_list = HorseMount.off, BigMount.off, HeadlightMount.off, RobinsonMountain.off
 #dataset_list = HorseMount.off, BigMount.off, HeadlightMount.off, RobinsonMountain.off, Simply_GunnisonForest.off, Simply_Laramie.off, BH_low.off, EP_low.off
 output_dir = ../exp/
 scripts_dir = ../scripts/

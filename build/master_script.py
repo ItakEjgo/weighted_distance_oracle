@@ -646,17 +646,25 @@ if __name__ == '__main__':
         # generate_query(variable_dict, 'default')
         # generate_query(variable_dict, 'weighted')
         # generate_query(variable_dict, 'disgap')
-        # run_default(variable_dict)
-        # run_weighted(variable_dict)
-        # run_epsilon(variable_dict)
-        # run_gridnum(variable_dict)
+
+        run_default(variable_dict)
+        plot_default(variable_dict)
+        
+        run_weighted(variable_dict)
+        plot_weighted(variable_dict)
+
+        run_epsilon(variable_dict)
+        plot_epsilon(variable_dict)
+
+        run_gridnum(variable_dict)
+        plot_gridnum(variable_dict)
+
         run_spnum(variable_dict)
-        # run_disgap(variable_dict)
-        # run_scalability(variable_dict)
-        # plot_default(variable_dict)
-        # plot_scalability(variable_dict)
-        # plot_weighted(variable_dict)
-        # plot_epsilon(variable_dict)
         plot_spnum(variable_dict)
-        # plot_gridnum(variable_dict)
-        # plot_disgap_breakdown(variable_dict)
+
+        run_disgap(variable_dict)
+        plot_disgap_breakdown(variable_dict)
+        
+        run_scalability(variable_dict)
+        plot_scalability(variable_dict)
+        
