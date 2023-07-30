@@ -143,6 +143,6 @@ If you use our code, please cite our paper:
         journal = {Proc. ACM Manag. Data},
         month = {may},
         articleno = {14},
-        numpages = {26},
+        numpages = {26}
         }
     
