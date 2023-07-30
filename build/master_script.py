@@ -645,7 +645,7 @@ if __name__ == '__main__':
         variable_dict = deal(config_dir)
         # generate_query(variable_dict, 'default')
         # generate_query(variable_dict, 'weighted')
-        # generate_query(variable_dict, 'disgap')
+        # generate_query(variable_dict, 'disgap') # this procedure may be time consuming, we prepared a disgap query in advance
 
         run_default(variable_dict)
         plot_default(variable_dict)

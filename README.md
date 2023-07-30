@@ -46,8 +46,9 @@ This repository contains the implementation of *EAR-Oracle* published in SIGMOD'
 ### Note for Reproducing
 0. All experimental results (except for scalability test) is tested on a machine with *256GB* memory. To support verification on machines with smaller memory space, the **default config** (locate in *build/script_config*) is only set for small datasets (i.e., four terrains in *datasets/small*). Please change **dataset_list(line5)** and **tested_dataset(line10)** in the **default config** if you want to test all datasets.
 1. For large datasets, the tested algorithms requires a large memory space. You may need to use *ulimit* command to adjust the memory limit.
-2. The UnfixedS and KAlgo are on-the-fly algorithms, therefore they are **very slow** for median and large datasets. If you can access multiple machines, we suggest separating the experiments into multiple machines (For example, each machine runs a single experiment. You can achieve this by *comment/uncomment **line 650-670*** of the master script).
-3. The output figures are in *.eps format. To check them, you can use 'Epstool' on Windows (Please remember to adjust the portait size (2000 * 1000 is large enough)). Or you can simply create a *.tex file in overleaf, insert the *.eps file and compile (view) it:
+2. The *UnfixedS* and *KAlgo* are on-the-fly algorithms, therefore they are **very slow** for median and large datasets (since they need to place a lot of auxiliary points and distance quires are independent to each other). If you can access multiple machines, we suggest separating the experiments into multiple machines (For example, each machine runs a single experiment. You can achieve this by *comment/uncomment **line 650-670*** of the master script).
+**Fully** run the on-the-fly algorithms on large datasets may **require a couple of weeks**. We suggest to add a time limit for these on-the-fly algorithms(UnfixedS, KAlgo). You can achieve this by modifying the *exp_\*.sh* in folder *scripts/exp/* (such as using *timelimit* command).
+3. The output figures are in *.eps format. To check them, you can use **Epstool** on Windows (Please remember to adjust the portait size (2000 * 1000 is large enough)). Or you can simply create a *.tex file in overleaf, insert the *.eps file and compile (view) it:
 
         \begin{figure*}
             \centering
@@ -59,6 +60,7 @@ This repository contains the implementation of *EAR-Oracle* published in SIGMOD'
 4. All experiments are affected by the query points generated. Therefore **randomness** influences the final figures to some extent, especially for the *query time* and *relative error*. We set the y-axis of relative error figure in the range [0.00, 0.06]. In case of the relative error curve does not appeared in the figure completely, you can change the y-axis scale by modifying the following code in the corresponding plot file (in *scripts/figures/\*.plot*):
 
         set yrange [0.000 : 0.06001]
+5. Generate the query for distance gap is quite time consuming (we need to calculte many distances and repeat if they are out of a certain range). Therefore, we provide distance queries in the *datasets/query* folder. For scalability test, it becomes **extremly slow** for on-the-fly algorithms. Therefore we reduce the number of queries to 15. 
 ### Scripts
 #### Dataset
 We provided the datasets used in the paper in **./datasets** folder. The datasets used in *EAR-Oracle* must be *2-manifold* terrain surfaces in *.off* format.
