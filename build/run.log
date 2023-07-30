@@ -1,558 +1,99 @@
-1440 4211 2772
-Load A2A queries finished.
-[Partition Tree] Current level radius is: 3482.92
-[Partition Tree] Current level radius is: 1741.46
-[Partition Tree] Current level radius is: 870.731
-[Partition Tree] Current level radius is: 435.365
-[Partition Tree] Current level radius is: 217.683
-[Partition Tree] Current level radius is: 108.841
-[Partition Tree] Current level radius is: 54.4207
-query-0 is finished.
-query-1 is finished.
-query-2 is finished.
-query-3 is finished.
-query-4 is finished.
-query-5 is finished.
-query-6 is finished.
-query-7 is finished.
-query-8 is finished.
-query-9 is finished.
-query-10 is finished.
-query-11 is finished.
-query-12 is finished.
-query-13 is finished.
-query-14 is finished.
-query-15 is finished.
-query-16 is finished.
-query-17 is finished.
-query-18 is finished.
-query-19 is finished.
-query-20 is finished.
-query-21 is finished.
-query-22 is finished.
-query-23 is finished.
-query-24 is finished.
-query-25 is finished.
-query-26 is finished.
-query-27 is finished.
-query-28 is finished.
-query-29 is finished.
-query-30 is finished.
-query-31 is finished.
-query-32 is finished.
-query-33 is finished.
-query-34 is finished.
-query-35 is finished.
-query-36 is finished.
-query-37 is finished.
-query-38 is finished.
-query-39 is finished.
-query-40 is finished.
-query-41 is finished.
-query-42 is finished.
-query-43 is finished.
-query-44 is finished.
-query-45 is finished.
-query-46 is finished.
-query-47 is finished.
-query-48 is finished.
-query-49 is finished.
-query-50 is finished.
-query-51 is finished.
-query-52 is finished.
-query-53 is finished.
-query-54 is finished.
-query-55 is finished.
-query-56 is finished.
-query-57 is finished.
-query-58 is finished.
-query-59 is finished.
-query-60 is finished.
-query-61 is finished.
-query-62 is finished.
-query-63 is finished.
-query-64 is finished.
-query-65 is finished.
-query-66 is finished.
-query-67 is finished.
-query-68 is finished.
-query-69 is finished.
-query-70 is finished.
-query-71 is finished.
-query-72 is finished.
-query-73 is finished.
-query-74 is finished.
-query-75 is finished.
-query-76 is finished.
-query-77 is finished.
-query-78 is finished.
-query-79 is finished.
-query-80 is finished.
-query-81 is finished.
-query-82 is finished.
-query-83 is finished.
-query-84 is finished.
-query-85 is finished.
-query-86 is finished.
-query-87 is finished.
-query-88 is finished.
-query-89 is finished.
-query-90 is finished.
-query-91 is finished.
-query-92 is finished.
-query-93 is finished.
-query-94 is finished.
-query-95 is finished.
-query-96 is finished.
-query-97 is finished.
-query-98 is finished.
-query-99 is finished.
-output file is written as: ../exp/spnum//BigMount.off-EAR-sp3.cln
-clean [../exp/spnum//BigMount.off-EAR-sp3.log] finished
-1440 4211 2772
-Load A2A queries finished.
-[Partition Tree] Current level radius is: 4134.49
-[Partition Tree] Current level radius is: 2067.25
-[Partition Tree] Current level radius is: 1033.62
-[Partition Tree] Current level radius is: 516.811
-[Partition Tree] Current level radius is: 258.406
-[Partition Tree] Current level radius is: 129.203
-[Partition Tree] Current level radius is: 64.6014
-query-0 is finished.
-query-1 is finished.
-query-2 is finished.
-query-3 is finished.
-query-4 is finished.
-query-5 is finished.
-query-6 is finished.
-query-7 is finished.
-query-8 is finished.
-query-9 is finished.
-query-10 is finished.
-query-11 is finished.
-query-12 is finished.
-query-13 is finished.
-query-14 is finished.
-query-15 is finished.
-query-16 is finished.
-query-17 is finished.
-query-18 is finished.
-query-19 is finished.
-query-20 is finished.
-query-21 is finished.
-query-22 is finished.
-query-23 is finished.
-query-24 is finished.
-query-25 is finished.
-query-26 is finished.
-query-27 is finished.
-query-28 is finished.
-query-29 is finished.
-query-30 is finished.
-query-31 is finished.
-query-32 is finished.
-query-33 is finished.
-query-34 is finished.
-query-35 is finished.
-query-36 is finished.
-query-37 is finished.
-query-38 is finished.
-query-39 is finished.
-query-40 is finished.
-query-41 is finished.
-query-42 is finished.
-query-43 is finished.
-query-44 is finished.
-query-45 is finished.
-query-46 is finished.
-query-47 is finished.
-query-48 is finished.
-query-49 is finished.
-query-50 is finished.
-query-51 is finished.
-query-52 is finished.
-query-53 is finished.
-query-54 is finished.
-query-55 is finished.
-query-56 is finished.
-query-57 is finished.
-query-58 is finished.
-query-59 is finished.
-query-60 is finished.
-query-61 is finished.
-query-62 is finished.
-query-63 is finished.
-query-64 is finished.
-query-65 is finished.
-query-66 is finished.
-query-67 is finished.
-query-68 is finished.
-query-69 is finished.
-query-70 is finished.
-query-71 is finished.
-query-72 is finished.
-query-73 is finished.
-query-74 is finished.
-query-75 is finished.
-query-76 is finished.
-query-77 is finished.
-query-78 is finished.
-query-79 is finished.
-query-80 is finished.
-query-81 is finished.
-query-82 is finished.
-query-83 is finished.
-query-84 is finished.
-query-85 is finished.
-query-86 is finished.
-query-87 is finished.
-query-88 is finished.
-query-89 is finished.
-query-90 is finished.
-query-91 is finished.
-query-92 is finished.
-query-93 is finished.
-query-94 is finished.
-query-95 is finished.
-query-96 is finished.
-query-97 is finished.
-query-98 is finished.
-query-99 is finished.
-output file is written as: ../exp/spnum//BigMount.off-EAR-sp4.cln
-clean [../exp/spnum//BigMount.off-EAR-sp4.log] finished
-1440 4211 2772
-Load A2A queries finished.
-[Partition Tree] Current level radius is: 3795.88
-[Partition Tree] Current level radius is: 1897.94
-[Partition Tree] Current level radius is: 948.971
-[Partition Tree] Current level radius is: 474.485
-[Partition Tree] Current level radius is: 237.243
-[Partition Tree] Current level radius is: 118.621
-[Partition Tree] Current level radius is: 59.3107
-query-0 is finished.
-query-1 is finished.
-query-2 is finished.
-query-3 is finished.
-query-4 is finished.
-query-5 is finished.
-query-6 is finished.
-query-7 is finished.
-query-8 is finished.
-query-9 is finished.
-query-10 is finished.
-query-11 is finished.
-query-12 is finished.
-query-13 is finished.
-query-14 is finished.
-query-15 is finished.
-query-16 is finished.
-query-17 is finished.
-query-18 is finished.
-query-19 is finished.
-query-20 is finished.
-query-21 is finished.
-query-22 is finished.
-query-23 is finished.
-query-24 is finished.
-query-25 is finished.
-query-26 is finished.
-query-27 is finished.
-query-28 is finished.
-query-29 is finished.
-query-30 is finished.
-query-31 is finished.
-query-32 is finished.
-query-33 is finished.
-query-34 is finished.
-query-35 is finished.
-query-36 is finished.
-query-37 is finished.
-query-38 is finished.
-query-39 is finished.
-query-40 is finished.
-query-41 is finished.
-query-42 is finished.
-query-43 is finished.
-query-44 is finished.
-query-45 is finished.
-query-46 is finished.
-query-47 is finished.
-query-48 is finished.
-query-49 is finished.
-query-50 is finished.
-query-51 is finished.
-query-52 is finished.
-query-53 is finished.
-query-54 is finished.
-query-55 is finished.
-query-56 is finished.
-query-57 is finished.
-query-58 is finished.
-query-59 is finished.
-query-60 is finished.
-query-61 is finished.
-query-62 is finished.
-query-63 is finished.
-query-64 is finished.
-query-65 is finished.
-query-66 is finished.
-query-67 is finished.
-query-68 is finished.
-query-69 is finished.
-query-70 is finished.
-query-71 is finished.
-query-72 is finished.
-query-73 is finished.
-query-74 is finished.
-query-75 is finished.
-query-76 is finished.
-query-77 is finished.
-query-78 is finished.
-query-79 is finished.
-query-80 is finished.
-query-81 is finished.
-query-82 is finished.
-query-83 is finished.
-query-84 is finished.
-query-85 is finished.
-query-86 is finished.
-query-87 is finished.
-query-88 is finished.
-query-89 is finished.
-query-90 is finished.
-query-91 is finished.
-query-92 is finished.
-query-93 is finished.
-query-94 is finished.
-query-95 is finished.
-query-96 is finished.
-query-97 is finished.
-query-98 is finished.
-query-99 is finished.
-output file is written as: ../exp/spnum//BigMount.off-EAR-sp5.cln
-clean [../exp/spnum//BigMount.off-EAR-sp5.log] finished
-1440 4211 2772
-Load A2A queries finished.
-[Partition Tree] Current level radius is: 3740.29
-[Partition Tree] Current level radius is: 1870.14
-[Partition Tree] Current level radius is: 935.072
-[Partition Tree] Current level radius is: 467.536
-[Partition Tree] Current level radius is: 233.768
-[Partition Tree] Current level radius is: 116.884
-[Partition Tree] Current level radius is: 58.442
-query-0 is finished.
-query-1 is finished.
-query-2 is finished.
-query-3 is finished.
-query-4 is finished.
-query-5 is finished.
-query-6 is finished.
-query-7 is finished.
-query-8 is finished.
-query-9 is finished.
-query-10 is finished.
-query-11 is finished.
-query-12 is finished.
-query-13 is finished.
-query-14 is finished.
-query-15 is finished.
-query-16 is finished.
-query-17 is finished.
-query-18 is finished.
-query-19 is finished.
-query-20 is finished.
-query-21 is finished.
-query-22 is finished.
-query-23 is finished.
-query-24 is finished.
-query-25 is finished.
-query-26 is finished.
-query-27 is finished.
-query-28 is finished.
-query-29 is finished.
-query-30 is finished.
-query-31 is finished.
-query-32 is finished.
-query-33 is finished.
-query-34 is finished.
-query-35 is finished.
-query-36 is finished.
-query-37 is finished.
-query-38 is finished.
-query-39 is finished.
-query-40 is finished.
-query-41 is finished.
-query-42 is finished.
-query-43 is finished.
-query-44 is finished.
-query-45 is finished.
-query-46 is finished.
-query-47 is finished.
-query-48 is finished.
-query-49 is finished.
-query-50 is finished.
-query-51 is finished.
-query-52 is finished.
-query-53 is finished.
-query-54 is finished.
-query-55 is finished.
-query-56 is finished.
-query-57 is finished.
-query-58 is finished.
-query-59 is finished.
-query-60 is finished.
-query-61 is finished.
-query-62 is finished.
-query-63 is finished.
-query-64 is finished.
-query-65 is finished.
-query-66 is finished.
-query-67 is finished.
-query-68 is finished.
-query-69 is finished.
-query-70 is finished.
-query-71 is finished.
-query-72 is finished.
-query-73 is finished.
-query-74 is finished.
-query-75 is finished.
-query-76 is finished.
-query-77 is finished.
-query-78 is finished.
-query-79 is finished.
-query-80 is finished.
-query-81 is finished.
-query-82 is finished.
-query-83 is finished.
-query-84 is finished.
-query-85 is finished.
-query-86 is finished.
-query-87 is finished.
-query-88 is finished.
-query-89 is finished.
-query-90 is finished.
-query-91 is finished.
-query-92 is finished.
-query-93 is finished.
-query-94 is finished.
-query-95 is finished.
-query-96 is finished.
-query-97 is finished.
-query-98 is finished.
-query-99 is finished.
-output file is written as: ../exp/spnum//BigMount.off-EAR-sp6.cln
-clean [../exp/spnum//BigMount.off-EAR-sp6.log] finished
-1440 4211 2772
-Load A2A queries finished.
-[Partition Tree] Current level radius is: 3566.9
-[Partition Tree] Current level radius is: 1783.45
-[Partition Tree] Current level radius is: 891.724
-[Partition Tree] Current level radius is: 445.862
-[Partition Tree] Current level radius is: 222.931
-[Partition Tree] Current level radius is: 111.466
-[Partition Tree] Current level radius is: 55.7328
-query-0 is finished.
-query-1 is finished.
-query-2 is finished.
-query-3 is finished.
-query-4 is finished.
-query-5 is finished.
-query-6 is finished.
-query-7 is finished.
-query-8 is finished.
-query-9 is finished.
-query-10 is finished.
-query-11 is finished.
-query-12 is finished.
-query-13 is finished.
-query-14 is finished.
-query-15 is finished.
-query-16 is finished.
-query-17 is finished.
-query-18 is finished.
-query-19 is finished.
-query-20 is finished.
-query-21 is finished.
-query-22 is finished.
-query-23 is finished.
-query-24 is finished.
-query-25 is finished.
-query-26 is finished.
-query-27 is finished.
-query-28 is finished.
-query-29 is finished.
-query-30 is finished.
-query-31 is finished.
-query-32 is finished.
-query-33 is finished.
-query-34 is finished.
-query-35 is finished.
-query-36 is finished.
-query-37 is finished.
-query-38 is finished.
-query-39 is finished.
-query-40 is finished.
-query-41 is finished.
-query-42 is finished.
-query-43 is finished.
-query-44 is finished.
-query-45 is finished.
-query-46 is finished.
-query-47 is finished.
-query-48 is finished.
-query-49 is finished.
-query-50 is finished.
-query-51 is finished.
-query-52 is finished.
-query-53 is finished.
-query-54 is finished.
-query-55 is finished.
-query-56 is finished.
-query-57 is finished.
-query-58 is finished.
-query-59 is finished.
-query-60 is finished.
-query-61 is finished.
-query-62 is finished.
-query-63 is finished.
-query-64 is finished.
-query-65 is finished.
-query-66 is finished.
-query-67 is finished.
-query-68 is finished.
-query-69 is finished.
-query-70 is finished.
-query-71 is finished.
-query-72 is finished.
-query-73 is finished.
-query-74 is finished.
-query-75 is finished.
-query-76 is finished.
-query-77 is finished.
-query-78 is finished.
-query-79 is finished.
-query-80 is finished.
-query-81 is finished.
-query-82 is finished.
-query-83 is finished.
-query-84 is finished.
-query-85 is finished.
-query-86 is finished.
-query-87 is finished.
-query-88 is finished.
-query-89 is finished.
-query-90 is finished.
-query-91 is finished.
-query-92 is finished.
-query-93 is finished.
-query-94 is finished.
-query-95 is finished.
-query-96 is finished.
-query-97 is finished.
-query-98 is finished.
-query-99 is finished.
-output file is written as: ../exp/spnum//BigMount.off-EAR-sp7.cln
-clean [../exp/spnum//BigMount.off-EAR-sp7.log] finished
+[Note] begin to run |default| experiments...
+bash ../scripts/exp/exp_default.sh ../datasets/small/ ../datasets/query/ ../exp/default/ FixedS 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_default.sh ../datasets/small/ ../datasets/query/ ../exp/default/ UnfixedS 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_default.sh ../datasets/small/ ../datasets/query/ ../exp/default/ KAlgo 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_default.sh ../datasets/small/ ../datasets/query/ ../exp/default/ SE 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_default.sh ../datasets/small/ ../datasets/query/ ../exp/default/ EAR 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_default.sh ../datasets/small/ ../datasets/query/ ../exp/default/ MMP 16 ../scripts/exp/clean.py
+[Note] |default| experiments finished.
+[Note] ploting |default| figures...
+gnuplot -c ../scripts/figures/default2-2row.plot ../scripts/figures/data/default.res
+[Note] ploting |default| finished.
+[Note] begin to run |weighted| experiments...
+bash ../scripts/exp/exp_weighted.sh ../datasets/small/ ../datasets/query/ ../exp/weighted/ FixedS 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_weighted.sh ../datasets/small/ ../datasets/query/ ../exp/weighted/ UnfixedS 16 ../scripts/exp/clean.py
+[KAlgo, MMP] does not support weighted terrain. Experiment for  KAlgo  is skipped.
+bash ../scripts/exp/exp_weighted.sh ../datasets/small/ ../datasets/query/ ../exp/weighted/ SE 16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_weighted.sh ../datasets/small/ ../datasets/query/ ../exp/weighted/ EAR 16 ../scripts/exp/clean.py
+[KAlgo, MMP] does not support weighted terrain. Experiment for  MMP  is skipped.
+[Note] |weighted| experiments finished.
+[Note] ploting |weighted| figures...
+gnuplot -c ../scripts/figures/weighted-2row.plot ../scripts/figures/data/weighted.res
+[Note] ploting |weighted| finished.
+[Note] begin to run |epsilon| experiments...
+Epsilon value only influences [UnfixedS, KAlgo, SE-Oracle and EAR-Oracle]. Experiment for  FixedS  is skipped.
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ UnfixedS 0.05 eps005 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ UnfixedS 0.10 eps010 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ UnfixedS 0.15 eps015 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ UnfixedS 0.20 eps020 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ UnfixedS 0.25 eps025 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ KAlgo 0.05 eps005 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ KAlgo 0.10 eps010 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ KAlgo 0.15 eps015 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ KAlgo 0.20 eps020 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ KAlgo 0.25 eps025 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ SE 0.05 eps005 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ SE 0.10 eps010 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ SE 0.15 eps015 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ SE 0.20 eps020 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ SE 0.25 eps025 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ EAR 0.05 eps005 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ EAR 0.10 eps010 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ EAR 0.15 eps015 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ EAR 0.20 eps020 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_epsilon.sh ../datasets/epsilon/ ../datasets/query/ ../exp/epsilon/ EAR 0.25 eps025 ../scripts/exp/clean.py
+Epsilon value only influences [UnfixedS, KAlgo, SE-Oracle and EAR-Oracle]. Experiment for  MMP  is skipped.
+[Note] |epsilon| experiments finished.
+[Note] ploting |epsilon| figures...
+gnuplot -c ../scripts/figures/eps-2row.plot ../scripts/figures/data/epsilon.res
+[Note] ploting |epsilon| finished.
+[Note] begin to run |gridnum| experiments...
+Grid number only influences [EAR-Oracle]. Experiment for  FixedS  is skipped.
+Grid number only influences [EAR-Oracle]. Experiment for  UnfixedS  is skipped.
+Grid number only influences [EAR-Oracle]. Experiment for  KAlgo  is skipped.
+Grid number only influences [EAR-Oracle]. Experiment for  SE  is skipped.
+bash ../scripts/exp/exp_gridnum.sh ../datasets/gridnum/ ../datasets/query/ ../exp/gridnum/ EAR 16 grid16 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_gridnum.sh ../datasets/gridnum/ ../datasets/query/ ../exp/gridnum/ EAR 64 grid64 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_gridnum.sh ../datasets/gridnum/ ../datasets/query/ ../exp/gridnum/ EAR 256 grid256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_gridnum.sh ../datasets/gridnum/ ../datasets/query/ ../exp/gridnum/ EAR 1024 grid1024 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_gridnum.sh ../datasets/gridnum/ ../datasets/query/ ../exp/gridnum/ EAR 4096 grid4096 ../scripts/exp/clean.py
+Grid number only influences [EAR-Oracle]. Experiment for  MMP  is skipped.
+[Note] |gridnum| experiments finished.
+[Note] ploting |gridnum| figures...
+gnuplot -c ../scripts/figures/grid-2row.plot ../scripts/figures/data/gridnum.res
+[Note] ploting |gridnum| finished.
+[Note] begin to run |spnum| experiments...
 Steiner points number only influences [FixedS, SE-Oracle and EAR-Oracle]. Experiment for  UnfixedS  is skipped.
 Steiner points number only influences [FixedS, SE-Oracle and EAR-Oracle]. Experiment for  KAlgo  is skipped.
+bash ../scripts/exp/exp_spnum.sh ../datasets/spnum/ ../datasets/query/ ../exp/spnum/ EAR 3 sp3 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_spnum.sh ../datasets/spnum/ ../datasets/query/ ../exp/spnum/ EAR 4 sp4 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_spnum.sh ../datasets/spnum/ ../datasets/query/ ../exp/spnum/ EAR 5 sp5 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_spnum.sh ../datasets/spnum/ ../datasets/query/ ../exp/spnum/ EAR 6 sp6 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_spnum.sh ../datasets/spnum/ ../datasets/query/ ../exp/spnum/ EAR 7 sp7 ../scripts/exp/clean.py
 Steiner points number only influences [FixedS, SE-Oracle and EAR-Oracle]. Experiment for  MMP  is skipped.
+[Note] |spnum| experiments finished.
+[Note] ploting |spnum| figures...
+gnuplot -c ../scripts/figures/spnum-2row.plot ../scripts/figures/data/spnum.res
+[Note] ploting |spnum| finished.
+[Note] begin to run |disgap| experiments...
+bash ../scripts/exp/exp_disgap.sh ../datasets/disgap/ ../datasets/query/ ../exp/disgap/ FixedS 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_disgap.sh ../datasets/disgap/ ../datasets/query/ ../exp/disgap/ UnfixedS 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_disgap.sh ../datasets/disgap/ ../datasets/query/ ../exp/disgap/ KAlgo 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_disgap.sh ../datasets/disgap/ ../datasets/query/ ../exp/disgap/ SE 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_disgap.sh ../datasets/disgap/ ../datasets/query/ ../exp/disgap/ EAR 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_disgap.sh ../datasets/disgap/ ../datasets/query/ ../exp/disgap/ MMP 256 ../scripts/exp/clean.py
+[Note] |disgap| experiments finished.
+[Note] ploting |disgap-breakdown| figures...
+gnuplot -c ../scripts/figures/breakdown-disgap.plot ../scripts/figures/data/breakdown.res ../scripts/figures/data/disgap.res
+[Note] ploting |disgap-breakdown| finished.
+[Note] begin to run |scalability| experiments...
+bash ../scripts/exp/exp_scalability.sh ../datasets/scalability/ ../datasets/query/ ../exp/scalability/ FixedS 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_scalability.sh ../datasets/scalability/ ../datasets/query/ ../exp/scalability/ UnfixedS 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_scalability.sh ../datasets/scalability/ ../datasets/query/ ../exp/scalability/ KAlgo 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_scalability.sh ../datasets/scalability/ ../datasets/query/ ../exp/scalability/ SE 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_scalability.sh ../datasets/scalability/ ../datasets/query/ ../exp/scalability/ EAR 256 ../scripts/exp/clean.py
+bash ../scripts/exp/exp_scalability.sh ../datasets/scalability/ ../datasets/query/ ../exp/scalability/ MMP 256 ../scripts/exp/clean.py
+[Note] |scalability| experiments finished.
+[Note] ploting |scalability| figures...
+gnuplot -c ../scripts/figures/n_effect-2row.plot ../scripts/figures/data/EP_high
+[Note] ploting |scalability| finished.

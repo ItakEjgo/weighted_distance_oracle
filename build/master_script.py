@@ -10,8 +10,6 @@ def deal(config_dir):
             if (val.find(',') >= 0):
                 val = list(x.strip() for x in list(val.split(',')))
             variable_dict[key] = val
-    # for key in variable_dict:
-        # print(key, variable_dict[key])
     return variable_dict
 
 def generate_query(variable_dict, terrain_type):
@@ -93,6 +91,8 @@ def calc_error(dis_1, dis_2):
     return error
 
 def plot_default(variable_dict):
+    print('[Note] ploting |default| figures...')
+
     clean_dir = variable_dict['output_dir'] + 'default/'
     pos_1 = [3, 10, 17, 24, 31, 38, 45, 51]
     pos_2 = [5, 15, 25, 35, 45, 55, 65, 75]
@@ -142,7 +142,11 @@ def plot_default(variable_dict):
     # print(cmd)
     os.system(cmd)
 
+    print('[Note] ploting |default| finished.')
+
 def run_default(variable_dict):
+    print('[Note] begin to run |default| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     for dir in tested_dataset:
@@ -155,15 +159,18 @@ def run_default(variable_dict):
         run_script = variable_dict['scripts_dir'] + 'exp/exp_default.sh'
         cleaner = variable_dict['scripts_dir'] + 'exp/clean.py'
         gridnum = '16' if dir == 'small' else '256'
-        # print(run_script_dir)
         for algo in algorithm:
             if len(algo) == 0:
                 continue
             cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + cleaner
-            os.system(cmd)
             # print(cmd)
+            os.system(cmd)
+            
+    print('[Note] |default| experiments finished.')
         
 def plot_weighted(variable_dict):
+    print('[Note] ploting |weighted| figures...')
+
     clean_dir = variable_dict['output_dir'] + 'weighted/'
     pos_1 = [3, 10, 17, 24, 31, 38, 45, 51]
     pos_2 = [5, 15, 25, 35, 45, 55, 65, 75]
@@ -209,9 +216,14 @@ def plot_weighted(variable_dict):
             file=f)
     f.close()
     cmd = 'gnuplot -c ' + variable_dict['scripts_dir'] + 'figures/weighted-2row.plot ' + plot_weighted_res
+    # print(cmd)
     os.system(cmd)
+    
+    print('[Note] ploting |weighted| finished.')
 
 def run_weighted(variable_dict):
+    print('[Note] begin to run |weighted| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     for dir in tested_dataset:
@@ -230,10 +242,14 @@ def run_weighted(variable_dict):
                 print('[KAlgo, MMP] does not support weighted terrain. Experiment for ', algo, ' is skipped.') 
                 continue
             cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + cleaner
-            os.system(cmd)
             # print(cmd)
+            os.system(cmd)
+
+    print('[Note] |weighted| experiments finished.')
 
 def plot_epsilon(variable_dict):
+    print('[Note] ploting |epsilon| figures...')
+
     clean_dir = variable_dict['output_dir'] + 'epsilon/'
     pos_1 = [0.05, 0.10, 0.15, 0.20, 0.25]
     plot_data = {}
@@ -289,8 +305,12 @@ def plot_epsilon(variable_dict):
     # print(cmd)
     os.system(cmd)
 
+    print('[Note] ploting |epsilon| finished.')
+
 
 def run_epsilon(variable_dict):
+    print('[Note] begin to run |epsilon| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     input_dir = variable_dict['datasets_dir'] + 'epsilon/'
@@ -308,11 +328,15 @@ def run_epsilon(variable_dict):
             eps = variable_dict['epsilon_val'][i]
             flag = variable_dict['epsilon_flag'][i]
             cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + eps + ' ' + flag + ' ' + cleaner
-            os.system(cmd)
             # print(cmd)
+            os.system(cmd)
+
+    print('[Note] |epsilon| experiments finished.')
 
 
 def plot_gridnum(variable_dict):
+    print('[Note] ploting |gridnum| figures...')
+
     clean_dir = variable_dict['output_dir'] + 'gridnum/'
     pos_1 = [0.05, 0.10, 0.15, 0.20, 0.25]
     plot_data = {}
@@ -364,7 +388,11 @@ def plot_gridnum(variable_dict):
     # print(cmd)
     os.system(cmd)
 
+    print('[Note] ploting |gridnum| finished.')
+
 def run_gridnum(variable_dict):
+    print('[Note] begin to run |gridnum| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     input_dir = variable_dict['datasets_dir'] + 'gridnum/'
@@ -382,10 +410,13 @@ def run_gridnum(variable_dict):
             gridnum = variable_dict['gridnum_val'][i]
             flag = variable_dict['gridnum_flag'][i]
             cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + flag + ' ' + cleaner
-            os.system(cmd)
             # print(cmd)
+            os.system(cmd)
+
+    print('[Note] |gridnum| experiments finished.')
 
 def plot_spnum(variable_dict):
+    print('[Note] ploting |spnum| figures...')
     clean_dir = variable_dict['output_dir'] + 'spnum/'
     pos_1 = [0.05, 0.10, 0.15, 0.20, 0.25]
     plot_data = {}
@@ -441,7 +472,11 @@ def plot_spnum(variable_dict):
     # print(cmd)
     os.system(cmd)
 
+    print('[Note] ploting |spnum| finished.')
+
 def run_spnum(variable_dict):
+    print('[Note] begin to run |spnum| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     input_dir = variable_dict['datasets_dir'] + 'spnum/'
@@ -461,10 +496,14 @@ def run_spnum(variable_dict):
             spnum = variable_dict['spnum_val'][i]
             flag = variable_dict['spnum_flag'][i]
             cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + spnum + ' ' + flag + ' ' + cleaner
-            os.system(cmd)
             # print(cmd)
+            os.system(cmd)
+
+    print('[Note] |spnum| experiments finished.')
 
 def plot_disgap_breakdown(variable_dict):
+    print('[Note] ploting |disgap-breakdown| figures...')
+
     disgap_dir = variable_dict['output_dir'] + 'disgap/'
     pos_1 = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
     pos_2 = [5, 15, 25, 35, 45, 55, 65, 75]
@@ -516,7 +555,11 @@ def plot_disgap_breakdown(variable_dict):
     # print(cmd)
     os.system(cmd)
 
+    print('[Note] ploting |disgap-breakdown| finished.')
+
 def run_disgap(variable_dict):
+    print('[Note] begin to run |disgap| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     input_dir = variable_dict['datasets_dir'] + 'disgap/'
@@ -531,10 +574,14 @@ def run_disgap(variable_dict):
         if len(algo) == 0:
             continue
         cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + cleaner
-        os.system(cmd)
         # print(cmd)
+        os.system(cmd)
+
+    print('[Note] |disgap| experiments finished.')
 
 def plot_scalability(variable_dict):
+    print('[Note] ploting |scalability| figures...')
+
     clean_dir = variable_dict['output_dir'] + 'scalability/'
     pos_1 = [0.05, 0.10, 0.15, 0.20, 0.25]
     plot_data = {}
@@ -618,7 +665,11 @@ def plot_scalability(variable_dict):
     # print(cmd)
     os.system(cmd)
 
+    print('[Note] ploting |scalability| finished.')
+
 def run_scalability(variable_dict):
+    print('[Note] begin to run |scalability| experiments...')
+
     algorithm = variable_dict['algorithms']
     tested_dataset = variable_dict['tested_dataset']
     input_dir = variable_dict['datasets_dir'] + 'scalability/'
@@ -633,8 +684,10 @@ def run_scalability(variable_dict):
         if len(algo) == 0:
             continue
         cmd = 'bash ' + run_script + ' ' + input_dir + ' ' + query_dir + ' ' + output_dir + ' ' + algo + ' ' + gridnum + ' ' + cleaner
-        os.system(cmd)
         # print(cmd)
+        os.system(cmd)
+
+    print('[Note] |scalability| experiments finished.')
 
 if __name__ == '__main__':
     argc = len(sys.argv)
@@ -646,7 +699,7 @@ if __name__ == '__main__':
         # generate_query(variable_dict, 'default')
         # generate_query(variable_dict, 'weighted')
         # generate_query(variable_dict, 'disgap') # this procedure may be time consuming, we prepared a disgap query in advance
-
+        
         run_default(variable_dict)
         plot_default(variable_dict)
         
