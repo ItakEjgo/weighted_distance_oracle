@@ -16,6 +16,8 @@ This repository contains the implementation of *EAR-Oracle* published in SIGMOD'
         |-*.h/hpp/cpp # source code.
 
 ### Environment & Run ( tested in Ubuntu 18.04LTS and Debian GNU/Linux 11 )
+A docker image is avaiable via **docker hub** (https://hub.docker.com/r/itakejgo/ear-oracle). You could pull this image and to run the code.
+
 0. Install the following packages: *build-essential, cmake, libcgal-dev, gnuplot, tmux* [ **Note:** *tmux* is for running long-time experiments, any other substitute is fine. Please make sure the CGAL(*libcgal-dev*) version is newer than v5.2 (for *cmake* support).]:
 
         apt-get update
