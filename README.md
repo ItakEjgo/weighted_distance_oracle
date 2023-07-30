@@ -123,7 +123,8 @@ If this parameter set to 1, the program will be run to generate given number of 
 ##### Run *Fixed Scheme* for query processing
 --generate=0 --input=../datasets/example.off --output=../results/test.log --grid-num=16 --query-num=1000 --method=FixedS
 ***
-###Reference
+
+### Reference
 If you use our code, please cite our paper:
 
         @article{10.1145/3588694,
