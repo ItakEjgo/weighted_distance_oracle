@@ -3,17 +3,17 @@ This repository contains the implementation of *EAR-Oracle* published in SIGMOD'
 ***
 
 ### Structure Overview (and important files)
-**./**
-**build/** # folder of compile and run the *master script*.
-**-out/** # final figures in *.eps* format.
-**-master_script.py** # a *master script* for running all experiments and ploting.
-**-script_config** # several paths and configs of the *master script*.
-**datasets** # all *datasets* used.
-**-query** # querys for all experiments.
-**exp** # folder stores the final *experimental results*.
-**scripts** # *scripts* for experiments, ploting and additional .off datasets.
-**technicalreport** # full version of our paper.
-***.h/hpp/cpp** # source code.
+        ./
+        |-build/ # folder of compile and run the master script.
+        | |-out/ # final figures in .eps format.
+        | |-master_script.py # a master script for running all experiments and ploting.
+        | |-script_config # several paths and configs of the master script.
+        |-datasets # all datasets used.
+        | |-query # querys for all experiments.
+        |-exp # folder stores the final experimental results.
+        |-scripts # scripts for experiments, ploting and additional .off datasets.
+        |-technicalreport # full version of our paper.
+        |-*.h/hpp/cpp # source code.
 
 ### Environment & Run ( tested in Ubuntu 18.04LTS and Debian GNU/Linux 11 )
 0. Install the following packages: *build-essential, cmake, libcgal-dev, gnuplot, tmux* [ **Note:** *tmux* is for running long-time experiments, any other substitute is fine. Please make sure the CGAL(*libcgal-dev*) version is newer than v5.2 (for *cmake* support).]:
