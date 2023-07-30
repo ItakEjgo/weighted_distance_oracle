@@ -468,8 +468,6 @@ namespace Base {
         A2A_fid.clear();
 
         cout << "V= " << surface_mesh.num_vertices() << " E= " << surface_mesh.num_edges() << " F= " << surface_mesh.num_faces() << endl;
-        AABB_tree aabb_tree;
-        CGAL::Polygon_mesh_processing::build_AABB_tree(surface_mesh, aabb_tree);
 //        float x_min = 1e60, x_max = -1e60, y_min = 1e60, y_max = -1e60;
 //        for (auto vd: surface_mesh.vertices()){
 //            float x = surface_mesh.points()[vd].x(),
@@ -488,7 +486,7 @@ namespace Base {
 //            }
 //        }
         int cnt = 0;
-        for (auto i = 0; i < 3 * q_num; i++) {
+        for (auto i = 0; i < q_num; i++) {
             auto p1_pair = generateArbitrarySurfacePoint(surface_mesh);
             auto p2_pair = generateArbitrarySurfacePoint(surface_mesh);
             A2A_query.emplace_back(p1_pair.first, p2_pair.first);

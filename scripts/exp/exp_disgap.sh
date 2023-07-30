@@ -18,7 +18,7 @@ for file in `ls $datasets_dir`; do
     cp $query_dir/$file-face_weight-disgap.query face_weight.query 
 
     ./main --input=$datasets_dir/$file --output=$output_dir/$file-$algorithm-disgap.log --method=$algorithm --grid-num=$gridnum
-    python3 $cleaner $output_dir/$file-$algorithm-disgap.log 
+    python3 $cleaner $output_dir/$file-$algorithm-disgap.log 1000
 
     rm A2A.query
     rm face_weight.query

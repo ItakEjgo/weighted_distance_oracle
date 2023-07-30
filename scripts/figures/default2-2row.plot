@@ -12,7 +12,6 @@
 # eps
 # eps
 # eps
-
 set out "out/default-2row.eps"
 set terminal postscript portrait enhanced mono "Helvetica" 32 
 

@@ -454,7 +454,7 @@ namespace Quad{
                 res = kSkip::dijkstra(spanner, final_s, final_t).first;
 
                 auto q_end = chrono::_V2::system_clock::now();
-                auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+                auto q_duration = chrono::duration_cast<chrono::microseconds>(q_end - q_start);
                 dijkstra_running_time += static_cast<float>(q_duration.count());
             }
 
@@ -487,7 +487,7 @@ namespace Quad{
             res = kSkip::dijkstra(base_graph, sid, tid).first;
 
             auto q_end = chrono::_V2::system_clock::now();
-            auto q_duration = chrono::duration_cast<chrono::milliseconds>(q_end - q_start);
+            auto q_duration = chrono::duration_cast<chrono::microseconds>(q_end - q_start);
             dijkstra_running_time += static_cast<float>(q_duration.count());
         }
 

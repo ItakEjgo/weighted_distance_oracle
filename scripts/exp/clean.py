@@ -29,16 +29,23 @@ if __name__ == '__main__':
                     # for x in range(3):
                     for j in range(query_num):
                         cur_line = f.readline()
-                        dis[j] = (float(cur_line.split(' ')[0]))
-                        time[j] = (float(cur_line.split(' ')[1]))
+                        split_line = cur_line.split(' ')
+                        if len(split_line) < 2:
+                            dis[j] = float(cur_line.split(' ')[0])
+                            time[j] = 0.0
+                        else:
+                            dis[j] = float(cur_line.split(' ')[0])
+                            time[j] = float(cur_line.split(' ')[1])
                 elif line.find('Index Time') >= 0:
                     index_time = float(line.split(' ')[3])
                 elif line.find('Index memory usage') >= 0:
                     index_size = float(line.split(' ')[3])
                 elif line.find('Breakdown_construction') >= 0:
-                    breakdown_construction = float(line.split(' ')[1])
+                    breakdown_construction = float(line.split(' ')[1]) / 1000 # construction time is in micro-seconds
+                    breakdown_construction /= query_num
                 elif line.find('Breakdown_dijkstra') >= 0:
-                    breakdown_dijkstra = float(line.split(' ')[1])
+                    breakdown_dijkstra = float(line.split(' ')[1]) / 1000 # dijkstra time is in micro-seconds
+                    breakdown_dijkstra /= query_num
 
         # inner_time = 0.0
         # inter_time = 0.0

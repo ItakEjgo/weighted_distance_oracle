@@ -1,0 +1,22 @@
+Load A2A queries finished.
+Load face weight finished.
+100 random queries, inner ratio = 0.000, inter ratio = 1.000
+Run Algorithm 3: SE-Oracle
+base graph |V| = 74560
+Begin to build partition tree...
+level 1 has 4 nodes
+max cover set size: 37597 min cover set size: 3475
+level 2 has 14 nodes
+max cover set size: 18287 min cover set size: 3
+level 3 has 57 nodes
+max cover set size: 6939 min cover set size: 1
+level 4 has 342 nodes
+max cover set size: 1870 min cover set size: 1
+level 5 has 1765 nodes
+max cover set size: 510 min cover set size: 1
+level 6 has 6868 nodes
+max cover set size: 160 min cover set size: 1
+level 7 has 19845 nodes
+max cover set size: 62 min cover set size: 1
+level 8 has 40865 nodes
+max cover set size: 29 min cover set size: 1
