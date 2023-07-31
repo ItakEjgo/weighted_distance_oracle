@@ -16,7 +16,7 @@ This repository contains the implementation of *EAR-Oracle* published in SIGMOD'
         |-*.h/hpp/cpp # source code.
 
 ### Environment & Run ( tested in Ubuntu 18.04LTS and Debian GNU/Linux 11 )
-A docker image is avaiable via **docker hub** (https://hub.docker.com/r/itakejgo/ear-oracle). You could pull this image and to run the code.
+A docker image is avaiable via **docker hub** (https://hub.docker.com/r/itakejgo/ear-oracle). You could pull this image and run the code.
 
 0. Install the following packages: *build-essential, cmake, libcgal-dev, gnuplot, tmux* [ **Note:** *tmux* is for running long-time experiments, any other substitute is fine. Please make sure the CGAL(*libcgal-dev*) version is newer than v5.2 (for *cmake* support).]:
 
@@ -46,7 +46,7 @@ A docker image is avaiable via **docker hub** (https://hub.docker.com/r/itakejgo
 4. The experimental results will be generated in the *../exp* folder. The final figures will locate in *out/* folder.
 
 ### Note for Reproducing
-0. All experimental results (except for scalability test) is tested on a machine with *256GB* memory. To support verification on machines with smaller memory space, the **default config** (locate in *build/script_config*) is only set for small datasets (i.e., four terrains in *datasets/small*). Please change **dataset_list(line5)** and **tested_dataset(line10)** in the **default config** if you want to test all datasets.
+0. All experimental results (except for scalability test) is tested on a machine with *256GB* memory. To support verification on machines with smaller memory space, the **default config** (locate in *build/script_config*) is only set for small datasets (i.e., four terrains in *datasets/small*). Please change **dataset_list (line 5)** and **tested_dataset (line 10)** in the **default config** if you want to test all datasets.
 1. For large datasets, the tested algorithms requires a large memory space. You may need to use *ulimit* command to adjust the memory limit.
 2. The *UnfixedS* and *KAlgo* are on-the-fly algorithms, therefore they are **very slow** for median and large datasets (since they need to place a lot of auxiliary points and distance quires are independent to each other). If you can access multiple machines, we suggest separating the experiments into multiple machines (For example, each machine runs a single experiment. You can achieve this by *comment/uncomment **line 650-670*** of the master script).
 **Fully** run the on-the-fly algorithms on large datasets may **require a couple of weeks**. We suggest to add a time limit for these on-the-fly algorithms(UnfixedS, KAlgo). You can achieve this by modifying the *exp_\*.sh* in folder *scripts/exp/* (such as using *timelimit* command).
