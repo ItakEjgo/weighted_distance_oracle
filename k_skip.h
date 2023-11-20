@@ -280,7 +280,7 @@ namespace kSkip{
     void constructMeshGraph(const Base::Mesh &mesh, Graph &g){
         g.init(mesh.num_vertices());
         g.head.resize(mesh.num_vertices(), 0);
-        for (auto &fd: mesh.faces()){
+        for (auto fd: mesh.faces()){
             for (auto hed: mesh.halfedges_around_face(mesh.halfedge(fd))){
                 auto sid = mesh.source(hed);
                 auto tid = mesh.target(hed);
