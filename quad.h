@@ -104,7 +104,7 @@ namespace Quad{
         set<unsigned> intersect_face_id = {};
         float x_min = tree_node->x_min, x_max = tree_node->x_max, y_min = tree_node->y_min, y_max = tree_node->y_max;
         if (fa_node == nullptr){
-            for (auto &f: mesh.faces()){
+            for (auto f: mesh.faces()){
                 bool in_flag = false;
                 vector<my_point> p;
                 for (auto v: mesh.vertices_around_face(mesh.halfedge(f))){
@@ -174,7 +174,7 @@ namespace Quad{
         root = new treeNode();
         node_count = 0;
         root->node_id = node_count++;
-        for (auto &v: mesh.vertices()){
+        for (auto v: mesh.vertices()){
 //            cout << mesh.points()[v].x() << " " << mesh.points()[v].y() << " " << mesh.points()[v].z() << endl;
             float x = mesh.points()[v].x(), y = mesh.points()[v].y();
             if (Base::floatCmp(x - root->x_min) < 0) root->x_min = x;
