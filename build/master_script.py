@@ -490,8 +490,8 @@ def run_spnum(variable_dict):
         if algo == 'UnfixedS' or algo == 'KAlgo' or algo == 'MMP':
             print('Steiner points number only influences [FixedS, SE-Oracle and EAR-Oracle]. Experiment for ', algo, ' is skipped.')
             continue
-        if algo != 'EAR':
-            continue
+        # if algo != 'EAR':
+            # continue
         for i in range(len(variable_dict['spnum_val'])):
             spnum = variable_dict['spnum_val'][i]
             flag = variable_dict['spnum_flag'][i]
